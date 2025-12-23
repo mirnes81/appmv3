@@ -1,0 +1,32 @@
+# Module MV-3 PRO Portail
+Module510000Name=MV-3 PRO Portail
+Module510000Desc=Portail MV-3 PRO (rapports journaliers, signalements, matériel, TV)
+
+# Permissions
+Permission510001=Lire module MV3
+Permission510002=Écrire module MV3
+Permission510003=Valider rapports
+Permission510004=Accès interface mobile ouvrier
+Permission510005=Accès affichage TV
+
+# Menu
+TopMenuMV3PRO=MV-3 PRO
+Dashboard=Tableau de bord
+Rapports=Rapports journaliers
+Signalements=Signalements
+Configuration=Configuration
+
+# General
+NewReport=Nouveau rapport
+ViewReport=Voir le rapport
+EditReport=Modifier le rapport
+ValidateReport=Valider le rapport
+Report=Rapport
+Reports=Rapports
+Status=Statut
+Draft=Brouillon
+Validated=Envoyé
+Priority=Priorité
+High=Haute
+Normal=Normale
+Low=Basse

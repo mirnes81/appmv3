@@ -1,0 +1,27 @@
+{
+  "name": "Sous-Traitants MV3 PRO",
+  "short_name": "MV3 ST",
+  "description": "Application mobile pour les sous-traitants MV3 PRO",
+  "start_url": "index.php",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["productivity", "business"],
+  "lang": "fr"
+}
