@@ -1,110 +1,135 @@
-# GUIDE DE CONNEXION - MV3 PRO MOBILE
+# GUIDE - CONFIGURER LA CONNEXION BASE DE DONNÉES
 
-## Comment se connecter à l'application mobile ?
+## ❌ ERREUR ACTUELLE
+```json
+{"error":"Database connection failed"}
+```
 
-### URL de l'application
-👉 **https://app.mv-3pro.ch/pro/**
+## 🔧 SOLUTION
 
----
+Vous devez modifier le fichier `config.php` avec les vrais identifiants de votre base de données Dolibarr.
 
-## IDENTIFIANTS DE CONNEXION
+### ÉTAPE 1: Trouver les identifiants Dolibarr
 
-### Utiliser vos identifiants Dolibarr
+Les identifiants sont dans le fichier de configuration de Dolibarr:
 
-**Email**: Votre adresse email dans Dolibarr
-**Mot de passe**: Votre mot de passe Dolibarr
+**Chemin:** `/var/www/dolibarr/htdocs/conf/conf.php`
 
-⚠️ **IMPORTANT**:
-- Vous devez être un utilisateur actif dans Dolibarr
-- Votre email doit être renseigné dans votre profil Dolibarr
-- Votre compte ne doit pas être désactivé
+Téléchargez ce fichier via FTP et ouvrez-le. Cherchez ces lignes:
 
----
+```php
+$dolibarr_main_db_host='localhost';
+$dolibarr_main_db_name='dolibarr';           // ← NOM DE LA BASE
+$dolibarr_main_db_user='dolibarr_user';      // ← UTILISATEUR
+$dolibarr_main_db_pass='mot_de_passe_ici';   // ← MOT DE PASSE
+```
 
-## EXEMPLE DE CONNEXION
+### ÉTAPE 2: Modifier config.php
 
-1. Ouvrez l'URL: https://app.mv-3pro.ch/pro/
-2. Entrez votre email: `jean.dupont@mv-3pro.ch`
-3. Entrez votre mot de passe Dolibarr
-4. Cliquez sur "Se connecter"
+Téléchargez le fichier via FTP:
+```
+/var/www/dolibarr/htdocs/custom/mv3pro_portail/api_mobile/config.php
+```
 
----
+Modifiez ces lignes avec les valeurs trouvées à l'étape 1:
 
-## VÉRIFIER VOS IDENTIFIANTS DANS DOLIBARR
+```php
+define('DOLIBARR_DB_HOST', 'localhost');                    // ← Généralement 'localhost'
+define('DOLIBARR_DB_NAME', 'dolibarr');                     // ← Copiez depuis conf.php
+define('DOLIBARR_DB_USER', 'dolibarr_user');                // ← Copiez depuis conf.php
+define('DOLIBARR_DB_PASS', 'votre_mot_de_passe_reel');      // ← Copiez depuis conf.php
 
-### 1. Connectez-vous à Dolibarr
-👉 https://crm.mv-3pro.ch
+define('JWT_SECRET', 'CHANGEZ_MOI_123456789');              // ← Mettez n'importe quelle chaîne aléatoire
+```
 
-### 2. Allez dans votre profil
-- Menu > Utilisateur > Modifier votre fiche
+### ÉTAPE 3: Sauvegarder et re-uploader
 
-### 3. Vérifiez votre email
-- Assurez-vous que votre email est bien renseigné
-- Assurez-vous que votre compte est "Activé"
+1. Sauvegardez le fichier `config.php`
+2. Re-uploadez-le via FTP au même emplacement
+3. Testez à nouveau: `https://crm.mv-3pro.ch/custom/mv3pro_portail/api_mobile/test.php`
 
-### 4. Modifier votre mot de passe si nécessaire
-- Allez dans "Mot de passe"
-- Changez votre mot de passe
-- Utilisez ce nouveau mot de passe dans l'app mobile
+## ✅ RÉSULTAT ATTENDU
 
----
+Après modification, vous devriez voir:
 
-## QUE FAIRE SI LA CONNEXION NE FONCTIONNE PAS ?
+```json
+{
+    "status": "ok",
+    "message": "API MV3 Pro Mobile fonctionne",
+    "timestamp": "2024-12-23T20:30:00+01:00",
+    "database": "connected",
+    "active_users": 5
+}
+```
 
-### ❌ Erreur "Invalid credentials"
-**Solutions**:
-1. Vérifiez que l'email est correct (pas d'espace avant/après)
-2. Vérifiez que le mot de passe est correct
-3. Essayez de vous connecter d'abord à Dolibarr pour confirmer vos identifiants
-4. Contactez l'administrateur système si le problème persiste
+## 🔒 SÉCURITÉ JWT_SECRET
 
-### ❌ Erreur "Network error"
-**Solutions**:
-1. Vérifiez votre connexion internet
-2. Vérifiez que l'API est bien installée sur le serveur
-3. Contactez l'administrateur système
+La clé JWT_SECRET sert à sécuriser les tokens de connexion. Mettez n'importe quelle chaîne aléatoire longue:
 
-### ❌ Page blanche ou erreur 404
-**Solutions**:
-1. Vérifiez l'URL: https://app.mv-3pro.ch/pro/ (avec /pro/)
-2. Videz le cache de votre navigateur
-3. Essayez en navigation privée
+**Exemples:**
+```php
+define('JWT_SECRET', 'MV3Pro2024!SecretKey#9876');
+define('JWT_SECRET', 'aB3$dE5fG7&hI9jK0lM2nO4');
+define('JWT_SECRET', 'MonSuperSecretQuiEstLong123456789');
+```
 
----
+Plus c'est long et complexe, mieux c'est.
 
-## INSTALLATION DE L'APP MOBILE (PWA)
+## 📋 EXEMPLE COMPLET
 
-### Sur Android
-1. Ouvrez l'URL dans Chrome
-2. Menu ⋮ > "Installer l'application" ou "Ajouter à l'écran d'accueil"
-3. Confirmez l'installation
+Voici un exemple de `config.php` correctement configuré:
 
-### Sur iOS (iPhone/iPad)
-1. Ouvrez l'URL dans Safari
-2. Cliquez sur le bouton Partager 📤
-3. Sélectionnez "Sur l'écran d'accueil"
-4. Confirmez l'ajout
+```php
+<?php
+define('DOLIBARR_DB_HOST', 'localhost');
+define('DOLIBARR_DB_NAME', 'dolibarr');
+define('DOLIBARR_DB_USER', 'dolibarr_user');
+define('DOLIBARR_DB_PASS', 'MonMotDePasse123');
 
-### Sur ordinateur (Windows/Mac/Linux)
-1. Ouvrez l'URL dans Chrome/Edge/Brave
-2. Regardez dans la barre d'adresse pour l'icône d'installation ⊕
-3. Cliquez sur "Installer"
+define('JWT_SECRET', 'MV3Pro2024SecretKey987654321');
+define('JWT_EXPIRATION', 86400 * 7);
 
----
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Content-Type: application/json; charset=utf-8');
 
-## FONCTIONNALITÉS DISPONIBLES
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
-Une fois connecté, vous aurez accès à:
+// ... reste du fichier ...
+```
 
-📋 **Rapports**: Créer et consulter les rapports de chantier
-📅 **Planning**: Voir votre planning du jour
-⚙️ **Matériel**: Gérer le matériel
-👤 **Profil**: Consulter et modifier votre profil
-🏗️ **Régie**: Gérer les bons de régie
-📐 **Sens de pose**: Créer des plans de pose
+## 🆘 SI VOUS NE TROUVEZ PAS conf.php
 
----
+### Solution alternative: Demandez à votre hébergeur
 
-## BESOIN D'AIDE ?
+Si vous n'avez pas accès au fichier `conf.php`, contactez votre hébergeur et demandez:
 
-Contactez votre administrateur système ou le support technique.
+> "Bonjour, j'ai besoin des identifiants de connexion à ma base de données MySQL pour mon installation Dolibarr. Pouvez-vous me communiquer:
+> - Le nom de la base de données
+> - L'utilisateur MySQL
+> - Le mot de passe MySQL
+>
+> Merci"
+
+### Solution alternative 2: Vérifier dans le panneau d'hébergement
+
+Si vous avez un panneau de contrôle (cPanel, Plesk, etc.):
+
+1. Allez dans "Bases de données MySQL"
+2. Notez le nom de la base Dolibarr
+3. Notez l'utilisateur associé
+4. Le mot de passe est celui que vous avez défini lors de la création
+
+## 📞 APRÈS MODIFICATION
+
+Une fois `config.php` modifié et uploadé:
+
+1. ✅ Testez test.php → devrait afficher "ok"
+2. ✅ Testez la connexion sur https://app.mv-3pro.ch/pro/
+3. ✅ Utilisez vos identifiants Dolibarr (email + mot de passe)
+
+Si vous avez encore des erreurs, envoyez-moi une capture d'écran de test.php
