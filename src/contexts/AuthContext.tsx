@@ -6,7 +6,7 @@ import * as storage from '../utils/storage';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, useBiometric?: boolean) => Promise<void>;
+  login: (url: string, apiKey: string) => Promise<void>;
   logout: () => Promise<void>;
   enableBiometric: () => Promise<boolean>;
 }
@@ -39,31 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string, useBiometric = false) => {
+  const login = async (url: string, apiKey: string) => {
     try {
       setLoading(true);
 
-      if (useBiometric && 'credentials' in navigator) {
-        const credential = await (navigator.credentials as any).get({
-          publicKey: {
-            challenge: new Uint8Array(32),
-            rpId: window.location.hostname,
-            userVerification: 'required',
-          }
-        });
-
-        if (!credential) {
-          throw new Error('Authentification biométrique échouée');
-        }
-      }
-
-      const userData = await api.login(email, password);
+      const userData = await api.login(url, apiKey);
       setUser(userData);
       await storage.saveUser(userData);
-
-      if (useBiometric) {
-        await storage.saveBiometricPreference(true);
-      }
     } catch (error) {
       console.error('Login failed:', error);
       throw error;

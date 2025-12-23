@@ -1,40 +1,27 @@
 import { useState } from 'react';
-import { Fingerprint, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Server, Key, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen() {
-  const { login, enableBiometric } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const { login } = useAuth();
+  const [dolibarrUrl, setDolibarrUrl] = useState('https://crm.mv-3pro.ch');
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [biometricAvailable] = useState('credentials' in navigator && 'PublicKeyCredential' in window);
 
-  const handleLogin = async (e: React.FormEvent, useBiometric = false) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      await login(email, password, useBiometric);
+      const cleanUrl = dolibarrUrl.trim().replace(/\/$/, '');
+      await login(cleanUrl, apiKey.trim());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de connexion');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleBiometricLogin = async () => {
-    if (!email || !password) {
-      setError('Veuillez d\'abord vous connecter avec email/mot de passe');
-      return;
-    }
-
-    try {
-      await handleLogin(new Event('submit') as any, true);
-    } catch (err) {
-      setError('Authentification biométrique échouée');
     }
   };
 
@@ -52,48 +39,52 @@ export default function LoginScreen() {
         </div>
 
         <div className="card-premium">
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                URL Dolibarr
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Server className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="url"
+                  value={dolibarrUrl}
+                  onChange={(e) => setDolibarrUrl(e.target.value)}
                   className="input-premium pl-12"
-                  placeholder="votre@email.com"
+                  placeholder="https://crm.mv-3pro.ch"
                   required
-                  autoComplete="email"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                L'URL de votre instance Dolibarr
+              </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mot de passe
+                DOLAPIKEY
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type={showApiKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
                   className="input-premium pl-12 pr-12"
-                  placeholder="••••••••"
+                  placeholder="Votre clé API Dolibarr"
                   required
-                  autoComplete="current-password"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowApiKey(!showApiKey)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Disponible dans Dolibarr : Menu Utilisateur → Générer une clé API
+              </p>
             </div>
 
             {error && (
@@ -116,34 +107,20 @@ export default function LoginScreen() {
                 'Se connecter'
               )}
             </button>
-
-            {biometricAvailable && (
-              <>
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white text-gray-500">ou</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleBiometricLogin}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl
-                           hover:from-blue-700 hover:to-blue-800 active:scale-95 transition-all shadow-lg
-                           flex items-center justify-center space-x-2"
-                  disabled={loading}
-                >
-                  <Fingerprint className="w-5 h-5" />
-                  <span>Connexion biométrique</span>
-                </button>
-              </>
-            )}
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+            <p className="text-sm text-gray-700 font-medium mb-2">Comment obtenir votre DOLAPIKEY ?</p>
+            <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+              <li>Connectez-vous à Dolibarr</li>
+              <li>Cliquez sur votre nom en haut à droite</li>
+              <li>Allez dans "Modifier ma fiche utilisateur"</li>
+              <li>Onglet "Clé API" → "Générer une nouvelle clé"</li>
+              <li>Copiez la clé et collez-la ici</li>
+            </ol>
+          </div>
+
+          <div className="mt-4 text-center text-sm text-gray-600">
             Mode hors-ligne disponible après première connexion
           </div>
         </div>

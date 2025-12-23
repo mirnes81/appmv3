@@ -1,135 +1,313 @@
 import { User, Report, Regie, SensPose } from '../types';
-import { getToken } from './storage';
+import { getDolibarrUrl, getDolapikey } from './storage';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://crm.mv-3pro.ch/custom/mv3pro_portail/api';
+async function fetchDolibarr(endpoint: string, options: RequestInit = {}) {
+  const baseUrl = await getDolibarrUrl();
+  const apiKey = await getDolapikey();
 
-async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-  const token = await getToken();
+  if (!baseUrl || !apiKey) {
+    throw new Error('Configuration Dolibarr manquante. Veuillez vous reconnecter.');
+  }
 
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    'DOLAPIKEY': apiKey,
+    'Accept': 'application/json',
     ...options.headers,
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (options.body && typeof options.body === 'string') {
+    headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const url = `${baseUrl}/api/index.php${endpoint}`;
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Network error' }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+    const error = await response.json().catch(() => ({ error: { message: 'Erreur réseau' } }));
+    throw new Error(error.error?.message || `HTTP ${response.status}`);
   }
 
   return response.json();
 }
 
-export async function login(email: string, password: string): Promise<User> {
-  const response = await fetchAPI('/auth/login.php', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
+export async function verifyApiKey(url: string, apiKey: string): Promise<User> {
+  const headers: HeadersInit = {
+    'DOLAPIKEY': apiKey,
+    'Accept': 'application/json',
+  };
+
+  const response = await fetch(`${url}/api/index.php/users/info`, {
+    headers,
   });
 
-  if (response.token) {
-    const { saveToken } = await import('./storage');
-    await saveToken(response.token);
+  if (!response.ok) {
+    throw new Error('DOLAPIKEY invalide ou URL incorrecte');
   }
 
-  return response.user;
+  const userData = await response.json();
+
+  return {
+    id: String(userData.id),
+    dolibarr_user_id: userData.id,
+    email: userData.email || userData.login,
+    name: `${userData.firstname || ''} ${userData.lastname || ''}`.trim(),
+    phone: userData.user_mobile || userData.phone,
+    biometric_enabled: false,
+    preferences: {
+      theme: 'auto',
+      notifications: true,
+      autoSave: true,
+      cameraQuality: 'high',
+      voiceLanguage: 'fr-FR',
+    },
+  };
+}
+
+export async function login(url: string, apiKey: string): Promise<User> {
+  const user = await verifyApiKey(url, apiKey);
+  const { saveDolibarrConfig, saveUser } = await import('./storage');
+  await saveDolibarrConfig(url, apiKey);
+  await saveUser(user);
+  return user;
 }
 
 export async function logout(): Promise<void> {
-  await fetchAPI('/auth/logout.php', { method: 'POST' });
+  const { clearUser } = await import('./storage');
+  await clearUser();
 }
 
 export async function verifySession(): Promise<boolean> {
   try {
-    await fetchAPI('/auth/verify.php');
+    await fetchDolibarr('/users/info');
     return true;
   } catch {
     return false;
   }
 }
 
-export async function createReport(data: Partial<Report>): Promise<Report> {
-  return fetchAPI('/reports/create.php', {
+export async function getFichinters(filters?: { limit?: number; sortfield?: string; sortorder?: string }): Promise<any[]> {
+  const params = new URLSearchParams();
+  if (filters?.limit) params.append('limit', String(filters.limit));
+  if (filters?.sortfield) params.append('sortfield', filters.sortfield);
+  if (filters?.sortorder) params.append('sortorder', filters.sortorder);
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchDolibarr(`/fichinter${query}`);
+}
+
+export async function createFichinter(data: any): Promise<any> {
+  return fetchDolibarr('/fichinter', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
-export async function getReports(filters?: any): Promise<Report[]> {
-  const query = filters ? `?${new URLSearchParams(filters)}` : '';
-  return fetchAPI(`/reports/list.php${query}`);
+export async function getAgendaEvents(filters?: { limit?: number }): Promise<any[]> {
+  const params = new URLSearchParams();
+  if (filters?.limit) params.append('limit', String(filters.limit));
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchDolibarr(`/agendaevents${query}`);
 }
 
-export async function createRegie(data: Partial<Regie>): Promise<Regie> {
-  return fetchAPI('/regie/create.php', {
+export async function createAgendaEvent(data: any): Promise<any> {
+  return fetchDolibarr('/agendaevents', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
-export async function getRegies(filters?: any): Promise<Regie[]> {
-  const query = filters ? `?${new URLSearchParams(filters)}` : '';
-  return fetchAPI(`/regie/list.php${query}`);
+export async function getThirdparties(filters?: { limit?: number }): Promise<any[]> {
+  const params = new URLSearchParams();
+  if (filters?.limit) params.append('limit', String(filters.limit));
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchDolibarr(`/thirdparties${query}`);
 }
 
-export async function createSensPose(data: Partial<SensPose>): Promise<SensPose> {
-  return fetchAPI('/sens_pose/create.php', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+export async function getProjects(filters?: { thirdparty_id?: number; limit?: number }): Promise<any[]> {
+  const params = new URLSearchParams();
+  if (filters?.thirdparty_id) params.append('thirdparty_ids', String(filters.thirdparty_id));
+  if (filters?.limit) params.append('limit', String(filters.limit));
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchDolibarr(`/projects${query}`);
 }
 
-export async function getSensPoses(filters?: any): Promise<SensPose[]> {
-  const query = filters ? `?${new URLSearchParams(filters)}` : '';
-  return fetchAPI(`/sens_pose/list.php${query}`);
-}
+export async function uploadDocument(modulepart: string, ref: string, file: File): Promise<any> {
+  const baseUrl = await getDolibarrUrl();
+  const apiKey = await getDolapikey();
 
-export async function uploadPhoto(data: { file: File; type: string; related_id: string }): Promise<any> {
-  const token = await getToken();
+  if (!baseUrl || !apiKey) {
+    throw new Error('Configuration Dolibarr manquante');
+  }
+
   const formData = new FormData();
-  formData.append('file', data.file);
-  formData.append('type', data.type);
-  formData.append('related_id', data.related_id);
+  formData.append('filename', file.name);
+  formData.append('modulepart', modulepart);
+  formData.append('ref', ref);
+  formData.append('filecontent', file);
 
-  const response = await fetch(`${API_BASE_URL}/photos/upload.php`, {
+  const response = await fetch(`${baseUrl}/api/index.php/documents/upload`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token || ''}`,
+      'DOLAPIKEY': apiKey,
     },
     body: formData,
   });
 
   if (!response.ok) {
-    throw new Error('Photo upload failed');
+    throw new Error('Échec de l\'envoi du document');
   }
 
   return response.json();
 }
 
-export async function getClients(): Promise<any[]> {
-  return fetchAPI('/clients/list.php');
+export async function getDocuments(modulepart: string, ref: string): Promise<any[]> {
+  return fetchDolibarr(`/documents?modulepart=${modulepart}&ref=${ref}`);
 }
 
-export async function getProjects(clientId?: number): Promise<any[]> {
-  const query = clientId ? `?client_id=${clientId}` : '';
-  return fetchAPI(`/projects/list.php${query}`);
+export async function getReports(filters?: any): Promise<Report[]> {
+  const fichinters = await getFichinters(filters);
+
+  return fichinters.map((fich: any) => ({
+    id: String(fich.id),
+    user_id: String(fich.fk_user_author || ''),
+    project_id: fich.fk_project,
+    client_name: fich.socid ? fich.ref_client || '' : '',
+    date: new Date(Number(fich.date_creation) * 1000).toISOString().split('T')[0],
+    start_time: '',
+    end_time: '',
+    description: fich.description || '',
+    observations: fich.note_private || '',
+    materials_used: [],
+    photos: [],
+    voice_notes: [],
+    status: fich.statut === '1' ? 'synced' : 'pending',
+    created_at: new Date(Number(fich.date_creation) * 1000).toISOString(),
+    updated_at: new Date(Number(fich.date_modification) * 1000).toISOString(),
+  }));
 }
 
-export async function getMaterials(): Promise<any[]> {
-  return fetchAPI('/materials/list.php');
-}
+export async function createReport(data: Partial<Report>): Promise<Report> {
+  const fichinterData = {
+    socid: data.client_name,
+    description: data.description,
+    note_private: data.observations,
+    fk_project: data.project_id,
+  };
 
-export async function getWeather(lat: number, lon: number): Promise<any> {
-  return fetchAPI(`/weather/current.php?lat=${lat}&lon=${lon}`);
+  const created = await createFichinter(fichinterData);
+
+  if (data.photos && data.photos.length > 0) {
+    for (const photo of data.photos) {
+      if (!photo.uploaded) {
+        const blob = await fetch(photo.url).then(r => r.blob());
+        const file = new File([blob], photo.filename, { type: 'image/jpeg' });
+        await uploadDocument('fichinter', String(created.id), file);
+      }
+    }
+  }
+
+  return {
+    ...data,
+    id: String(created.id),
+    status: 'synced',
+  } as Report;
 }
 
 export async function getDashboardStats(): Promise<any> {
-  return fetchAPI('/dashboard/stats.php');
+  const today = new Date();
+  const startOfDay = Math.floor(today.setHours(0, 0, 0, 0) / 1000);
+
+  try {
+    const fichinters = await getFichinters({ limit: 100 });
+
+    const todayFichinters = fichinters.filter((f: any) => Number(f.date_creation) >= startOfDay);
+
+    return {
+      reports_today: todayFichinters.length,
+      reports_week: fichinters.length,
+      reports_month: fichinters.length,
+      hours_today: 0,
+      hours_week: 0,
+      pending_sync: 0,
+      photos_count: 0,
+    };
+  } catch (error) {
+    return {
+      reports_today: 0,
+      reports_week: 0,
+      reports_month: 0,
+      hours_today: 0,
+      hours_week: 0,
+      pending_sync: 0,
+      photos_count: 0,
+    };
+  }
+}
+
+export async function getClients(): Promise<any[]> {
+  return getThirdparties({ limit: 100 });
+}
+
+export async function getMaterials(): Promise<any[]> {
+  return [];
+}
+
+export async function getWeather(lat: number, lon: number): Promise<any> {
+  try {
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+    const data = await response.json();
+
+    return {
+      temperature: data.current_weather?.temperature || 0,
+      conditions: getWeatherCondition(data.current_weather?.weathercode || 0),
+      icon: getWeatherIcon(data.current_weather?.weathercode || 0),
+      humidity: 0,
+      wind_speed: data.current_weather?.windspeed || 0,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function getWeatherCondition(code: number): string {
+  if (code === 0) return 'Ensoleillé';
+  if (code <= 3) return 'Nuageux';
+  if (code <= 67) return 'Pluie';
+  if (code <= 77) return 'Neige';
+  return 'Orage';
+}
+
+function getWeatherIcon(code: number): string {
+  if (code === 0) return '☀️';
+  if (code <= 3) return '⛅';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '❄️';
+  return '⛈️';
+}
+
+export async function uploadPhoto(data: { file: File; type: string; related_id: string }): Promise<any> {
+  return uploadDocument(data.type, data.related_id, data.file);
+}
+
+export async function createRegie(data: Partial<Regie>): Promise<Regie> {
+  throw new Error('Non implémenté - à faire via module Dolibarr custom');
+}
+
+export async function getRegies(filters?: any): Promise<Regie[]> {
+  return [];
+}
+
+export async function createSensPose(data: Partial<SensPose>): Promise<SensPose> {
+  throw new Error('Non implémenté - à faire via module Dolibarr custom');
+}
+
+export async function getSensPoses(filters?: any): Promise<SensPose[]> {
+  return [];
 }

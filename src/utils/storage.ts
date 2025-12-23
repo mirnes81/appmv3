@@ -1,9 +1,23 @@
 import { User } from '../types';
 
+const DOLIBARR_URL_KEY = 'mv3_dolibarr_url';
+const DOLAPIKEY_KEY = 'mv3_dolapikey';
 const USER_KEY = 'mv3_user';
-const TOKEN_KEY = 'mv3_token';
 const BIOMETRIC_KEY = 'mv3_biometric';
 const PREFERENCES_KEY = 'mv3_preferences';
+
+export async function saveDolibarrConfig(url: string, apiKey: string): Promise<void> {
+  localStorage.setItem(DOLIBARR_URL_KEY, url);
+  localStorage.setItem(DOLAPIKEY_KEY, apiKey);
+}
+
+export async function getDolibarrUrl(): Promise<string | null> {
+  return localStorage.getItem(DOLIBARR_URL_KEY);
+}
+
+export async function getDolapikey(): Promise<string | null> {
+  return localStorage.getItem(DOLAPIKEY_KEY);
+}
 
 export async function saveUser(user: User): Promise<void> {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -16,15 +30,8 @@ export async function getUser(): Promise<User | null> {
 
 export async function clearUser(): Promise<void> {
   localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-export async function saveToken(token: string): Promise<void> {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export async function getToken(): Promise<string | null> {
-  return localStorage.getItem(TOKEN_KEY);
+  localStorage.removeItem(DOLIBARR_URL_KEY);
+  localStorage.removeItem(DOLAPIKEY_KEY);
 }
 
 export async function saveBiometricPreference(enabled: boolean): Promise<void> {
