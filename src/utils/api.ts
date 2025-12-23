@@ -1,12 +1,13 @@
 import { User, Report, Regie, SensPose } from '../types';
-import { getDolibarrUrl, getDolapikey } from './storage';
+import { getDolapikey } from './storage';
+
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/index.php';
 
 async function fetchDolibarr(endpoint: string, options: RequestInit = {}) {
-  const baseUrl = await getDolibarrUrl();
   const apiKey = await getDolapikey();
 
-  if (!baseUrl || !apiKey) {
-    throw new Error('Configuration Dolibarr manquante. Veuillez vous reconnecter.');
+  if (!apiKey) {
+    throw new Error('DOLAPIKEY manquante. Veuillez vous reconnecter.');
   }
 
   const headers: HeadersInit = {
@@ -19,7 +20,7 @@ async function fetchDolibarr(endpoint: string, options: RequestInit = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  const url = `${baseUrl}/api/index.php${endpoint}`;
+  const url = `${API_BASE}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
@@ -34,18 +35,18 @@ async function fetchDolibarr(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-export async function verifyApiKey(url: string, apiKey: string): Promise<User> {
+export async function verifyApiKey(apiKey: string): Promise<User> {
   const headers: HeadersInit = {
     'DOLAPIKEY': apiKey,
     'Accept': 'application/json',
   };
 
-  const response = await fetch(`${url}/api/index.php/users/info`, {
+  const response = await fetch(`${API_BASE}/users/info`, {
     headers,
   });
 
   if (!response.ok) {
-    throw new Error('DOLAPIKEY invalide ou URL incorrecte');
+    throw new Error('DOLAPIKEY invalide');
   }
 
   const userData = await response.json();
@@ -67,10 +68,10 @@ export async function verifyApiKey(url: string, apiKey: string): Promise<User> {
   };
 }
 
-export async function login(url: string, apiKey: string): Promise<User> {
-  const user = await verifyApiKey(url, apiKey);
-  const { saveDolibarrConfig, saveUser } = await import('./storage');
-  await saveDolibarrConfig(url, apiKey);
+export async function login(apiKey: string): Promise<User> {
+  const user = await verifyApiKey(apiKey);
+  const { saveDolapikey, saveUser } = await import('./storage');
+  await saveDolapikey(apiKey);
   await saveUser(user);
   return user;
 }
@@ -139,11 +140,10 @@ export async function getProjects(filters?: { thirdparty_id?: number; limit?: nu
 }
 
 export async function uploadDocument(modulepart: string, ref: string, file: File): Promise<any> {
-  const baseUrl = await getDolibarrUrl();
   const apiKey = await getDolapikey();
 
-  if (!baseUrl || !apiKey) {
-    throw new Error('Configuration Dolibarr manquante');
+  if (!apiKey) {
+    throw new Error('DOLAPIKEY manquante');
   }
 
   const formData = new FormData();
@@ -152,7 +152,7 @@ export async function uploadDocument(modulepart: string, ref: string, file: File
   formData.append('ref', ref);
   formData.append('filecontent', file);
 
-  const response = await fetch(`${baseUrl}/api/index.php/documents/upload`, {
+  const response = await fetch(`${API_BASE}/documents/upload`, {
     method: 'POST',
     headers: {
       'DOLAPIKEY': apiKey,

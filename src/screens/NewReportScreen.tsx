@@ -7,6 +7,7 @@ import * as api from '../utils/api';
 import { useOffline } from '../contexts/OfflineContext';
 import CameraCapture from '../components/CameraCapture';
 import VoiceRecorder from '../components/VoiceRecorder';
+import TimeTracker from '../components/TimeTracker';
 
 interface NewReportScreenProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ export default function NewReportScreen({ onClose, draft }: NewReportScreenProps
   const [saving, setSaving] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [totalTimeSeconds, setTotalTimeSeconds] = useState(0);
 
   const [formData, setFormData] = useState<Partial<Report>>({
     id: draft?.id || crypto.randomUUID(),
@@ -159,6 +161,11 @@ export default function NewReportScreen({ onClose, draft }: NewReportScreenProps
             <Clock className="w-4 h-4 text-green-600" />
           </div>
         </div>
+
+        <TimeTracker
+          fichinterId={formData.project_id}
+          onTimeUpdate={setTotalTimeSeconds}
+        />
 
         <div className="card-premium">
           <label className="block text-sm font-medium text-gray-700 mb-2">

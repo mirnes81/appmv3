@@ -6,7 +6,7 @@ import * as storage from '../utils/storage';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (url: string, apiKey: string) => Promise<void>;
+  login: (apiKey: string) => Promise<void>;
   logout: () => Promise<void>;
   enableBiometric: () => Promise<boolean>;
 }
@@ -39,11 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (url: string, apiKey: string) => {
+  const login = async (apiKey: string) => {
     try {
       setLoading(true);
 
-      const userData = await api.login(url, apiKey);
+      const userData = await api.login(apiKey);
       setUser(userData);
       await storage.saveUser(userData);
     } catch (error) {

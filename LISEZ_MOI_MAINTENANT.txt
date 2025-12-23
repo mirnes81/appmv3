@@ -1,0 +1,156 @@
+═══════════════════════════════════════════════════════════════
+   MV3 PRO PWA - APPLICATION PRÊTE POUR LA PRODUCTION
+═══════════════════════════════════════════════════════════════
+
+✅ L'APPLICATION EST MAINTENANT CONFIGURÉE POUR VOTRE ENVIRONNEMENT !
+
+
+🌍 VOS URLs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PWA (Front)     : https://app.mv-3pro.ch/pro/
+  Dolibarr (API)  : https://crm.mv-3pro.ch/
+
+
+🏗️ ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ Authentification : DOLAPIKEY uniquement
+  ✅ API              : Proxy /api/ → crm.mv-3pro.ch/api/
+  ✅ Données          : 100% API REST Dolibarr
+  ✅ Mode offline     : IndexedDB
+  ✅ Suivi heures     : Start/Pause/Stop avec localStorage
+
+
+🚀 DÉPLOIEMENT (RAPIDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1️⃣  Compiler :
+      npm install
+      npm run build
+
+  2️⃣  FTP :
+      Copier TOUT le contenu de dist/ dans /pro/
+      ⚠️ IMPORTANT : Le fichier .htaccess DOIT être copié !
+
+  3️⃣  Tester :
+      Ouvrir https://app.mv-3pro.ch/pro/
+      Se connecter avec votre DOLAPIKEY
+
+
+🔑 OBTENIR VOTRE DOLAPIKEY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Allez sur https://crm.mv-3pro.ch/
+  2. Connectez-vous
+  3. Cliquez sur votre nom (en haut à droite)
+  4. "Modifier ma fiche utilisateur"
+  5. Onglet "Clé API"
+  6. "Générer une nouvelle clé"
+  7. Copiez la clé
+
+
+📁 FICHIERS IMPORTANTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  📖 README_DEPLOY.md           → Guide complet de déploiement
+  🔧 public/.htaccess           → Reverse proxy (OBLIGATOIRE)
+  ⚙️  .env                      → Configuration de l'API
+  📦 dist/                      → Application compilée (à copier en FTP)
+
+
+⚙️ FONCTIONNALITÉS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✅ Connexion DOLAPIKEY uniquement
+  ✅ Suivi des heures (▶️ Start / ⏸ Pause / ⏹ Stop)
+  ✅ Création de rapports (fiches d'intervention)
+  ✅ Photos avec compression automatique
+  ✅ Notes vocales avec transcription
+  ✅ Géolocalisation GPS
+  ✅ Mode offline avec sync automatique
+  ✅ Sauvegarde automatique (toutes les 10 secondes)
+  ✅ PWA installable
+
+
+🔧 REVERSE PROXY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Le fichier public/.htaccess redirige :
+
+    https://app.mv-3pro.ch/api/*
+           ↓
+    https://crm.mv-3pro.ch/api/*
+
+  ⚠️ Ce fichier est OBLIGATOIRE pour que l'app fonctionne !
+
+
+🧪 TEST DU PROXY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  curl -H "DOLAPIKEY: votre_cle" https://app.mv-3pro.ch/api/index.php/users/info
+
+  Si ça fonctionne, vous devez voir vos infos utilisateur Dolibarr.
+
+
+💾 MODE OFFLINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  IndexedDB stocke :
+    - Rapports en brouillon
+    - Photos non uploadées
+    - Notes vocales
+    - Cache des données
+
+  Synchronisation automatique au retour en ligne.
+
+
+⏱️ SUIVI DES HEURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Le composant TimeTracker affiche :
+    - Timer en temps réel
+    - Boutons Start/Pause/Reprendre/Stop
+    - Total journalier
+    - Historique des périodes
+
+  Les heures sont stockées en localStorage et liées à l'intervention.
+
+
+🔄 MISE À JOUR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. npm run build
+  2. FTP : Remplacer /pro/ avec dist/
+  3. Vider le cache : Ctrl+Shift+R
+
+
+🐛 DEBUG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ❌ Connexion échoue :
+     → Vérifiez la DOLAPIKEY
+     → F12 → Console pour voir l'erreur
+
+  ❌ Erreur CORS :
+     → Vérifiez que .htaccess est présent
+     → Vérifiez que mod_headers est activé
+
+  ❌ Le proxy ne fonctionne pas :
+     → Vérifiez que mod_rewrite est activé
+     → Vérifiez AllowOverride All dans Apache
+
+
+📖 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Lisez README_DEPLOY.md pour le guide complet !
+
+
+🎉 FÉLICITATIONS !
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Votre application MV3 Pro PWA est prête pour la production !
+
+  Déployez-la et commencez à travailler !
+
+
+═══════════════════════════════════════════════════════════════
