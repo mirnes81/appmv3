@@ -1,0 +1,41 @@
+{
+  "version": "3.2.0",
+  "build": "20251221001",
+  "date": "2025-12-21",
+  "changelog": [
+    {
+      "version": "3.2.0",
+      "date": "2025-12-21",
+      "changes": [
+        "💰 Gestion des frais ouvriers intégrée aux rapports",
+        "🍽️ Frais repas midi et essence",
+        "💳 Choix mode paiement (entreprise/ouvrier)",
+        "📸 Photo du ticket optionnelle",
+        "✅ Création automatique lors du rapport",
+        "📊 Référence auto FRA000001, FRA000002..."
+      ]
+    },
+    {
+      "version": "3.1.0",
+      "date": "2025-01-07",
+      "changes": [
+        "✨ Système de mise à jour automatique",
+        "📅 Planning du jour dans le dashboard",
+        "🌤️ Météo en temps réel avec géolocalisation",
+        "📎 Badges documents/images dans le planning",
+        "🔄 Auto-refresh intelligent (économie batterie)"
+      ]
+    },
+    {
+      "version": "3.0.0",
+      "date": "2025-01-06",
+      "changes": [
+        "🎨 Nouvelle interface mobile moderne",
+        "📱 Navigation à 5 onglets",
+        "📅 Planning hebdomadaire avec détails",
+        "🔔 Système de notifications",
+        "📋 Gestion des rapports optimisée"
+      ]
+    }
+  ]
+}
