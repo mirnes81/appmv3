@@ -1,0 +1,33 @@
+# Configuration CORS pour l'API Mobile MV3 Pro
+<IfModule mod_headers.c>
+    # Autoriser toutes les origines (ou remplacer * par https://app.mv-3pro.ch)
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    Header always set Access-Control-Max-Age "3600"
+
+    # Répondre immédiatement aux requêtes OPTIONS
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
+</IfModule>
+
+# Activer la réécriture d'URL
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Forcer HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Sécurité
+<Files "config.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Type MIME pour JSON
+<IfModule mod_mime.c>
+    AddType application/json .json
+</IfModule>
