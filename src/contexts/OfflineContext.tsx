@@ -78,7 +78,9 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
               await api.createSensPose(item.payload);
               break;
             case 'upload_photo':
-              await api.uploadPhoto(item.payload);
+              if (item.payload.reportId && item.payload.photo) {
+                await api.uploadPhoto(item.payload.reportId, item.payload.photo);
+              }
               break;
             default:
               console.warn('Unknown action type:', item.action_type);

@@ -3,9 +3,9 @@ const RUNTIME_CACHE = 'mv3-runtime';
 const API_CACHE = 'mv3-api';
 
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  '/pro/',
+  '/pro/index.html',
+  '/pro/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
