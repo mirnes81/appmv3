@@ -41,31 +41,47 @@ export async function verifyApiKey(apiKey: string): Promise<User> {
     'Accept': 'application/json',
   };
 
-  const response = await fetch(`${API_BASE}/users/info`, {
-    headers,
-  });
+  const url = `${API_BASE}/users/info`;
 
-  if (!response.ok) {
-    throw new Error('DOLAPIKEY invalide');
+  try {
+    const response = await fetch(url, {
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      console.error('API Error:', response.status, errorText);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('DOLAPIKEY invalide ou expirée');
+      }
+
+      throw new Error(`Erreur API (${response.status}): ${errorText || 'Vérifiez votre connexion'}`);
+    }
+
+    const userData = await response.json();
+
+    return {
+      id: String(userData.id),
+      dolibarr_user_id: userData.id,
+      email: userData.email || userData.login,
+      name: `${userData.firstname || ''} ${userData.lastname || ''}`.trim(),
+      phone: userData.user_mobile || userData.phone,
+      biometric_enabled: false,
+      preferences: {
+        theme: 'auto',
+        notifications: true,
+        autoSave: true,
+        cameraQuality: 'high',
+        voiceLanguage: 'fr-FR',
+      },
+    };
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error(`Impossible de contacter le serveur.\n\nVérifiez:\n• Votre connexion Internet\n• Configuration CORS sur ${API_BASE}\n\nErreur technique: ${error.message}`);
+    }
+    throw error;
   }
-
-  const userData = await response.json();
-
-  return {
-    id: String(userData.id),
-    dolibarr_user_id: userData.id,
-    email: userData.email || userData.login,
-    name: `${userData.firstname || ''} ${userData.lastname || ''}`.trim(),
-    phone: userData.user_mobile || userData.phone,
-    biometric_enabled: false,
-    preferences: {
-      theme: 'auto',
-      notifications: true,
-      autoSave: true,
-      cameraQuality: 'high',
-      voiceLanguage: 'fr-FR',
-    },
-  };
 }
 
 export async function login(apiKey: string): Promise<User> {

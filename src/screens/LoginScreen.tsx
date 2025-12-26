@@ -67,8 +67,14 @@ export default function LoginScreen() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm animate-fade-in">
-                {error}
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm animate-fade-in">
+                <div className="font-semibold mb-1">Erreur de connexion</div>
+                <pre className="whitespace-pre-wrap font-sans text-xs">{error}</pre>
+                <div className="mt-2 pt-2 border-t border-red-200 text-xs">
+                  <a href="#diagnostic" onClick={(e) => { e.preventDefault(); window.location.hash = 'diagnostic'; window.location.reload(); }} className="text-blue-600 hover:underline">
+                    Ouvrir le diagnostic API
+                  </a>
+                </div>
               </div>
             )}
 
