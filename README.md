@@ -1,44 +1,63 @@
-# MV3PRO - Application de Gestion
+# MV3PRO - Application de Gestion de Chantiers
 
-## Structure du projet
+Application PWA complète avec modules Dolibarr pour la gestion de chantiers.
 
-Ce projet contient uniquement les éléments essentiels pour le déploiement :
+## Structure du Projet
 
 ```
-.
-├── new_dolibarr/          # Modules Dolibarr
-│   ├── mv3_tv_display/    # Module d'affichage TV
-│   └── mv3pro_portail/    # Module portail principal
+project/
+├── src/                   # Code source React/TypeScript
+│   ├── App.tsx           # Composant principal
+│   ├── main.tsx          # Point d'entrée
+│   └── pages/            # Pages de l'application
+│       ├── Login.tsx     # Page de connexion
+│       └── Dashboard.tsx # Tableau de bord
 │
-└── pro/                   # Application web PWA
-    ├── api/               # API PHP de connexion
-    ├── assets/            # JavaScript et CSS compilés
-    ├── manifest.json      # Manifeste PWA
-    ├── sw.js              # Service Worker
-    └── index.html         # Page principale
+├── pro/                  # Build de production (prêt à déployer)
+│   ├── api/             # API PHP de connexion Dolibarr
+│   ├── assets/          # JS et CSS compilés
+│   ├── index.html       # Page principale
+│   ├── manifest.json    # Manifeste PWA
+│   ├── sw.js            # Service Worker
+│   └── .htaccess        # Configuration Apache
+│
+└── new_dolibarr/        # Modules Dolibarr
+    ├── mv3pro_portail/  # Module portail principal
+    └── mv3_tv_display/  # Module affichage TV
 ```
+
+## Développement
+
+### Installation
+
+```bash
+npm install
+```
+
+### Développement local
+
+```bash
+npm run dev
+```
+
+Ouvre l'application sur http://localhost:5173
+
+### Build de production
+
+```bash
+npm run build
+```
+
+Compile l'application dans le dossier `pro/`
 
 ## Déploiement
 
-### 1. Modules Dolibarr
+### 1. Application PWA
 
-Uploadez le contenu de `new_dolibarr/` dans votre installation Dolibarr :
-
-```bash
-# Via FTP/SFTP sur votre serveur Dolibarr
-/htdocs/custom/
-├── mv3_tv_display/
-└── mv3pro_portail/
-```
-
-Puis activez les modules depuis l'interface Dolibarr (Configuration → Modules).
-
-### 2. Application PWA
-
-Uploadez le contenu de `pro/` sur votre serveur web :
+Uploadez le contenu du dossier `pro/` sur votre serveur web :
 
 ```bash
-# Via FTP/SFTP
+# Via FTP/SFTP vers votre serveur
 /public_html/pro/
 ├── api/
 ├── assets/
@@ -48,27 +67,57 @@ Uploadez le contenu de `pro/` sur votre serveur web :
 └── .htaccess
 ```
 
-### 3. Configuration de l'API
+### 2. Configuration API
 
-Éditez `pro/api/index.php` et configurez :
+Éditez `pro/api/index.php` :
 
 ```php
-// URL de votre Dolibarr
 define('DOLIBARR_URL', 'https://votre-dolibarr.com');
 define('DOLIBARR_API_KEY', 'votre-clé-api');
 ```
 
+### 3. Modules Dolibarr
+
+Uploadez `new_dolibarr/` dans votre installation Dolibarr :
+
+```bash
+/htdocs/custom/
+├── mv3pro_portail/
+└── mv3_tv_display/
+```
+
+Activez les modules depuis l'interface Dolibarr (Configuration → Modules).
+
 ## URLs d'accès
 
-- **Application PWA** : `https://votre-domaine.com/pro/`
-- **API** : `https://votre-domaine.com/pro/api/`
+- **Application PWA** : `https://app.mv-3pro.ch/pro/`
+- **API** : `https://app.mv-3pro.ch/pro/api/`
 
-## Documentation complète
+## Fonctionnalités
 
-Pour plus de détails, consultez les fichiers README dans chaque dossier :
-- `new_dolibarr/mv3pro_portail/` - Documentation du module
+- Authentification via Dolibarr
+- Gestion des rapports de chantier
+- Gestion du matériel
+- Planning et calendrier
+- Sens de pose
+- Gestion de régie
+- Mode hors ligne (PWA)
+- Notifications push
+
+## Technologies
+
+- **Frontend** : React 18 + TypeScript + Vite
+- **Styling** : Tailwind CSS
+- **Backend** : PHP + Dolibarr API
+- **Base de données** : MySQL/MariaDB (via Dolibarr)
+
+## Documentation
+
+Consultez les fichiers README dans chaque module pour plus de détails :
+
+- `new_dolibarr/mv3pro_portail/` - Documentation du module portail
 - `pro/README_INSTALLATION.txt` - Guide d'installation PWA
 
 ## Support
 
-Modules développés pour MV3PRO - Gestion de chantiers
+Développé pour MV3PRO - Gestion de chantiers

@@ -1,0 +1,70 @@
+{
+  "name": "MV3 Pro - Gestion de Chantiers",
+  "short_name": "MV3 Pro",
+  "description": "Application mobile professionnelle pour la gestion de chantiers",
+  "start_url": "/pro/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/pro/",
+  "icons": [
+    {
+      "src": "/pro/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pro/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/pro/screenshot1.png",
+      "sizes": "1170x2532",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Nouveau Rapport",
+      "short_name": "Rapport",
+      "description": "Créer un nouveau rapport",
+      "url": "/pro/?action=new-report",
+      "icons": [{ "src": "/pro/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Photo Rapide",
+      "short_name": "Photo",
+      "description": "Prendre une photo rapidement",
+      "url": "/pro/?action=quick-photo",
+      "icons": [{ "src": "/pro/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Planning",
+      "short_name": "Planning",
+      "description": "Voir le planning du jour",
+      "url": "/pro/?action=planning",
+      "icons": [{ "src": "/pro/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "share_target": {
+    "action": "/pro/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "photos",
+          "accept": ["image/*"]
+        }
+      ]
+    }
+  }
+}
