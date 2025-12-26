@@ -104,8 +104,22 @@ export default function LoginScreen() {
           </div>
         </div>
 
-        <div className="mt-6 text-center text-white text-xs opacity-75">
-          Version 1.0.0 • © 2024 MV3 Pro
+        <div className="mt-6 text-center">
+          <a
+            href="?screen=diagnostic"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.hash = 'diagnostic';
+              window.location.reload();
+            }}
+            className="text-white text-sm hover:text-blue-200 underline"
+          >
+            Diagnostic API
+          </a>
+        </div>
+
+        <div className="mt-4 text-center text-white text-xs opacity-75">
+          Version 1.0.2 • © 2024 MV3 Pro
         </div>
       </div>
     </div>

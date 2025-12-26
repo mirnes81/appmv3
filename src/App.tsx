@@ -9,10 +9,11 @@ import SensPoseScreen from './screens/SensPoseScreen';
 import MaterielScreen from './screens/MaterielScreen';
 import PlanningScreen from './screens/PlanningScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import DiagnosticScreen from './screens/DiagnosticScreen';
 import BottomNav from './components/BottomNav';
 import { useAuth } from './contexts/AuthContext';
 
-type Screen = 'dashboard' | 'reports' | 'regie' | 'sens-pose' | 'materiel' | 'planning' | 'profile';
+type Screen = 'dashboard' | 'reports' | 'regie' | 'sens-pose' | 'materiel' | 'planning' | 'profile' | 'diagnostic';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -49,6 +50,8 @@ function AppContent() {
         return <PlanningScreen />;
       case 'profile':
         return <ProfileScreen />;
+      case 'diagnostic':
+        return <DiagnosticScreen />;
       default:
         return <Dashboard onNavigate={setCurrentScreen} />;
     }
