@@ -15,7 +15,7 @@ header('Content-Type: application/json');
 setCorsHeaders();
 handleCorsPreflightRequest();
 
-require_once '../../main.inc.php';
+require_once '../../../main.inc.php';
 
 $user = checkAuth();
 

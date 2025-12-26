@@ -12,7 +12,7 @@ header('Content-Type: application/json');
 setCorsHeaders();
 handleCorsPreflightRequest();
 
-require_once '../../main.inc.php';
+require_once '../../../main.inc.php';
 
 $auth_token = $_SERVER['HTTP_X_AUTH_TOKEN'] ?? '';
 

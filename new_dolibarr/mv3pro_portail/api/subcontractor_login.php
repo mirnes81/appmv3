@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 setCorsHeaders(); // Utilise la configuration centralisée
 handleCorsPreflightRequest();
 
-require_once '../../main.inc.php';
+require_once '../../../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 
 $input = json_decode(file_get_contents('php://input'), true);

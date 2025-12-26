@@ -12,7 +12,7 @@ header('Content-Type: application/json');
 setCorsHeaders();
 handleCorsPreflightRequest();
 
-require_once '../../main.inc.php';
+require_once '../../../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 
 $input = json_decode(file_get_contents('php://input'), true);

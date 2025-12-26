@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 setCorsHeaders();
 handleCorsPreflightRequest();
 
-require_once '../../main.inc.php';
+require_once '../../../main.inc.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 $session_token = isset($input['session_token']) ? trim($input['session_token']) : '';
