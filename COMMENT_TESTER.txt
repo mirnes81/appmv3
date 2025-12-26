@@ -1,89 +1,71 @@
-╔═══════════════════════════════════════════════════════════════╗
-║                  🚀 COMMENT TESTER L'APPLICATION              ║
-╚═══════════════════════════════════════════════════════════════╝
+═══════════════════════════════════════════════════════════════════════════════
+🧪 COMMENT TESTER LA PWA
+═══════════════════════════════════════════════════════════════════════════════
 
-✅ Votre API fonctionne parfaitement !
-✅ CORS est configuré
-✅ Votre clé API est valide
-✅ Le build est prêt dans le dossier /pro
+PROBLÈME RÉSOLU : Page blanche
+──────────────────────────────────────────────────────────────────────────────
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Le build a été corrigé
+✅ Les fichiers sont maintenant dans pro/
+✅ L'archive pwa_frontend.tar.gz a été mise à jour (73 KB)
 
-📍 ÉTAPE 1 : TEST AUTOMATIQUE DE L'API
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Ouvrez dans votre navigateur :
+📦 DÉPLOYER LE NOUVEAU BUILD
+═══════════════════════════════════════════════════════════════════════════════
 
-    👉 http://localhost:5173/pro/test-api.html
+Via FTP sur app.mv-3pro.ch :
 
-La page va automatiquement :
-  ✓ Tester la configuration
-  ✓ Se connecter à votre API Dolibarr
-  ✓ Récupérer vos données utilisateur
+1. Allez dans : /public_html/pro/
 
-Si TOUS les tests sont VERTS ✅ → Passez à l'étape 2
+2. Uploadez la nouvelle archive : pwa_frontend.tar.gz
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. Décompressez :
+   tar -xzf pwa_frontend.tar.gz
 
-📍 ÉTAPE 2 : OUVRIR L'APPLICATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. Vérifiez que ces fichiers existent :
+   ✅ index.html (996 bytes)
+   ✅ assets/index-CLKmr-ij.css (27 KB)
+   ✅ assets/index-k_EK0EVl.js (219 KB)
 
-Ouvrez dans votre navigateur :
+5. Testez : https://app.mv-3pro.ch/pro/
 
-    👉 http://localhost:5173/pro/
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 VÉRIFIER LES FICHIERS
+═══════════════════════════════════════════════════════════════════════════════
 
-📍 ÉTAPE 3 : SE CONNECTER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Via FTP, dans /public_html/pro/ :
 
-1. Entrez votre DOLAPIKEY :
+✅ index.html
+✅ manifest.json
+✅ sw.js
+✅ assets/index-k_EK0EVl.js
+✅ assets/index-CLKmr-ij.css
+✅ api/index.php
+✅ api/.htaccess
 
-    04VxqqZ4fEi78j4tYVNqc18jQ0TWU1Wr
 
-2. Cliquez sur "Se connecter"
+🌐 TESTER DANS LE NAVIGATEUR
+═══════════════════════════════════════════════════════════════════════════════
 
-3. Vous devriez voir le DASHBOARD avec :
-   ✓ Votre nom : Velagic MIRNES
-   ✓ Email : info@mv-3pro.ch
-   ✓ Statistiques du jour
-   ✓ Menu de navigation en bas
+1. Ouvrez : https://app.mv-3pro.ch/pro/
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. VIDEZ LE CACHE : Ctrl+Shift+R (ou Cmd+Shift+R sur Mac)
 
-🔍 SI ÇA NE FONCTIONNE PAS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. Ouvrez la console (F12)
 
-Option 1 : Cliquez sur "Diagnostic API" (en bas de la page de login)
+4. Vous devez voir l'écran de login ✅
 
-Option 2 : Ouvrez la console du navigateur (touche F12)
-          → Onglet "Console"
-          → Cherchez les messages d'erreur
 
-Option 3 : Relancez le test automatique (étape 1)
+❌ SI PAGE BLANCHE
+═══════════════════════════════════════════════════════════════════════════════
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Videz le cache : Ctrl+Shift+R
 
-📦 DÉPLOIEMENT SUR VOTRE SERVEUR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. Console (F12) → Regardez les erreurs
 
-Une fois que tout fonctionne en local :
+3. Vérifiez que les fichiers existent via FTP
 
-1. Le dossier à déployer : /pro/
+4. Testez en navigation privée
 
-2. Uploadez tout le contenu de /pro/ sur votre serveur web
 
-3. Exemple :
-   Serveur : https://crm.mv-3pro.ch/app/
-   → Uploadez /pro/* dans le dossier /app/
-
-4. Accédez à : https://crm.mv-3pro.ch/app/
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✨ C'EST TOUT !
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Pour plus de détails, consultez : TEST_ET_DEPLOIEMENT.md
-
-Bonne chance ! 🚀
+═══════════════════════════════════════════════════════════════════════════════

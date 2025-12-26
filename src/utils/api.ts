@@ -262,3 +262,23 @@ export async function getSensPoses(filters?: any): Promise<SensPose[]> {
 export async function createSensPose(data: Partial<SensPose>): Promise<SensPose> {
   return data as SensPose;
 }
+
+export async function uploadPhoto(reportId: string, photo: any): Promise<any> {
+  const response = await fetchAPI('/forms_upload.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      form_id: parseInt(reportId),
+      photos: [photo]
+    })
+  });
+
+  return response;
+}
+
+export async function getWeather(lat: number, lon: number): Promise<any> {
+  return {
+    temperature: 20,
+    conditions: 'Ensoleillé',
+    icon: '☀️'
+  };
+}
