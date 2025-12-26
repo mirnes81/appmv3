@@ -1,0 +1,73 @@
+╔═══════════════════════════════════════════════════════╗
+║     STRUCTURE FINALE - MV3PRO APPLICATION             ║
+╚═══════════════════════════════════════════════════════╝
+
+✅ NETTOYAGE TERMINÉ
+
+Tous les fichiers inutiles ont été supprimés.
+Seuls les dossiers essentiels sont conservés.
+
+📁 STRUCTURE ACTUELLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+project/
+│
+├── new_dolibarr/              [1.4 MB]
+│   ├── mv3_tv_display/        → Module affichage TV
+│   └── mv3pro_portail/        → Module portail principal
+│       ├── api/               → API mobile
+│       ├── mobile_app/        → App mobile Dolibarr
+│       ├── rapports/          → Gestion rapports
+│       ├── regie/             → Gestion régie
+│       ├── sens_pose/         → Sens de pose
+│       ├── sql/               → Scripts SQL
+│       └── subcontractors/    → Gestion sous-traitants
+│
+└── pro/                       [364 KB]
+    ├── api/                   → API PHP connexion
+    │   └── index.php          → Endpoint principal
+    ├── assets/                → JS/CSS compilés
+    │   ├── index-BG_BI7O5.js  → 219 KB (avec uploadPhoto + getWeather)
+    │   └── index-CLKmr-ij.css → 27 KB
+    ├── index.html             → Page principale
+    ├── manifest.json          → Manifeste PWA
+    ├── sw.js                  → Service Worker
+    ├── .htaccess              → Config Apache
+    └── icon-*.png             → Icônes PWA
+
+📋 SUPPRIMÉ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ src/ (code source React)
+✓ public/ (assets publics)
+✓ node_modules/ (dépendances npm)
+✓ dist/ (ancien build)
+✓ *.tar.gz (archives)
+✓ *.md (documentation racine - sauf README.md)
+✓ *.txt (guides multiples)
+✓ package.json, tsconfig.json, vite.config.ts, etc.
+✓ .env, .env.production
+
+🎯 RÉSULTAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Structure propre et organisée
+✅ Seulement 2 dossiers principaux
+✅ Total : ~1.8 MB
+✅ Prêt pour le déploiement
+
+📤 DÉPLOIEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. new_dolibarr/ → /htdocs/custom/ sur serveur Dolibarr
+2. pro/ → /public_html/pro/ sur serveur web
+
+🔗 URLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PWA : https://app.mv-3pro.ch/pro/
+API : https://app.mv-3pro.ch/pro/api/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          Projet nettoyé - Prêt à déployer
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
