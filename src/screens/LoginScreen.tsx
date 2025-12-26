@@ -1,131 +1,95 @@
 import { useState } from 'react';
-import { Key, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Lock, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function LoginScreen() {
-  const { login } = useAuth();
-  const [apiKey, setApiKey] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
+
+    if (!email || !password) {
+      toast.error('Email et mot de passe requis');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await login(apiKey.trim());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de connexion');
+      await login(email, password);
+      toast.success('Connexion réussie');
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Erreur login:', error);
+      toast.error(error.message || 'Erreur de connexion');
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 flex items-center justify-center p-4 safe-area-top safe-area-bottom">
-      <div className="w-full max-w-md animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-white rounded-3xl shadow-xl mx-auto mb-4 flex items-center justify-center">
-            <svg className="w-12 h-12 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
-            </svg>
+          <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">MV3 Pro</h1>
-          <p className="text-blue-200">Gestion de chantiers mobile</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">MV3 PRO</h1>
+          <p className="text-gray-600">Gestion de chantiers</p>
         </div>
 
-        <div className="card-premium">
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                DOLAPIKEY
-              </label>
-              <div className="relative">
-                <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type={showApiKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="input-premium pl-12 pr-12"
-                  placeholder="Votre clé API Dolibarr"
-                  required
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Disponible dans Dolibarr : Menu Utilisateur → Générer une clé API
-              </p>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email / Login
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="votre@email.com"
+                disabled={loading}
+              />
             </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm animate-fade-in">
-                <div className="font-semibold mb-1">Erreur de connexion</div>
-                <pre className="whitespace-pre-wrap font-sans text-xs">{error}</pre>
-                <div className="mt-2 pt-2 border-t border-red-200 text-xs">
-                  <a href="#diagnostic" onClick={(e) => { e.preventDefault(); window.location.hash = 'diagnostic'; window.location.reload(); }} className="text-blue-600 hover:underline">
-                    Ouvrir le diagnostic API
-                  </a>
-                </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Connexion...
-                </div>
-              ) : (
-                'Se connecter'
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
-            <p className="text-sm text-gray-700 font-medium mb-2">Comment obtenir votre DOLAPIKEY ?</p>
-            <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
-              <li>Connectez-vous à Dolibarr (crm.mv-3pro.ch)</li>
-              <li>Cliquez sur votre nom en haut à droite</li>
-              <li>Allez dans "Modifier ma fiche utilisateur"</li>
-              <li>Onglet "Clé API" → "Générer une nouvelle clé"</li>
-              <li>Copiez la clé et collez-la ici</li>
-            </ol>
           </div>
 
-          <div className="mt-4 text-center text-sm text-gray-600">
-            Mode hors-ligne disponible après première connexion
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Mot de passe
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="••••••••"
+                disabled={loading}
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="mt-6 text-center">
-          <a
-            href="?screen=diagnostic"
-            onClick={(e) => {
-              e.preventDefault();
-              window.location.hash = 'diagnostic';
-              window.location.reload();
-            }}
-            className="text-white text-sm hover:text-blue-200 underline"
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Diagnostic API
-          </a>
-        </div>
+            {loading ? 'Connexion...' : 'Se connecter'}
+          </button>
+        </form>
 
-        <div className="mt-4 text-center text-white text-xs opacity-75">
-          Version 1.0.2 • © 2024 MV3 Pro
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p>Utilisez vos identifiants Dolibarr</p>
         </div>
       </div>
     </div>

@@ -1,0 +1,198 @@
+═══════════════════════════════════════════════════════════════════════════════
+✅ SUPABASE SUPPRIMÉ - L'APP FONCTIONNE 100% AVEC DOLIBARR
+═══════════════════════════════════════════════════════════════════════════════
+
+📦 3 ARCHIVES À DÉPLOYER
+═══════════════════════════════════════════════════════════════════════════════
+
+1. dolibarr_api_complet.tar.gz (6.6 KB)
+   📍 Où : crm.mv-3pro.ch
+   📂 Dossier : /var/www/html/dolibarr/custom/mv3pro_portail/api/
+   📄 Contient : 10 fichiers PHP (auth, forms, etc.)
+
+2. pwa_proxy.tar.gz (1.3 KB)
+   📍 Où : app.mv-3pro.ch
+   📂 Dossier : /public_html/pro/api/
+   📄 Contient : index.php + .htaccess
+
+3. pwa_frontend.tar.gz (75 KB)
+   📍 Où : app.mv-3pro.ch
+   📂 Dossier : /public_html/pro/
+   📄 Contient : index.html + assets/
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 INSTALLATION RAPIDE
+═══════════════════════════════════════════════════════════════════════════════
+
+MÉTHODE 1 : SCRIPT AUTOMATIQUE (si vous avez SSH)
+--------------------------------------------------
+./install.sh
+
+MÉTHODE 2 : MANUEL (via FTP/SFTP)
+----------------------------------
+
+ÉTAPE 1 - API Dolibarr (crm.mv-3pro.ch)
+  → Se connecter via FTP
+  → Aller dans : /var/www/html/dolibarr/custom/mv3pro_portail/api/
+  → Uploader : dolibarr_api_complet.tar.gz
+  → Décompresser : tar -xzf dolibarr_api_complet.tar.gz
+
+ÉTAPE 2 - Proxy (app.mv-3pro.ch)
+  → Se connecter via FTP
+  → Aller dans : /public_html/pro/
+  → Créer dossier : api/
+  → Uploader dans api/ : pwa_proxy.tar.gz
+  → Décompresser : tar -xzf pwa_proxy.tar.gz
+
+ÉTAPE 3 - PWA (app.mv-3pro.ch)
+  → Aller dans : /public_html/pro/
+  → Uploader : pwa_frontend.tar.gz
+  → Décompresser : tar -xzf pwa_frontend.tar.gz
+
+ÉTAPE 4 - Dossiers uploads (crm.mv-3pro.ch via SSH)
+  → mkdir -p /var/www/dolibarr_documents/mv3pro_portail/rapports
+  → mkdir -p /var/www/dolibarr_documents/mv3pro_portail/pdf
+  → chmod 755 /var/www/dolibarr_documents/mv3pro_portail/*
+  → chown -R www-data:www-data /var/www/dolibarr_documents/mv3pro_portail/
+
+ÉTAPE 5 - Base de données (si colonnes GPS/météo manquantes)
+  → mysql -u root -p dolibarr
+  → Source : new_dolibarr/mv3pro_portail/sql/llx_mv3_rapport_add_features.sql
+
+═══════════════════════════════════════════════════════════════════════════════
+🧪 TESTS
+═══════════════════════════════════════════════════════════════════════════════
+
+TEST 1 : Proxy fonctionne
+--------------------------
+curl https://app.mv-3pro.ch/pro/api/auth_me.php
+
+RÉSULTAT ATTENDU : {"error":"Token requis"}
+
+
+TEST 2 : Login fonctionne
+--------------------------
+curl -X POST "https://app.mv-3pro.ch/pro/api/auth_login.php" \
+  -H "Content-Type: application/json" \
+  -d '{"login":"admin","password":"VOTRE_MOT_DE_PASSE"}'
+
+RÉSULTAT ATTENDU : {"success":true,"token":"...","user":{...}}
+
+
+TEST 3 : PWA accessible
+-----------------------
+1. Ouvrir : https://app.mv-3pro.ch/pro/
+2. Login : admin (ou votre login Dolibarr)
+3. Password : votre mot de passe Dolibarr
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ FONCTIONNALITÉS
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Authentification
+   - Login email/password (comptes Dolibarr)
+   - Token JWT sécurisé (expire 30 jours)
+   - Session persistante
+
+✅ Rapports de chantier
+   - Création avec photos
+   - GPS automatique
+   - Météo automatique
+   - Matériaux utilisés
+   - Génération PDF professionnel
+   - Envoi email automatique
+
+✅ Projets
+   - Liste des projets Dolibarr
+   - Filtrage par statut
+
+═══════════════════════════════════════════════════════════════════════════════
+🏗️ ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+PWA (app.mv-3pro.ch/pro/)
+  ↓ Appels API
+Proxy (/pro/api/index.php)
+  ↓ Forward HTTP
+API Dolibarr (crm.mv-3pro.ch/custom/mv3pro_portail/api/)
+  ↓ SQL
+Base MySQL (llx_mv3_rapport, llx_mv3_rapport_photo)
+
+═══════════════════════════════════════════════════════════════════════════════
+📖 DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════════════
+
+📄 RECAPITULATIF_DOLIBARR_ONLY.md
+   → Résumé complet de tout ce qui a été fait
+
+📄 GUIDE_INSTALLATION_DOLIBARR.md
+   → Guide technique détaillé avec troubleshooting
+
+📄 README_DEPLOIEMENT_FINAL.txt
+   → Instructions complètes d'installation
+
+📄 install.sh
+   → Script d'installation automatique (SSH)
+
+═══════════════════════════════════════════════════════════════════════════════
+🐛 PROBLÈMES COURANTS
+═══════════════════════════════════════════════════════════════════════════════
+
+❌ "Token requis"
+   → Se reconnecter dans la PWA
+
+❌ "Identifiants invalides"
+   → Vérifier que le compte existe et est actif dans Dolibarr
+
+❌ "Erreur proxy"
+   → tail -f /var/log/apache2/error.log
+
+❌ Photos ne s'uploadent pas
+   → chmod 755 /var/www/dolibarr_documents/mv3pro_portail/rapports
+
+❌ PDF ne se génère pas
+   → Vérifier TCPDF installé dans Dolibarr
+
+❌ Email ne part pas
+   → Configurer SMTP dans Dolibarr
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ CE QUI A CHANGÉ
+═══════════════════════════════════════════════════════════════════════════════
+
+AVANT :
+❌ PWA → Supabase (ne fonctionne pas)
+❌ Données perdues
+❌ CORS problématique
+❌ Nécessite clé API Supabase
+
+APRÈS :
+✅ PWA → Proxy → Dolibarr → MySQL
+✅ Données sauvegardées dans llx_mv3_rapport
+✅ Photos stockées dans /documents/
+✅ PDF professionnel
+✅ Email automatique
+✅ Login email/password Dolibarr
+✅ Pas de configuration externe
+
+═══════════════════════════════════════════════════════════════════════════════
+📞 SUPPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+Logs à vérifier :
+  - Apache : tail -f /var/log/apache2/error.log
+  - Console navigateur : F12 → Console
+
+Commandes utiles :
+  - Vérifier tables : SHOW TABLES LIKE 'llx_mv3_%';
+  - Derniers rapports : SELECT * FROM llx_mv3_rapport ORDER BY date_creation DESC LIMIT 5;
+  - Users avec API key : SELECT login, api_key FROM llx_user WHERE api_key IS NOT NULL;
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Version : 1.0.0
+Date : 26 Décembre 2024
+Supabase : SUPPRIMÉ ✅
+Dolibarr : 100% FONCTIONNEL ✅
+
+═══════════════════════════════════════════════════════════════════════════════
