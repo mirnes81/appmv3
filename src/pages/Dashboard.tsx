@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
@@ -50,41 +50,41 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
+          <Link to="/rapports" className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer block">
             <div className="text-blue-600 text-3xl mb-3">📋</div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Rapports</h3>
             <p className="text-gray-600 text-sm">Gérer les rapports de chantier</p>
-          </div>
+          </Link>
 
-          <div className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
+          <Link to="/planning" className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer block">
             <div className="text-green-600 text-3xl mb-3">📅</div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Planning</h3>
             <p className="text-gray-600 text-sm">Consulter le planning</p>
-          </div>
+          </Link>
 
-          <div className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
+          <Link to="/materiel" className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer block">
             <div className="text-yellow-600 text-3xl mb-3">🔧</div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Matériel</h3>
             <p className="text-gray-600 text-sm">Gérer le matériel</p>
-          </div>
+          </Link>
 
-          <div className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
+          <Link to="/sens-de-pose" className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer block">
             <div className="text-orange-600 text-3xl mb-3">📐</div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Sens de Pose</h3>
             <p className="text-gray-600 text-sm">Plans de pose</p>
-          </div>
+          </Link>
 
-          <div className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
+          <Link to="/regie" className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer block">
             <div className="text-red-600 text-3xl mb-3">⏱️</div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Régie</h3>
             <p className="text-gray-600 text-sm">Suivi des heures</p>
-          </div>
+          </Link>
 
-          <div className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
+          <Link to="/profil" className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer block">
             <div className="text-gray-600 text-3xl mb-3">👤</div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Profil</h3>
             <p className="text-gray-600 text-sm">Gérer votre profil</p>
-          </div>
+          </Link>
         </div>
       </main>
     </div>
