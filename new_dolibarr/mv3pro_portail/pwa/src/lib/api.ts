@@ -20,6 +20,30 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Parse JSON de manière sécurisée
+ * Ne crash jamais, retourne null si la réponse n'est pas du JSON valide
+ */
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+
+  if (!text || text.trim() === '') {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('Erreur parsing JSON:', error);
+    console.error('Réponse reçue:', text.slice(0, 500));
+    throw new ApiError(
+      `Réponse non-JSON du serveur (HTTP ${res.status}): ${text.slice(0, 200)}`,
+      res.status,
+      { rawText: text }
+    );
+  }
+}
+
 async function apiFetch<T = any>(
   path: string,
   options: RequestInit = {}
@@ -52,7 +76,13 @@ async function apiFetch<T = any>(
     const isJson = contentType?.includes('application/json');
 
     if (!response.ok) {
-      const errorData = isJson ? await response.json() : await response.text();
+      let errorData: any;
+      try {
+        errorData = isJson ? await safeJson(response) : await response.text();
+      } catch (e) {
+        errorData = { message: `Erreur ${response.status}` };
+      }
+
       throw new ApiError(
         errorData?.message || `Erreur ${response.status}`,
         response.status,
@@ -61,7 +91,7 @@ async function apiFetch<T = any>(
     }
 
     if (isJson) {
-      return await response.json();
+      return await safeJson(response);
     }
 
     return (await response.text()) as any;
@@ -134,19 +164,30 @@ export interface RapportCreatePayload {
 
 export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await fetch(`${AUTH_API_URL}?action=login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch(`${AUTH_API_URL}?action=login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await response.json();
+      const data = await safeJson(response);
 
-    if (data.success && data.token) {
-      storage.setToken(data.token);
+      if (!data) {
+        throw new ApiError('Réponse vide du serveur', response.status);
+      }
+
+      if (data.success && data.token) {
+        storage.setToken(data.token);
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError('Erreur de connexion au serveur', 0, error);
     }
-
-    return data;
   },
 
   async logout(): Promise<void> {
