@@ -83,6 +83,18 @@ Liste des événements planning
 #### `GET /rapports.php?limit=20&page=1`
 Liste des rapports journaliers
 
+#### `GET /rapports_view.php?id=123`
+Détail d'un rapport avec photos, frais, GPS, météo
+
+#### `POST /rapports_photos_upload.php`
+Upload de photos pour un rapport (multipart/form-data)
+
+#### `POST /rapports_pdf.php`
+Génère le PDF d'un rapport
+
+#### `POST /rapports_send_email.php`
+Envoie le PDF par email
+
 **Paramètres:**
 - `limit` (optionnel): Nombre de résultats (défaut: 20, max: 100)
 - `page` (optionnel): Page (défaut: 1)
@@ -194,3 +206,164 @@ Aucune URL existante n'est cassée. Migration progressive recommandée.
 - Support de l'entity multi-entreprise Dolibarr
 - Limitation de débit (rate limiting) recommandée en production
 - HTTPS obligatoire en production
+
+### Frais
+
+#### `GET /frais_list.php?month=YYYY-MM&user_id=&statut=`
+Liste des frais pour un mois donné
+
+#### `POST /frais_update_status.php`
+Met à jour le statut de frais (manager/admin uniquement)
+
+#### `GET /frais_export_csv.php?month=YYYY-MM`
+Exporte les frais en CSV (manager/admin uniquement)
+
+### Régie
+
+#### `GET /regie_list.php?limit=50&page=1&status=&project_id=`
+Liste des bons de régie
+
+#### `POST /regie_create.php`
+Crée un nouveau bon de régie avec lignes
+
+#### `GET /regie_view.php?id=123`
+Détail d'un bon avec lignes, photos, signature
+
+#### `POST /regie_add_photo.php`
+Upload photos pour un bon (multipart/form-data)
+
+#### `POST /regie_signature.php`
+Enregistre la signature électronique
+
+#### `POST /regie_pdf.php`
+Génère le PDF d'un bon
+
+#### `POST /regie_send_email.php`
+Envoie le PDF par email
+
+### Sens de Pose
+
+#### `GET /sens_pose_list.php?limit=50&page=1`
+Liste des sens de pose
+
+#### `POST /sens_pose_create.php`
+Crée un nouveau sens de pose
+
+#### `POST /sens_pose_create_from_devis.php`
+Crée un sens de pose depuis un devis
+
+#### `GET /sens_pose_view.php?id=123`
+Détail d'un sens de pose avec pièces
+
+#### `POST /sens_pose_signature.php`
+Enregistre la signature
+
+#### `POST /sens_pose_pdf.php`
+Génère le PDF
+
+#### `POST /sens_pose_send_email.php`
+Envoie le PDF par email
+
+### Matériel
+
+#### `GET /materiel_list.php`
+Liste du matériel disponible
+
+#### `GET /materiel_view.php?id=123`
+Détail d'un matériel
+
+#### `POST /materiel_action.php`
+Effectue une action (réserver, libérer, etc.)
+
+### Notifications
+
+#### `GET /notifications_list.php?limit=50`
+Liste des notifications de l'utilisateur
+
+#### `POST /notifications_mark_read.php?id=123`
+Marque une notification comme lue
+
+#### `GET /notifications_unread_count.php`
+Nombre de notifications non lues
+
+### Planning (complet)
+
+#### `GET /planning.php?from=&to=`
+Liste des événements (déjà existant)
+
+#### `GET /planning_view.php?id=123`
+Détail d'un événement planning
+
+### Sous-traitants
+
+#### `POST /subcontractor_login.php`
+Wrapper vers le login existant
+
+#### `POST /subcontractor_submit_report.php`
+Wrapper vers la soumission de rapport existant
+
+## Résumé des endpoints (30 nouveaux)
+
+**ÉTAPE 5 - Endpoints ajoutés:**
+
+| Module | Endpoints |
+|--------|-----------|
+| Rapports | view, photos_upload, pdf, send_email (4) |
+| Frais | list, update_status, export_csv (3) |
+| Régie | list, create, view, add_photo, signature, pdf, send_email (7) |
+| Sens de Pose | list, create, create_from_devis, view, signature, pdf, send_email (7) |
+| Matériel | list, view, action (3) |
+| Notifications | list, mark_read, unread_count (3) |
+| Planning | view (1) |
+| Subcontractors | login, submit_report (2) |
+
+**Total: 30 nouveaux endpoints** + 4 existants (ÉTAPE 2) = **34 endpoints**
+
+## Exemples d'utilisation
+
+### Upload photo rapport
+```bash
+curl -X POST "https://app.mv-3pro.ch/custom/mv3pro_portail/api/v1/rapports_photos_upload.php" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "rapport_id=123" \
+  -F "files[]=@photo1.jpg" \
+  -F "files[]=@photo2.jpg" \
+  -F "descriptions[]=Vue d'ensemble" \
+  -F "descriptions[]=Détail"
+```
+
+### Générer et envoyer PDF régie
+```bash
+# 1. Générer PDF
+curl -X POST "https://app.mv-3pro.ch/custom/mv3pro_portail/api/v1/regie_pdf.php" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"regie_id": 456}'
+
+# 2. Envoyer par email
+curl -X POST "https://app.mv-3pro.ch/custom/mv3pro_portail/api/v1/regie_send_email.php" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"regie_id": 456, "to": "client@example.com"}'
+```
+
+### Signature électronique
+```bash
+curl -X POST "https://app.mv-3pro.ch/custom/mv3pro_portail/api/v1/sens_pose_signature.php" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sens_pose_id": 789,
+    "signature_data": "data:image/png;base64,iVBORw0KGgoAAAANS...",
+    "latitude": 48.8566,
+    "longitude": 2.3522
+  }'
+```
+
+### Export CSV frais
+```bash
+curl -X GET "https://app.mv-3pro.ch/custom/mv3pro_portail/api/v1/frais_export_csv.php?month=2025-01" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o frais_2025_01.csv
+```
+

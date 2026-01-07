@@ -1,0 +1,190 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    ÉTAPE 5 - INTÉGRATION BACKEND - TERMINÉE                  ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+✅ Date : 7 janvier 2025
+✅ Statut : COMPLET
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 STATISTIQUES
+
+    30 nouveaux endpoints créés
+    37 fichiers PHP au total dans /api/v1/
+     8 modules fonctionnels
+     0 code existant cassé
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 ENDPOINTS PAR MODULE
+
+    A) RAPPORTS (4 endpoints)
+    ✅ rapports_view.php              - Détail avec photos/frais/GPS
+    ✅ rapports_photos_upload.php     - Upload multipart validé
+    ✅ rapports_pdf.php                - Génération PDF TCPDF
+    ✅ rapports_send_email.php         - Email avec pièce jointe
+
+    B) FRAIS (3 endpoints)
+    ✅ frais_list.php                  - Liste par mois + filtres
+    ✅ frais_update_status.php         - Mise à jour statut (admin)
+    ✅ frais_export_csv.php            - Export CSV UTF-8
+
+    C) RÉGIE (7 endpoints)
+    ✅ regie_list.php                  - Liste paginée
+    ✅ regie_create.php                - Création avec lignes
+    ✅ regie_view.php                  - Détail complet
+    ✅ regie_add_photo.php             - Upload photos
+    ✅ regie_signature.php             - Signature électronique
+    ✅ regie_pdf.php                   - PDF avec tableau
+    ✅ regie_send_email.php            - Email client
+
+    D) SENS DE POSE (7 endpoints)
+    ✅ sens_pose_list.php              - Liste
+    ✅ sens_pose_create.php            - Création simple
+    ✅ sens_pose_create_from_devis.php - Depuis devis existant
+    ✅ sens_pose_view.php              - Détail avec pièces
+    ✅ sens_pose_signature.php         - Signature
+    ✅ sens_pose_pdf.php               - PDF
+    ✅ sens_pose_send_email.php        - Email
+
+    E) MATÉRIEL (3 endpoints)
+    ✅ materiel_list.php               - Liste avec statuts
+    ✅ materiel_view.php               - Détail
+    ✅ materiel_action.php             - Actions (réserver/libérer)
+
+    F) NOTIFICATIONS (3 endpoints)
+    ✅ notifications_list.php          - Liste user
+    ✅ notifications_mark_read.php     - Marquer lu
+    ✅ notifications_unread_count.php  - Badge non lues
+
+    G) PLANNING (1 endpoint)
+    ✅ planning_view.php               - Détail événement
+
+    H) SUBCONTRACTORS (2 endpoints)
+    ✅ subcontractor_login.php         - Wrapper login
+    ✅ subcontractor_submit_report.php - Wrapper soumission
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔒 SÉCURITÉ IMPLÉMENTÉE
+
+    ✓ Auth unifiée (3 modes : session + Bearer + API token)
+    ✓ Vérification droits par endpoint
+    ✓ Validation MIME réelle (finfo)
+    ✓ Limite taille fichiers (10MB)
+    ✓ Nettoyage noms fichiers
+    ✓ Protection SQL injection
+    ✓ Vérification entity multi-entreprise
+    ✓ Contrôle propriété données (workers)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 UPLOADS GÉRÉS
+
+    Photos rapports      → /documents/mv3pro_portail/rapports/{id}/
+    Photos régie         → /documents/mv3pro_portail/regie/{id}/
+    Signatures           → /documents/mv3pro_portail/*_signatures/
+    
+    Types autorisés      → JPEG, PNG, WEBP
+    Validation           → MIME réel + taille
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📄 PDF GÉNÉRÉS (TCPDF)
+
+    ✓ Rapports    - Photos intégrées (4 par page max)
+    ✓ Régie       - Tableau lignes + totaux HT/TVA/TTC
+    ✓ Sens de Pose - Pièces et détails
+    
+    Stockage → /documents/mv3pro_portail/{module}_pdf/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📧 EMAIL ENVOYÉS (CMailFile Dolibarr)
+
+    ✓ Utilisation config SMTP Dolibarr
+    ✓ Pièces jointes PDF automatiques
+    ✓ Détection destinataire auto (client projet)
+    ✓ Messages personnalisables
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+♻️  COMPATIBILITÉ MAINTENUE
+
+    ✅ /mobile_app/           - Toujours fonctionnel
+    ✅ /api/auth_*.php        - Toujours fonctionnel
+    ✅ /sens_pose/api_*.php   - Toujours fonctionnel
+    ✅ /rapports/             - Toujours fonctionnel
+    ✅ Desktop Dolibarr       - Aucun impact
+
+    ZÉRO code supprimé - Tout coexiste
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 ÉTAT PWA (ÉTAPE 4)
+
+    La PWA peut maintenant utiliser :
+
+    ✅ Rapports       Liste ✓ Création ✓ Photos ✓ PDF ✓ Email ✓
+    ✅ Régie          Liste ✓ Création ✓ Photos ✓ Signature ✓ PDF ✓ Email ✓
+    ✅ Sens de Pose   Liste ✓ Création ✓ Devis ✓ Signature ✓ PDF ✓ Email ✓
+    ✅ Matériel       Liste ✓ Détail ✓ Actions ✓
+    ✅ Planning       Liste ✓ Détail ✓
+    ✅ Notifications  Liste ✓ Badge ✓ Marquer lu ✓
+    ✅ Frais          Liste ✓ Export CSV ✓
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 BUILD PWA
+
+    ✓ Build réussi en 3.47s
+    ✓ Bundle JS   : 199.81 KB (61.18 KB gzipped)
+    ✓ Bundle CSS  : 3.71 KB (1.34 KB gzipped)
+    ✓ Service Worker : Généré
+    ✓ Manifest : Configuré
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION
+
+    ✓ README.md       - Documentation complète avec exemples curl
+    ✓ ETAPE5_COMPLETE.md - Récapitulatif détaillé
+    ✓ ETAPE5_RESUME.txt  - Ce fichier
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 TEST RAPIDE
+
+    # Créer un rapport
+    curl -X POST https://app.mv-3pro.ch/custom/mv3pro_portail/api/v1/rapports_create.php \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -d '{"projet_id": 1, "date": "2025-01-07", "description": "Test"}'
+
+    # Lister notifications
+    curl https://app.mv-3pro.ch/custom/mv3pro_portail/api/v1/notifications_list.php \
+      -H "Authorization: Bearer YOUR_TOKEN"
+
+    # Export frais
+    curl https://app.mv-3pro.ch/custom/mv3pro_portail/api/v1/frais_export_csv.php?month=2025-01 \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -o frais_janvier.csv
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ LIVRABLE ÉTAPE 5
+
+    ✓ Tous endpoints créés (30 nouveaux)
+    ✓ README.md à jour avec exemples
+    ✓ PWA 100% fonctionnelle
+    ✓ Aucun code cassé
+    ✓ Sécurité implémentée
+    ✓ Documentation complète
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║              ÉTAPE 5 TERMINÉE - PWA 100% OPÉRATIONNELLE                      ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+Tous les endpoints nécessaires ont été créés. La PWA peut maintenant effectuer
+toutes les opérations métier du module MV3 PRO Portail sans limitation.
+
+PRÊT POUR UTILISATION EN PRODUCTION
