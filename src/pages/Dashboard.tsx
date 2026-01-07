@@ -41,9 +41,12 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Bienvenue, {user.firstname} {user.lastname}
+            Bienvenue, {user.name}
           </h2>
-          <p className="text-gray-600">Rôle: {user.role}</p>
+          <p className="text-gray-600">
+            <span className="font-medium">Login:</span> {user.login} |
+            <span className="font-medium ml-3">Rôle:</span> {user.role}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -60,7 +63,7 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="text-purple-600 text-3xl mb-3">🔧</div>
+            <div className="text-yellow-600 text-3xl mb-3">🔧</div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Matériel</h3>
             <p className="text-gray-600 text-sm">Gérer le matériel</p>
           </div>
@@ -78,7 +81,7 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="text-indigo-600 text-3xl mb-3">👤</div>
+            <div className="text-gray-600 text-3xl mb-3">👤</div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Profil</h3>
             <p className="text-gray-600 text-sm">Gérer votre profil</p>
           </div>
