@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/custom/mv3pro_portail/pwa_dist/sw.js', { scope: '/custom/mv3pro_portail/pwa_dist/' })})}
