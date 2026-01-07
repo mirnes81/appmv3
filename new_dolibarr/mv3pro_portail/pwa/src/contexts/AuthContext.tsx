@@ -33,7 +33,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
     if (!response.success) {
-      throw new Error(response.message || 'Échec de connexion');
+      const error: any = new Error(response.message || 'Échec de connexion');
+      error.hint = response.hint;
+      throw error;
     }
     const userData = await api.me();
     setUser(userData);

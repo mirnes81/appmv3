@@ -7,6 +7,7 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [hint, setHint] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setHint('');
     setLoading(true);
 
     try {
@@ -21,6 +23,9 @@ export function Login() {
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Erreur de connexion');
+      if (err.hint) {
+        setHint(err.hint);
+      }
     } finally {
       setLoading(false);
     }
@@ -59,7 +64,20 @@ export function Login() {
 
         {error && (
           <div className="alert alert-error" style={{ marginBottom: '20px' }}>
-            {error}
+            <div style={{ fontWeight: '600', marginBottom: hint ? '8px' : '0' }}>
+              {error}
+            </div>
+            {hint && (
+              <div style={{
+                fontSize: '13px',
+                opacity: 0.9,
+                marginTop: '8px',
+                paddingTop: '8px',
+                borderTop: '1px solid rgba(255,255,255,0.2)'
+              }}>
+                💡 {hint}
+              </div>
+            )}
           </div>
         )}
 

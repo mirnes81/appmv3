@@ -114,6 +114,7 @@ export interface LoginResponse {
     dolibarr_user_id?: number;
   };
   message?: string;
+  hint?: string;
 }
 
 export interface User {

@@ -105,14 +105,22 @@ function handleLogin($db, $conf, $data) {
     $resql = $db->query($sql);
 
     if (!$resql || $db->num_rows($resql) === 0) {
-        jsonResponse(['success' => false, 'message' => 'Email ou mot de passe incorrect'], 401);
+        jsonResponse([
+            'success' => false,
+            'message' => 'Compte mobile introuvable ou mot de passe incorrect.',
+            'hint' => 'Créez ou éditez l\'utilisateur mobile dans Dolibarr: Accueil > MV3 PRO > Gestion Utilisateurs Mobiles'
+        ], 401);
     }
 
     $user = $db->fetch_object($resql);
 
     // Vérifier si compte actif
     if (!$user->is_active) {
-        jsonResponse(['success' => false, 'message' => 'Compte désactivé. Contactez votre administrateur'], 403);
+        jsonResponse([
+            'success' => false,
+            'message' => 'Compte désactivé. Contactez votre administrateur.',
+            'hint' => 'Activez le compte dans Dolibarr: Gestion Utilisateurs Mobiles'
+        ], 403);
     }
 
     // Vérifier si compte verrouillé
@@ -120,7 +128,8 @@ function handleLogin($db, $conf, $data) {
         $remaining = ceil((strtotime($user->locked_until) - time()) / 60);
         jsonResponse([
             'success' => false,
-            'message' => "Compte verrouillé. Réessayez dans $remaining minute(s)"
+            'message' => "Compte verrouillé temporairement. Réessayez dans $remaining minute(s).",
+            'hint' => 'Sécurité: Compte verrouillé automatiquement après 5 tentatives échouées (15 min)'
         ], 403);
     }
 
@@ -144,11 +153,17 @@ function handleLogin($db, $conf, $data) {
         if ($attempts >= 5) {
             jsonResponse([
                 'success' => false,
-                'message' => 'Trop de tentatives échouées. Compte verrouillé 15 minutes'
+                'message' => 'Compte verrouillé pour 15 minutes après 5 tentatives échouées.',
+                'hint' => 'Protection anti-brute-force activée. Réessayez dans 15 minutes ou contactez l\'administrateur.'
             ], 403);
         }
 
-        jsonResponse(['success' => false, 'message' => 'Email ou mot de passe incorrect'], 401);
+        $remaining_attempts = 5 - $attempts;
+        jsonResponse([
+            'success' => false,
+            'message' => 'Mot de passe incorrect.',
+            'hint' => "Il vous reste $remaining_attempts tentative(s) avant verrouillage automatique (15 min)."
+        ], 401);
     }
 
     // Connexion réussie - Réinitialiser tentatives
