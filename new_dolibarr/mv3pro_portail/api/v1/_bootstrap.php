@@ -1,0 +1,353 @@
+<?php
+/**
+ * Bootstrap API v1 - MV3 PRO Portail
+ *
+ * Charge l'environnement Dolibarr et fournit des helpers pour les endpoints API
+ *
+ * Supporte 3 modes d'authentification:
+ * - Mode A: Session Dolibarr (admin/chef)
+ * - Mode B: Token mobile (Bearer)
+ * - Mode C: Token API ancien (X-Auth-Token)
+ */
+
+// Désactiver les erreurs PHP en mode production (à adapter selon besoin)
+if (!defined('SHOW_PHP_ERRORS')) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '0');
+}
+
+// Headers JSON + UTF-8
+header('Content-Type: application/json; charset=utf-8');
+
+// CORS
+require_once __DIR__ . '/../cors_config.php';
+setCorsHeaders();
+handleCorsPreflightRequest();
+
+// Charger Dolibarr
+$res = 0;
+if (!$res && file_exists(__DIR__ . "/../../../main.inc.php")) {
+    $res = @include __DIR__ . "/../../../main.inc.php";
+}
+if (!$res && file_exists(__DIR__ . "/../../../../main.inc.php")) {
+    $res = @include __DIR__ . "/../../../../main.inc.php";
+}
+
+if (!$res) {
+    json_error('Impossible de charger Dolibarr', 'DOLIBARR_LOAD_ERROR', 500);
+}
+
+require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
+
+// Variables globales disponibles
+global $db, $conf, $user, $langs;
+
+/**
+ * Retourne une réponse JSON de succès
+ *
+ * @param mixed $data Données à retourner
+ * @param int $code Code HTTP (défaut: 200)
+ * @return void
+ */
+function json_ok($data, $code = 200) {
+    http_response_code($code);
+
+    if (is_array($data) && !isset($data['success'])) {
+        $data = ['success' => true] + $data;
+    }
+
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+/**
+ * Retourne une réponse JSON d'erreur
+ *
+ * @param string $message Message d'erreur
+ * @param string $code Code d'erreur
+ * @param int $http_code Code HTTP (défaut: 400)
+ * @return void
+ */
+function json_error($message, $code = 'ERROR', $http_code = 400) {
+    http_response_code($http_code);
+    echo json_encode([
+        'success' => false,
+        'error' => $message,
+        'code' => $code
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+/**
+ * Vérifie que la méthode HTTP est correcte
+ *
+ * @param string|array $methods Méthode(s) autorisée(s) (ex: 'GET' ou ['GET', 'POST'])
+ * @return void
+ */
+function require_method($methods) {
+    $methods = (array)$methods;
+    $current = $_SERVER['REQUEST_METHOD'];
+
+    if (!in_array($current, $methods)) {
+        json_error(
+            'Méthode ' . $current . ' non autorisée. Utiliser: ' . implode(', ', $methods),
+            'METHOD_NOT_ALLOWED',
+            405
+        );
+    }
+}
+
+/**
+ * Récupère un paramètre de manière sécurisée
+ *
+ * @param string $name Nom du paramètre
+ * @param string $default Valeur par défaut
+ * @param string $method 'GET' ou 'POST' ou 'ANY'
+ * @return mixed
+ */
+function get_param($name, $default = '', $method = 'ANY') {
+    global $db;
+
+    $value = null;
+
+    if ($method === 'GET' || $method === 'ANY') {
+        $value = $_GET[$name] ?? null;
+    }
+
+    if (($method === 'POST' || $method === 'ANY') && $value === null) {
+        $value = $_POST[$name] ?? null;
+    }
+
+    if ($value === null) {
+        return $default;
+    }
+
+    // Protection basique
+    if (is_string($value)) {
+        $value = trim($value);
+    }
+
+    return $value;
+}
+
+/**
+ * Récupère le body JSON de la requête
+ *
+ * @param bool $required Si true, erreur 400 si pas de JSON valide
+ * @return array|null
+ */
+function get_json_body($required = false) {
+    $body = file_get_contents('php://input');
+    $data = json_decode($body, true);
+
+    if ($required && (!$data || json_last_error() !== JSON_ERROR_NONE)) {
+        json_error('Body JSON invalide ou manquant', 'INVALID_JSON', 400);
+    }
+
+    return $data ?: [];
+}
+
+/**
+ * Authentification unifiée
+ * Supporte 3 modes: Session Dolibarr, Token Mobile, Token API
+ *
+ * @param bool $required Si true, erreur 401 si non authentifié
+ * @return array|null Informations utilisateur ou null
+ */
+function require_auth($required = true) {
+    global $db, $conf, $user;
+
+    $auth_result = null;
+    $auth_mode = null;
+
+    // MODE A: Session Dolibarr (priorité la plus haute)
+    if (!empty($user->id) && isset($_SESSION['dol_login'])) {
+        $auth_mode = 'dolibarr_session';
+        $auth_result = [
+            'mode' => $auth_mode,
+            'user_id' => $user->id,
+            'login' => $user->login,
+            'name' => $user->getFullName($langs),
+            'email' => $user->email,
+            'dolibarr_user' => $user,
+            'rights' => [
+                'read' => !empty($user->rights->mv3pro_portail->read),
+                'write' => !empty($user->rights->mv3pro_portail->write),
+                'validate' => !empty($user->rights->mv3pro_portail->validate),
+                'worker' => !empty($user->rights->mv3pro_portail->worker),
+            ]
+        ];
+    }
+
+    // MODE B: Token Mobile (Bearer)
+    if (!$auth_result) {
+        $bearer = null;
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $auth = $_SERVER['HTTP_AUTHORIZATION'];
+            if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
+                $bearer = $matches[1];
+            }
+        }
+
+        if ($bearer) {
+            $sql = "SELECT s.rowid, s.user_id, s.expires_at,
+                           u.rowid as mobile_user_id, u.email, u.firstname, u.lastname,
+                           u.phone, u.role, u.is_active, u.dolibarr_user_id
+                    FROM ".MAIN_DB_PREFIX."mv3_mobile_sessions s
+                    INNER JOIN ".MAIN_DB_PREFIX."mv3_mobile_users u ON u.rowid = s.user_id
+                    WHERE s.session_token = '".$db->escape($bearer)."'
+                    AND s.expires_at > NOW()
+                    AND u.is_active = 1";
+
+            $resql = $db->query($sql);
+
+            if ($resql && $db->num_rows($resql) > 0) {
+                $session = $db->fetch_object($resql);
+
+                // Charger l'utilisateur Dolibarr lié
+                if ($session->dolibarr_user_id) {
+                    $dol_user = new User($db);
+                    if ($dol_user->fetch($session->dolibarr_user_id) > 0) {
+                        $dol_user->getrights();
+                        $user = $dol_user; // Mettre à jour la variable globale $user
+                    }
+                }
+
+                $auth_mode = 'mobile_token';
+                $auth_result = [
+                    'mode' => $auth_mode,
+                    'mobile_user_id' => $session->mobile_user_id,
+                    'user_id' => $session->dolibarr_user_id,
+                    'email' => $session->email,
+                    'name' => trim($session->firstname . ' ' . $session->lastname),
+                    'role' => $session->role,
+                    'dolibarr_user' => $user ?? null,
+                    'rights' => [
+                        'read' => true,
+                        'write' => true,
+                        'worker' => true,
+                    ]
+                ];
+
+                // Mettre à jour last_activity
+                $db->query("UPDATE ".MAIN_DB_PREFIX."mv3_mobile_sessions
+                           SET last_activity = NOW()
+                           WHERE session_token = '".$db->escape($bearer)."'");
+            }
+        }
+    }
+
+    // MODE C: Token API Ancien (X-Auth-Token)
+    if (!$auth_result) {
+        $api_token = $_SERVER['HTTP_X_AUTH_TOKEN'] ?? '';
+
+        if ($api_token) {
+            $decoded = json_decode(base64_decode($api_token), true);
+
+            if ($decoded && isset($decoded['user_id']) && isset($decoded['api_key'])) {
+                // Vérifier expiration
+                if (isset($decoded['expires_at']) && $decoded['expires_at'] < time()) {
+                    if ($required) {
+                        json_error('Token expiré', 'TOKEN_EXPIRED', 401);
+                    }
+                    return null;
+                }
+
+                $sql = "SELECT u.rowid, u.login, u.lastname, u.firstname, u.email, u.statut
+                        FROM ".MAIN_DB_PREFIX."user as u
+                        WHERE u.rowid = ".(int)$decoded['user_id']."
+                        AND u.api_key = '".$db->escape($decoded['api_key'])."'
+                        AND u.statut = 1";
+
+                $resql = $db->query($sql);
+
+                if ($resql && $db->num_rows($resql) > 0) {
+                    $user_obj = $db->fetch_object($resql);
+
+                    // Charger droits
+                    $dol_user = new User($db);
+                    if ($dol_user->fetch($user_obj->rowid) > 0) {
+                        $dol_user->getrights();
+                        $user = $dol_user;
+                    }
+
+                    $auth_mode = 'api_token';
+                    $auth_result = [
+                        'mode' => $auth_mode,
+                        'user_id' => $user_obj->rowid,
+                        'login' => $user_obj->login,
+                        'name' => trim($user_obj->firstname . ' ' . $user_obj->lastname),
+                        'email' => $user_obj->email,
+                        'dolibarr_user' => $user,
+                        'rights' => [
+                            'read' => !empty($user->rights->mv3pro_portail->read),
+                            'write' => !empty($user->rights->mv3pro_portail->write),
+                            'validate' => !empty($user->rights->mv3pro_portail->validate),
+                            'worker' => !empty($user->rights->mv3pro_portail->worker),
+                        ]
+                    ];
+                }
+            }
+        }
+    }
+
+    // Si authentification requise et pas d'auth valide
+    if ($required && !$auth_result) {
+        json_error(
+            'Authentification requise. Utilisez session Dolibarr, Bearer token ou X-Auth-Token',
+            'UNAUTHORIZED',
+            401
+        );
+    }
+
+    return $auth_result;
+}
+
+/**
+ * Vérifie les droits utilisateur
+ *
+ * @param string|array $rights Droit(s) requis ('read', 'write', 'validate', 'worker')
+ * @param array $auth_data Données d'authentification (retour de require_auth)
+ * @return void
+ */
+function require_rights($rights, $auth_data) {
+    $rights = (array)$rights;
+
+    foreach ($rights as $right) {
+        if (empty($auth_data['rights'][$right])) {
+            json_error(
+                'Droits insuffisants. Droit requis: ' . $right,
+                'FORBIDDEN',
+                403
+            );
+        }
+    }
+}
+
+/**
+ * Valide un paramètre requis
+ *
+ * @param mixed $value Valeur à vérifier
+ * @param string $name Nom du paramètre (pour message d'erreur)
+ * @return void
+ */
+function require_param($value, $name) {
+    if ($value === null || $value === '') {
+        json_error('Paramètre requis manquant: ' . $name, 'MISSING_PARAMETER', 400);
+    }
+}
+
+/**
+ * Log une action API (optionnel, à implémenter selon besoin)
+ *
+ * @param string $endpoint Endpoint appelé
+ * @param array $auth_data Données auth
+ * @param array $extra_data Données supplémentaires
+ * @return void
+ */
+function log_api_call($endpoint, $auth_data, $extra_data = []) {
+    global $db;
+
+    // TODO: Implémenter si besoin de logs API
+    // Exemple: INSERT INTO llx_mv3_api_logs...
+}
