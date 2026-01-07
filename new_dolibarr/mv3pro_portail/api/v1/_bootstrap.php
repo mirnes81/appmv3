@@ -24,6 +24,15 @@ require_once __DIR__ . '/../cors_config.php';
 setCorsHeaders();
 handleCorsPreflightRequest();
 
+// --- Dolibarr bootstrap for API (no CSRF, no menu) ---
+// Note: NOLOGIN permet l'auth manuelle via require_auth()
+if (!defined('NOLOGIN')) define('NOLOGIN', 1);
+if (!defined('NOCSRFCHECK')) define('NOCSRFCHECK', 1);
+if (!defined('NOREQUIREMENU')) define('NOREQUIREMENU', 1);
+if (!defined('NOREQUIREHTML')) define('NOREQUIREHTML', 1);
+if (!defined('NOREQUIREAJAX')) define('NOREQUIREAJAX', 1);
+if (!defined('NOTOKENRENEWAL')) define('NOTOKENRENEWAL', 1);
+
 // Charger Dolibarr
 $res = 0;
 if (!$res && file_exists(__DIR__ . "/../../../main.inc.php")) {

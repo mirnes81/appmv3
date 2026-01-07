@@ -25,6 +25,14 @@ function jsonResponse($data, $code = 200) {
     exit;
 }
 
+// --- Dolibarr bootstrap for API (no session, no CSRF) ---
+if (!defined('NOLOGIN')) define('NOLOGIN', 1);
+if (!defined('NOCSRFCHECK')) define('NOCSRFCHECK', 1);
+if (!defined('NOREQUIREMENU')) define('NOREQUIREMENU', 1);
+if (!defined('NOREQUIREHTML')) define('NOREQUIREHTML', 1);
+if (!defined('NOREQUIREAJAX')) define('NOREQUIREAJAX', 1);
+if (!defined('NOTOKENRENEWAL')) define('NOTOKENRENEWAL', 1);
+
 // Charger Dolibarr
 $res = 0;
 if (!$res && file_exists(__DIR__ . "/../../../main.inc.php")) {
