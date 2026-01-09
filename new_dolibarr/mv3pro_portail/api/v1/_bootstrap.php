@@ -169,6 +169,16 @@ function get_json_body($required = false) {
 function require_auth($required = true) {
     global $db, $conf, $user;
 
+    $is_debug = isset($_SERVER['HTTP_X_MV3_DEBUG']) && $_SERVER['HTTP_X_MV3_DEBUG'] === '1';
+
+    if ($is_debug) {
+        error_log('[MV3 API] ========== AUTH START ==========');
+        error_log('[MV3 API] path=' . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
+        error_log('[MV3 API] method=' . ($_SERVER['REQUEST_METHOD'] ?? 'N/A'));
+        error_log('[MV3 API] auth_header_present=' . (isset($_SERVER['HTTP_AUTHORIZATION']) ? '1' : '0'));
+        error_log('[MV3 API] x_auth_token_present=' . (isset($_SERVER['HTTP_X_AUTH_TOKEN']) ? '1' : '0'));
+    }
+
     DebugLogger::log('require_auth() called', [
         'required' => $required,
         'request_uri' => $_SERVER['REQUEST_URI'] ?? 'N/A',
@@ -210,12 +220,23 @@ function require_auth($required = true) {
             $auth = $_SERVER['HTTP_AUTHORIZATION'];
             if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
                 $bearer = $matches[1];
+                $token_mask = strlen($bearer) > 10 ? substr($bearer, 0, 6) . '....' . substr($bearer, -4) : 'short';
+
+                if ($is_debug) {
+                    error_log('[MV3 API] token_extracted=1');
+                    error_log('[MV3 API] token_mask=' . $token_mask);
+                    error_log('[MV3 API] token_length=' . strlen($bearer));
+                }
+
                 DebugLogger::log('Bearer token extracted', [
                     'token_length' => strlen($bearer),
                     'token_preview' => substr($bearer, 0, 20) . '...',
                 ]);
             }
         } else {
+            if ($is_debug) {
+                error_log('[MV3 API] auth_header_missing=1');
+            }
             DebugLogger::log('No Authorization header found');
         }
 
@@ -236,6 +257,13 @@ function require_auth($required = true) {
             if ($resql && $db->num_rows($resql) > 0) {
                 $session = $db->fetch_object($resql);
 
+                if ($is_debug) {
+                    error_log('[MV3 API] session_found=1');
+                    error_log('[MV3 API] user_rowid=' . $session->mobile_user_id);
+                    error_log('[MV3 API] user_email=' . $session->email);
+                    error_log('[MV3 API] dolibarr_user_id=' . ($session->dolibarr_user_id ?: '0'));
+                }
+
                 DebugLogger::log('Mobile session found in DB', [
                     'mobile_user_id' => $session->mobile_user_id,
                     'email' => $session->email,
@@ -245,6 +273,11 @@ function require_auth($required = true) {
 
                 // Détecter si le compte mobile n'est pas lié à Dolibarr
                 $is_unlinked = empty($session->dolibarr_user_id) || $session->dolibarr_user_id == 0;
+
+                if ($is_debug) {
+                    error_log('[MV3 API] session_expired=0');
+                    error_log('[MV3 API] is_unlinked=' . ($is_unlinked ? '1' : '0'));
+                }
 
                 DebugLogger::log('Checking if account is unlinked', [
                     'dolibarr_user_id' => $session->dolibarr_user_id,
@@ -301,12 +334,23 @@ function require_auth($required = true) {
                            SET last_activity = NOW()
                            WHERE session_token = '".$db->escape($bearer)."'");
             } else {
+                if ($is_debug) {
+                    error_log('[MV3 API] session_found=0');
+                    error_log('[MV3 API] session_expired_or_not_found=1');
+                    if ($db->lasterror()) {
+                        error_log('[MV3 API] db_error=' . $db->lasterror());
+                    }
+                }
+
                 DebugLogger::log('Mobile session NOT found in DB or expired', [
                     'num_rows' => $resql ? $db->num_rows($resql) : 0,
                     'db_error' => $db->lasterror(),
                 ]);
             }
         } else {
+            if ($is_debug) {
+                error_log('[MV3 API] bearer_token_not_found=1');
+            }
             DebugLogger::log('No bearer token found, skipping MODE B');
         }
     }
@@ -367,6 +411,12 @@ function require_auth($required = true) {
 
     // Si authentification requise et pas d'auth valide
     if ($required && !$auth_result) {
+        if ($is_debug) {
+            error_log('[MV3 API] auth_result=FAILED');
+            error_log('[MV3 API] reason=NO_VALID_AUTH_FOUND');
+            error_log('[MV3 API] ========== AUTH END ==========');
+        }
+
         DebugLogger::log('Authentication FAILED - No valid auth found', [
             'required' => $required,
             'tried_modes' => ['dolibarr_session', 'mobile_token', 'api_token'],
@@ -379,6 +429,15 @@ function require_auth($required = true) {
     }
 
     if ($auth_result) {
+        if ($is_debug) {
+            error_log('[MV3 API] auth_result=SUCCESS');
+            error_log('[MV3 API] auth_mode=' . ($auth_result['mode'] ?? 'unknown'));
+            error_log('[MV3 API] user_id=' . ($auth_result['user_id'] ?? 'null'));
+            error_log('[MV3 API] mobile_user_id=' . ($auth_result['mobile_user_id'] ?? 'N/A'));
+            error_log('[MV3 API] is_unlinked=' . ($auth_result['is_unlinked'] ?? '0'));
+            error_log('[MV3 API] ========== AUTH END ==========');
+        }
+
         DebugLogger::log('Authentication SUCCESS', [
             'mode' => $auth_result['mode'],
             'user_id' => $auth_result['user_id'] ?? 'null',
@@ -386,6 +445,10 @@ function require_auth($required = true) {
             'is_unlinked' => $auth_result['is_unlinked'] ?? false,
         ]);
     } else {
+        if ($is_debug) {
+            error_log('[MV3 API] auth_result=NULL (optional auth)');
+            error_log('[MV3 API] ========== AUTH END ==========');
+        }
         DebugLogger::log('Authentication returned null (optional auth)');
     }
 

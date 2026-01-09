@@ -7,11 +7,21 @@
 
 require_once __DIR__ . '/_bootstrap.php';
 
+$is_debug = isset($_SERVER['HTTP_X_MV3_DEBUG']) && $_SERVER['HTTP_X_MV3_DEBUG'] === '1';
+
+if ($is_debug) {
+    error_log('[MV3 API] /me.php called');
+}
+
 // Méthode GET uniquement
 require_method('GET');
 
 // Authentification obligatoire
 $auth = require_auth(true);
+
+if ($is_debug) {
+    error_log('[MV3 API] /me.php auth successful, building response');
+}
 
 // Construire la réponse
 $response = [

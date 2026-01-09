@@ -1,18 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
-interface DebugInfo {
-  timestamp: string;
-  requestUrl: string;
-  requestMethod: string;
-  requestHeaders: Record<string, string>;
-  requestBody: any;
-  responseStatus: number;
-  responseHeaders: Record<string, string>;
-  responseBody: any;
-  errorDetails?: any;
+interface DebugStep {
+  step: number;
+  name: string;
+  status: 'pending' | 'running' | 'success' | 'error';
+  details?: any;
+  error?: string;
 }
 
 export function Login() {
@@ -21,16 +17,37 @@ export function Login() {
   const [error, setError] = useState('');
   const [hint, setHint] = useState('');
   const [loading, setLoading] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
+  const [debugMode, setDebugMode] = useState(() => {
+    return localStorage.getItem('mv3_debug') === '1';
+  });
+  const [debugSteps, setDebugSteps] = useState<DebugStep[]>([]);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    localStorage.setItem('mv3_debug', debugMode ? '1' : '0');
+  }, [debugMode]);
+
+  const updateStep = (step: number, updates: Partial<DebugStep>) => {
+    setDebugSteps(prev => {
+      const newSteps = [...prev];
+      const index = newSteps.findIndex(s => s.step === step);
+      if (index >= 0) {
+        newSteps[index] = { ...newSteps[index], ...updates };
+      }
+      return newSteps;
+    });
+  };
+
+  const maskToken = (token: string): string => {
+    if (!token || token.length < 10) return token;
+    return `${token.substring(0, 6)}...${token.substring(token.length - 4)}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setHint('');
-    setDebugInfo(null);
     setLoading(true);
 
     if (debugMode) {
@@ -51,84 +68,229 @@ export function Login() {
   };
 
   const handleDebugLogin = async () => {
-    const url = '/custom/mv3pro_portail/mobile_app/api/auth.php?action=login';
-    const requestBody = { email, password };
-    const requestHeaders = { 'Content-Type': 'application/json' };
+    const steps: DebugStep[] = [
+      { step: 1, name: 'Connexion au serveur', status: 'pending' },
+      { step: 2, name: 'Stockage du token', status: 'pending' },
+      { step: 3, name: 'Test API /me.php', status: 'pending' },
+      { step: 4, name: 'Redirection Dashboard', status: 'pending' },
+    ];
+    setDebugSteps(steps);
 
-    const debug: DebugInfo = {
-      timestamp: new Date().toISOString(),
-      requestUrl: url,
-      requestMethod: 'POST',
-      requestHeaders,
-      requestBody: {
-        email,
-        password: `[${password.length} chars] ${password.slice(0, 3)}...`
-      },
-      responseStatus: 0,
-      responseHeaders: {},
-      responseBody: null,
-    };
+    const API_BASE = '/custom/mv3pro_portail';
+    const LOGIN_URL = `${API_BASE}/mobile_app/api/auth.php?action=login`;
+    const ME_URL = `${API_BASE}/api/v1/me.php`;
+
+    updateStep(1, { status: 'running' });
 
     try {
-      console.log('[DEBUG] Starting login request', {
-        email,
-        passwordLength: password.length,
-        url
-      });
+      console.log('[DEBUG STEP 1] Login request to:', LOGIN_URL);
 
-      const response = await fetch(url, {
+      const loginResponse = await fetch(LOGIN_URL, {
         method: 'POST',
-        headers: requestHeaders,
-        body: JSON.stringify(requestBody),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      debug.responseStatus = response.status;
-
-      const headersObj: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        headersObj[key] = value;
-      });
-      debug.responseHeaders = headersObj;
-
-      const responseText = await response.text();
-      console.log('[DEBUG] Response received', {
-        status: response.status,
-        headers: headersObj,
-        bodyLength: responseText.length,
-        bodyPreview: responseText.slice(0, 200)
+      const loginData = await loginResponse.json();
+      console.log('[DEBUG STEP 1] Login response:', {
+        status: loginResponse.status,
+        success: loginData.success,
+        hasToken: !!loginData.token,
+        user: loginData.user,
       });
 
+      if (!loginResponse.ok || !loginData.success) {
+        updateStep(1, {
+          status: 'error',
+          error: loginData.message || `HTTP ${loginResponse.status}`,
+          details: {
+            status: loginResponse.status,
+            response: loginData,
+          },
+        });
+        setError(loginData.message || 'Erreur de connexion');
+        setLoading(false);
+        return;
+      }
+
+      updateStep(1, {
+        status: 'success',
+        details: {
+          status: loginResponse.status,
+          user_email: loginData.user?.email,
+          user_name: loginData.user?.name,
+          dolibarr_user_id: loginData.user?.dolibarr_user_id,
+          token_received: !!loginData.token,
+          token_masked: loginData.token ? maskToken(loginData.token) : null,
+        },
+      });
+
+      updateStep(2, { status: 'running' });
+
+      const token = loginData.token;
+      if (!token) {
+        updateStep(2, {
+          status: 'error',
+          error: 'Aucun token reçu du serveur',
+        });
+        setError('Aucun token reçu');
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem('mv3pro_token', token);
+      console.log('[DEBUG STEP 2] Token stored in localStorage:', maskToken(token));
+
+      const storedToken = localStorage.getItem('mv3pro_token');
+      const tokenMatches = storedToken === token;
+
+      updateStep(2, {
+        status: 'success',
+        details: {
+          token_masked: maskToken(token),
+          token_length: token.length,
+          stored_in_localStorage: !!storedToken,
+          token_matches: tokenMatches,
+        },
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      updateStep(3, { status: 'running' });
+
+      console.log('[DEBUG STEP 3] Testing /me.php with token:', maskToken(token));
+      console.log('[DEBUG STEP 3] Headers sent:', {
+        'Authorization': `Bearer ${maskToken(token)}`,
+        'X-Auth-Token': maskToken(token),
+        'X-MV3-Debug': '1',
+      });
+
+      const meResponse = await fetch(ME_URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Auth-Token': token,
+          'X-MV3-Debug': '1',
+        },
+      });
+
+      console.log('[DEBUG STEP 3] /me.php response status:', meResponse.status);
+
+      let meData;
       try {
-        debug.responseBody = JSON.parse(responseText);
-      } catch {
-        debug.responseBody = { _raw: responseText };
+        meData = await meResponse.json();
+        console.log('[DEBUG STEP 3] /me.php response body:', meData);
+      } catch (e) {
+        const text = await meResponse.text();
+        console.error('[DEBUG STEP 3] Failed to parse JSON, raw response:', text);
+        meData = { _raw: text };
       }
 
-      setDebugInfo(debug);
-
-      if (response.ok && debug.responseBody?.success) {
-        console.log('[DEBUG] Login SUCCESS', debug.responseBody);
-        if (debug.responseBody.token) {
-          localStorage.setItem('mv3pro_token', debug.responseBody.token);
-        }
-      } else {
-        console.log('[DEBUG] Login FAILED', debug.responseBody);
-        setError(debug.responseBody?.message || `Erreur ${response.status}`);
-        if (debug.responseBody?.hint) {
-          setHint(debug.responseBody.hint);
-        }
+      if (!meResponse.ok) {
+        updateStep(3, {
+          status: 'error',
+          error: `HTTP ${meResponse.status}: ${meData.message || meData.error || 'Unauthorized'}`,
+          details: {
+            status: meResponse.status,
+            statusText: meResponse.statusText,
+            response: meData,
+            token_sent: `Bearer ${maskToken(token)}`,
+            headers_sent: {
+              'Authorization': 'Present',
+              'X-Auth-Token': 'Present',
+              'X-MV3-Debug': '1',
+            },
+          },
+        });
+        setError(`Erreur /me.php: ${meResponse.status}`);
+        setLoading(false);
+        return;
       }
-    } catch (err: any) {
-      console.error('[DEBUG] Request ERROR', err);
-      debug.errorDetails = {
-        name: err.name,
-        message: err.message,
-        stack: err.stack,
-      };
-      setDebugInfo(debug);
-      setError('Erreur réseau: ' + err.message);
-    } finally {
+
+      if (!meData.success || !meData.user) {
+        updateStep(3, {
+          status: 'error',
+          error: 'Réponse invalide de /me.php',
+          details: {
+            response: meData,
+            reason: meData.reason || 'Unknown',
+          },
+        });
+        setError('Réponse invalide');
+        setLoading(false);
+        return;
+      }
+
+      updateStep(3, {
+        status: 'success',
+        details: {
+          status: meResponse.status,
+          user_id: meData.user.id,
+          user_email: meData.user.email,
+          user_name: meData.user.name,
+          is_unlinked: meData.user.is_unlinked,
+          dolibarr_user_id: meData.user.dolibarr_user_id,
+          rights: meData.user.rights,
+        },
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      updateStep(4, { status: 'running' });
+
+      console.log('[DEBUG STEP 4] All checks passed, redirecting to dashboard');
+
+      updateStep(4, {
+        status: 'success',
+        details: {
+          redirect_to: '/dashboard',
+          ready: true,
+        },
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log('[DEBUG] Authentication flow complete, navigating to dashboard');
       setLoading(false);
+      navigate('/dashboard', { replace: true });
+
+    } catch (err: any) {
+      console.error('[DEBUG] Unexpected error:', err);
+      const currentStep = debugSteps.findIndex(s => s.status === 'running');
+      if (currentStep >= 0) {
+        updateStep(currentStep + 1, {
+          status: 'error',
+          error: err.message,
+          details: {
+            name: err.name,
+            message: err.message,
+            stack: err.stack,
+          },
+        });
+      }
+      setError('Erreur: ' + err.message);
+      setLoading(false);
+    }
+  };
+
+  const getStepIcon = (status: DebugStep['status']) => {
+    switch (status) {
+      case 'pending': return '⏳';
+      case 'running': return '⚙️';
+      case 'success': return '✅';
+      case 'error': return '❌';
+    }
+  };
+
+  const getStepColor = (status: DebugStep['status']) => {
+    switch (status) {
+      case 'pending': return '#9ca3af';
+      case 'running': return '#3b82f6';
+      case 'success': return '#10b981';
+      case 'error': return '#ef4444';
     }
   };
 
@@ -146,7 +308,7 @@ export function Login() {
       <div
         style={{
           width: '100%',
-          maxWidth: debugMode ? '900px' : '400px',
+          maxWidth: debugMode && debugSteps.length > 0 ? '900px' : '400px',
           background: 'white',
           borderRadius: '16px',
           padding: '32px',
@@ -176,11 +338,21 @@ export function Login() {
               fontWeight: '500',
             }}
           >
-            {debugMode ? '🔍 Debug ON' : '🔍 Debug OFF'}
+            {debugMode ? '🔍 DEBUG MODE ON' : 'Mode Debug'}
           </button>
+          {debugMode && (
+            <div style={{
+              marginTop: '8px',
+              fontSize: '11px',
+              color: '#f59e0b',
+              fontWeight: '500'
+            }}>
+              Mode debug activé - Suivi étape par étape
+            </div>
+          )}
         </div>
 
-        {error && (
+        {error && !debugSteps.length && (
           <div className="alert alert-error" style={{ marginBottom: '20px' }}>
             <div style={{ fontWeight: '600', marginBottom: hint ? '8px' : '0' }}>
               {error}
@@ -251,6 +423,104 @@ export function Login() {
           </button>
         </form>
 
+        {debugMode && debugSteps.length > 0 && (
+          <div style={{
+            marginTop: '24px',
+            padding: '20px',
+            background: '#f9fafb',
+            borderRadius: '12px',
+            border: '2px solid #e5e7eb',
+          }}>
+            <h3 style={{
+              fontSize: '16px',
+              fontWeight: '700',
+              marginBottom: '16px',
+              color: '#1f2937',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              🔍 DEBUG - Suivi étape par étape
+            </h3>
+
+            {debugSteps.map((step) => (
+              <div
+                key={step.step}
+                style={{
+                  marginBottom: '16px',
+                  padding: '16px',
+                  background: 'white',
+                  borderRadius: '8px',
+                  border: `2px solid ${getStepColor(step.status)}`,
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: step.details || step.error ? '12px' : '0',
+                }}>
+                  <span style={{ fontSize: '24px' }}>{getStepIcon(step.status)}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontWeight: '600',
+                      color: getStepColor(step.status),
+                      fontSize: '14px',
+                    }}>
+                      ÉTAPE {step.step}: {step.name}
+                    </div>
+                    {step.status === 'running' && (
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                        En cours...
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {step.error && (
+                  <div style={{
+                    padding: '12px',
+                    background: '#fef2f2',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    color: '#dc2626',
+                    fontWeight: '500',
+                  }}>
+                    ❌ {step.error}
+                  </div>
+                )}
+
+                {step.details && (
+                  <div style={{
+                    padding: '12px',
+                    background: '#f3f4f6',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                    maxHeight: '200px',
+                    overflow: 'auto',
+                  }}>
+                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                      {JSON.stringify(step.details, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <div style={{
+              marginTop: '16px',
+              padding: '12px',
+              background: '#fef3c7',
+              borderRadius: '8px',
+              fontSize: '12px',
+              color: '#92400e',
+            }}>
+              💡 Consultez la console du navigateur (F12) pour plus de détails
+            </div>
+          </div>
+        )}
+
         <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #e5e7eb' }}>
           <p style={{ color: '#6b7280', fontSize: '13px', marginBottom: '12px' }}>
             Pas de compte mobile?
@@ -273,92 +543,6 @@ export function Login() {
         <div style={{ textAlign: 'center', marginTop: '16px', color: '#9ca3af', fontSize: '12px' }}>
           MV3 Carrelage - Version 1.0.0
         </div>
-
-        {debugMode && debugInfo && (
-          <div style={{
-            marginTop: '24px',
-            padding: '16px',
-            background: '#f3f4f6',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontFamily: 'monospace',
-            maxHeight: '600px',
-            overflow: 'auto',
-          }}>
-            <h3 style={{ marginBottom: '16px', fontWeight: '700', color: '#1f2937' }}>
-              DEBUG INFO
-            </h3>
-
-            <div style={{ marginBottom: '16px' }}>
-              <strong style={{ color: '#dc2626' }}>REQUEST</strong>
-              <div style={{ marginTop: '8px', background: 'white', padding: '12px', borderRadius: '6px' }}>
-                <div><strong>URL:</strong> {debugInfo.requestUrl}</div>
-                <div><strong>Method:</strong> {debugInfo.requestMethod}</div>
-                <div><strong>Headers:</strong></div>
-                <pre style={{ marginLeft: '16px', marginTop: '4px', fontSize: '11px' }}>
-                  {JSON.stringify(debugInfo.requestHeaders, null, 2)}
-                </pre>
-                <div><strong>Body:</strong></div>
-                <pre style={{ marginLeft: '16px', marginTop: '4px', fontSize: '11px' }}>
-                  {JSON.stringify(debugInfo.requestBody, null, 2)}
-                </pre>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <strong style={{ color: debugInfo.responseStatus === 200 ? '#059669' : '#dc2626' }}>
-                RESPONSE ({debugInfo.responseStatus})
-              </strong>
-              <div style={{ marginTop: '8px', background: 'white', padding: '12px', borderRadius: '6px' }}>
-                <div><strong>Status:</strong> {debugInfo.responseStatus}</div>
-                <div><strong>Headers:</strong></div>
-                <pre style={{ marginLeft: '16px', marginTop: '4px', fontSize: '11px' }}>
-                  {JSON.stringify(debugInfo.responseHeaders, null, 2)}
-                </pre>
-                <div><strong>Body:</strong></div>
-                <pre style={{ marginLeft: '16px', marginTop: '4px', fontSize: '11px', color: debugInfo.responseBody?.success ? '#059669' : '#dc2626' }}>
-                  {JSON.stringify(debugInfo.responseBody, null, 2)}
-                </pre>
-              </div>
-            </div>
-
-            {debugInfo.errorDetails && (
-              <div>
-                <strong style={{ color: '#dc2626' }}>ERROR DETAILS</strong>
-                <div style={{ marginTop: '8px', background: 'white', padding: '12px', borderRadius: '6px' }}>
-                  <pre style={{ fontSize: '11px', color: '#dc2626' }}>
-                    {JSON.stringify(debugInfo.errorDetails, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            )}
-
-            <div style={{ marginTop: '16px', padding: '12px', background: '#fef3c7', borderRadius: '6px' }}>
-              <strong>Ouvrez la console pour plus de détails (F12)</strong>
-            </div>
-
-            {debugInfo.responseStatus === 200 && debugInfo.responseBody?.success && (
-              <div style={{ marginTop: '16px' }}>
-                <button
-                  onClick={() => navigate('/dashboard', { replace: true })}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    background: '#059669',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                  }}
-                >
-                  ✓ LOGIN REUSSI - Continuer vers le Dashboard
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
