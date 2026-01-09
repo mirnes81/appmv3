@@ -14,7 +14,7 @@
 
 require_once __DIR__ . '/_bootstrap.php';
 
-global $db;
+global $db, $conf;
 
 // Méthode GET uniquement
 require_method('GET');
@@ -84,7 +84,7 @@ if ($resql_count) {
 
 // Récupérer les rapports
 $sql = "SELECT r.rowid, r.ref, r.date_rapport, r.heure_debut, r.heure_fin,
-        r.surface_total, r.fk_projet, r.fk_soc, r.zones, r.format, r.type_carrelage,
+        r.surface_total, r.fk_projet, r.fk_soc, r.fk_user, r.zones, r.format, r.type_carrelage,
         r.travaux_realises, r.observations, r.statut,
         p.ref as projet_ref, p.title as projet_title,
         s.nom as client_nom,
