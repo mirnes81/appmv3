@@ -36,14 +36,8 @@ if ($page < 1) $page = 1;
 
 $offset = ($page - 1) * $limit;
 
-// Vérifier si la table existe
-$table_check = $db->query("SHOW TABLES LIKE '".MAIN_DB_PREFIX."mv3_rapport'");
-if (!$table_check || $db->num_rows($table_check) == 0) {
-    // Table n'existe pas, retourner liste vide
-    http_response_code(200);
-    echo json_encode([], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
+// Vérifier si la table existe (retourne liste vide si absent)
+mv3_check_table_or_empty($db, 'mv3_rapport', 'Rapports');
 
 // Construction de la requête
 $where = [];
@@ -111,12 +105,17 @@ $resql = $db->query($sql);
 
 if (!$resql) {
     $error_msg = 'Erreur lors de la récupération des rapports';
-    if ($db->lasterror()) {
-        $error_msg .= ': ' . $db->lasterror();
+    $db_error = $db->lasterror();
+    if ($db_error) {
+        $error_msg .= ': ' . $db_error;
     }
     error_log('[MV3 Rapports] SQL Error: ' . $error_msg);
     error_log('[MV3 Rapports] SQL Query: ' . $sql);
-    json_error($error_msg . ' | SQL: ' . $sql, 'DATABASE_ERROR', 500);
+
+    // Retourner un tableau vide plutôt qu'une erreur 500
+    http_response_code(200);
+    echo json_encode([], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
 $rapports = [];

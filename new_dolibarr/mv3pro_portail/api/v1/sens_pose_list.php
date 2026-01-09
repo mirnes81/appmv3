@@ -14,10 +14,8 @@ $page = (int)get_param('page', 1);
 if ($limit > 100) $limit = 100;
 $offset = ($page - 1) * $limit;
 
-// Vérifier si la table existe
-$table_check = $db->query("SHOW TABLES LIKE '".MAIN_DB_PREFIX."mv3_sens_pose'");
-if (!$table_check || $db->num_rows($table_check) == 0) {
-    // Table n'existe pas, retourner liste vide
+// Vérifier si la table existe (retourne liste vide si absent)
+if (!mv3_table_exists($db, 'mv3_sens_pose')) {
     json_ok(['sens_pose' => [], 'count' => 0]);
 }
 
@@ -34,12 +32,15 @@ $sql .= " ORDER BY s.date_creation DESC LIMIT ".$limit." OFFSET ".$offset;
 $resql = $db->query($sql);
 if (!$resql) {
     $error_msg = 'Erreur lors de la récupération des sens de pose';
-    if ($db->lasterror()) {
-        $error_msg .= ': ' . $db->lasterror();
+    $db_error = $db->lasterror();
+    if ($db_error) {
+        $error_msg .= ': ' . $db_error;
     }
     error_log('[MV3 Sens Pose] SQL Error: ' . $error_msg);
     error_log('[MV3 Sens Pose] SQL Query: ' . $sql);
-    json_error($error_msg . ' | SQL: ' . $sql, 'DATABASE_ERROR', 500);
+
+    // Retourner un tableau vide plutôt qu'une erreur
+    json_ok(['sens_pose' => [], 'count' => 0]);
 }
 
 $list = [];

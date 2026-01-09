@@ -11,10 +11,8 @@ require_method('GET');
 
 $limit = (int)get_param('limit', 50);
 
-// Vérifier si la table existe
-$table_check = $db->query("SHOW TABLES LIKE '".MAIN_DB_PREFIX."mv3_notifications'");
-if (!$table_check || $db->num_rows($table_check) == 0) {
-    // Table n'existe pas, retourner liste vide
+// Vérifier si la table existe (retourne liste vide si absent)
+if (!mv3_table_exists($db, 'mv3_notifications')) {
     json_ok(['notifications' => [], 'count' => 0]);
 }
 
@@ -26,12 +24,15 @@ $sql .= " ORDER BY date_creation DESC LIMIT ".$limit;
 $resql = $db->query($sql);
 if (!$resql) {
     $error_msg = 'Erreur lors de la récupération des notifications';
-    if ($db->lasterror()) {
-        $error_msg .= ': ' . $db->lasterror();
+    $db_error = $db->lasterror();
+    if ($db_error) {
+        $error_msg .= ': ' . $db_error;
     }
     error_log('[MV3 Notifications] SQL Error: ' . $error_msg);
     error_log('[MV3 Notifications] SQL Query: ' . $sql);
-    json_error($error_msg . ' | SQL: ' . $sql, 'DATABASE_ERROR', 500);
+
+    // Retourner un tableau vide plutôt qu'une erreur
+    json_ok(['notifications' => [], 'count' => 0]);
 }
 
 $list = [];

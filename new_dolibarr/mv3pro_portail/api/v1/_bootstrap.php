@@ -531,3 +531,137 @@ function log_api_call($endpoint, $auth_data, $extra_data = []) {
     // TODO: Implémenter si besoin de logs API
     // Exemple: INSERT INTO llx_mv3_api_logs...
 }
+
+// =============================================================================
+// DATABASE COMPATIBILITY HELPERS
+// Système de vérification des tables/colonnes avec cache
+// =============================================================================
+
+/**
+ * Cache global pour éviter de requêter plusieurs fois la même info
+ */
+global $MV3_DB_SCHEMA_CACHE;
+$MV3_DB_SCHEMA_CACHE = [];
+
+/**
+ * Vérifie si une table existe dans la base de données
+ *
+ * @param object $db Instance de base de données Dolibarr
+ * @param string $table_name Nom de la table (avec ou sans préfixe)
+ * @return bool
+ */
+function mv3_table_exists($db, $table_name) {
+    global $MV3_DB_SCHEMA_CACHE;
+
+    // Ajouter le préfixe si nécessaire
+    if (strpos($table_name, MAIN_DB_PREFIX) !== 0) {
+        $table_name = MAIN_DB_PREFIX . $table_name;
+    }
+
+    $cache_key = 'table_' . $table_name;
+
+    // Vérifier le cache
+    if (isset($MV3_DB_SCHEMA_CACHE[$cache_key])) {
+        return $MV3_DB_SCHEMA_CACHE[$cache_key];
+    }
+
+    // Requête pour vérifier l'existence
+    $sql = "SHOW TABLES LIKE '".$db->escape($table_name)."'";
+    $resql = $db->query($sql);
+
+    $exists = ($resql && $db->num_rows($resql) > 0);
+
+    // Mettre en cache
+    $MV3_DB_SCHEMA_CACHE[$cache_key] = $exists;
+
+    return $exists;
+}
+
+/**
+ * Vérifie si une colonne existe dans une table
+ *
+ * @param object $db Instance de base de données Dolibarr
+ * @param string $table_name Nom de la table (avec ou sans préfixe)
+ * @param string $column_name Nom de la colonne
+ * @return bool
+ */
+function mv3_column_exists($db, $table_name, $column_name) {
+    global $MV3_DB_SCHEMA_CACHE;
+
+    // Ajouter le préfixe si nécessaire
+    if (strpos($table_name, MAIN_DB_PREFIX) !== 0) {
+        $table_name = MAIN_DB_PREFIX . $table_name;
+    }
+
+    $cache_key = 'column_' . $table_name . '.' . $column_name;
+
+    // Vérifier le cache
+    if (isset($MV3_DB_SCHEMA_CACHE[$cache_key])) {
+        return $MV3_DB_SCHEMA_CACHE[$cache_key];
+    }
+
+    // Requête pour vérifier l'existence
+    $sql = "SHOW COLUMNS FROM ".$table_name." LIKE '".$db->escape($column_name)."'";
+    $resql = $db->query($sql);
+
+    $exists = ($resql && $db->num_rows($resql) > 0);
+
+    // Mettre en cache
+    $MV3_DB_SCHEMA_CACHE[$cache_key] = $exists;
+
+    return $exists;
+}
+
+/**
+ * Construit un champ SQL conditionnel selon l'existence de la colonne
+ * Retourne soit "table.column" soit "valeur_par_defaut AS column"
+ *
+ * @param object $db Instance de base de données
+ * @param string $table_name Nom de la table
+ * @param string $column_name Nom de la colonne
+ * @param mixed $default_value Valeur par défaut si la colonne n'existe pas (NULL, '', 0, etc.)
+ * @param string $alias_prefix Préfixe de table (ex: 'a' pour 'a.note_private')
+ * @return string Fragment SQL à insérer dans la requête SELECT
+ */
+function mv3_select_column($db, $table_name, $column_name, $default_value = null, $alias_prefix = '') {
+    $exists = mv3_column_exists($db, $table_name, $column_name);
+
+    if ($exists) {
+        if ($alias_prefix) {
+            return $alias_prefix . '.' . $column_name;
+        }
+        return $column_name;
+    } else {
+        // Colonne n'existe pas, retourner valeur par défaut avec alias
+        if ($default_value === null) {
+            $value = 'NULL';
+        } elseif (is_string($default_value)) {
+            $value = "'" . $db->escape($default_value) . "'";
+        } elseif (is_numeric($default_value)) {
+            $value = $default_value;
+        } else {
+            $value = 'NULL';
+        }
+
+        return $value . ' AS ' . $column_name;
+    }
+}
+
+/**
+ * Retourne un tableau vide JSON avec le bon format si la table n'existe pas
+ * Et enregistre l'erreur dans les logs pour diagnostic
+ *
+ * @param object $db Instance de base de données
+ * @param string $table_name Nom de la table à vérifier
+ * @param string $endpoint_name Nom de l'endpoint pour les logs
+ * @return bool true si la table existe, false si elle n'existe pas (et response envoyée)
+ */
+function mv3_check_table_or_empty($db, $table_name, $endpoint_name = 'unknown') {
+    if (!mv3_table_exists($db, $table_name)) {
+        error_log("[MV3 $endpoint_name] Table manquante: $table_name");
+        http_response_code(200);
+        echo json_encode([], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    return true;
+}

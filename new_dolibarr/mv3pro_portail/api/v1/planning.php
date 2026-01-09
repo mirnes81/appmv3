@@ -47,13 +47,12 @@ if (!$user_id) {
 
 $events = [];
 
-// Vérifier si la colonne note_private existe
-$columns_check = $db->query("SHOW COLUMNS FROM ".MAIN_DB_PREFIX."actioncomm LIKE 'note_private'");
-$has_note_private = ($columns_check && $db->num_rows($columns_check) > 0);
+// Utiliser le helper pour construire la requête avec colonnes conditionnelles
+$note_private_field = mv3_select_column($db, 'actioncomm', 'note_private', '', 'a');
 
 // Requête SQL pour récupérer les événements
 $sql = "SELECT DISTINCT a.id, a.label, a.datep, a.datep2, a.fulldayevent, a.location,
-        ".($has_note_private ? "a.note_private" : "'' as note_private").", a.percent,
+        ".$note_private_field.", a.percent,
         s.nom as client_nom, s.rowid as client_id,
         p.ref as projet_ref, p.title as projet_title, p.rowid as projet_id
         FROM ".MAIN_DB_PREFIX."actioncomm a
@@ -78,12 +77,18 @@ $resql = $db->query($sql);
 if (!$resql) {
     // Log l'erreur SQL pour debug
     $error_msg = 'Erreur lors de la récupération du planning';
-    if ($db->lasterror()) {
-        $error_msg .= ': ' . $db->lasterror();
+    $db_error = $db->lasterror();
+    if ($db_error) {
+        $error_msg .= ': ' . $db_error;
     }
     error_log('[MV3 Planning] SQL Error: ' . $error_msg);
     error_log('[MV3 Planning] SQL Query: ' . $sql);
-    json_error($error_msg . ' | SQL: ' . $sql, 'DATABASE_ERROR', 500);
+
+    // Retourner un tableau vide plutôt qu'une erreur 500
+    // pour éviter de casser l'app si la structure de BDD est différente
+    http_response_code(200);
+    echo json_encode([], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
 while ($obj = $db->fetch_object($resql)) {
