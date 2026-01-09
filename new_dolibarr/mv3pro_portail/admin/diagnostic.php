@@ -69,7 +69,7 @@ function perform_real_login($api_url, $credentials) {
     ];
 
     try {
-        $ch = curl_init($api_url.'auth_login.php');
+        $ch = curl_init($api_url.'auth/login.php');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($credentials));
@@ -87,10 +87,10 @@ function perform_real_login($api_url, $credentials) {
             $json = json_decode($response, true);
             if ($json && isset($json['success']) && $json['success']) {
                 $result['success'] = true;
-                $result['token'] = $json['token'] ?? null;
-                $result['user'] = $json['user'] ?? null;
+                $result['token'] = $json['data']['token'] ?? $json['token'] ?? null;
+                $result['user'] = $json['data']['user'] ?? $json['user'] ?? null;
             } else {
-                $result['error'] = $json['error'] ?? 'Login failed';
+                $result['error'] = $json['error'] ?? $json['message'] ?? 'Login failed';
             }
         } else {
             $result['error'] = 'No response from server';
@@ -113,7 +113,7 @@ function perform_real_logout($api_url, $token) {
     ];
 
     try {
-        $ch = curl_init($api_url.'auth_logout.php');
+        $ch = curl_init($api_url.'auth/logout.php');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -135,7 +135,7 @@ function perform_real_logout($api_url, $token) {
             if ($json && isset($json['success']) && $json['success']) {
                 $result['success'] = true;
             } else {
-                $result['error'] = $json['error'] ?? 'Logout failed';
+                $result['error'] = $json['error'] ?? $json['message'] ?? 'Logout failed';
             }
         }
     } catch (Exception $e) {
@@ -446,15 +446,19 @@ if ($action == 'run_tests') {
     // NIVEAU 1 : SMOKE TESTS
     if ($test_level == 'all' || $test_level == 'level1') {
         // Test Auth Login
+        $user_name = '';
+        if ($login_result['user']) {
+            $user_name = $login_result['user']['name'] ?? ($login_result['user']['firstname'].' '.$login_result['user']['lastname']) ?? $login_result['user']['email'] ?? '';
+        }
         $result = [
-            'name' => '🔐 Auth - Login (POST JSON)',
+            'name' => '🔐 Auth - Login (POST JSON) - /api/v1/auth/login.php',
             'status' => $login_result['success'] ? 'OK' : 'ERROR',
             'http_code' => $login_result['http_code'],
             'response_time' => 0,
             'error_message' => $login_result['error'],
             'debug_id' => null,
             'sql_error' => null,
-            'details' => $login_result['user'] ? ['User: '.$login_result['user']['nom']] : []
+            'details' => $login_result['user'] ? ['User: '.trim($user_name), 'Token: '.substr($auth_token ?? '', 0, 16).'...'] : []
         ];
         $all_results['level1_auth'][] = $result;
         $stats['total']++;
