@@ -55,37 +55,37 @@ if ($table_exists) {
     $resql = $db->query($sql);
 
     if ($resql && $db->num_rows($resql) > 0) {
-        $user = $db->fetch_object($resql);
+        $mobile_user = $db->fetch_object($resql);
 
-        if (!$user->is_active) {
+        if (!$mobile_user->is_active) {
             log_debug("Mobile user account inactive");
             json_error('Compte désactivé. Contactez votre administrateur.', 'ACCOUNT_INACTIVE', 403, [
                 'reason' => 'user_inactive',
                 'email' => $email,
-                'user_id' => (int)$user->rowid,
+                'user_id' => (int)$mobile_user->rowid,
                 'hint' => 'Le compte mobile est désactivé (is_active = 0)'
             ]);
         }
 
-        if ($user->locked_until && strtotime($user->locked_until) > time()) {
-            $remaining = ceil((strtotime($user->locked_until) - time()) / 60);
+        if ($mobile_user->locked_until && strtotime($mobile_user->locked_until) > time()) {
+            $remaining = ceil((strtotime($mobile_user->locked_until) - time()) / 60);
             log_debug("Mobile user account locked for ".$remaining." minutes");
             json_error("Compte verrouillé temporairement. Réessayez dans $remaining minute(s).", 'ACCOUNT_LOCKED', 403, [
                 'reason' => 'locked',
                 'email' => $email,
-                'user_id' => (int)$user->rowid,
-                'locked_until' => $user->locked_until,
+                'user_id' => (int)$mobile_user->rowid,
+                'locked_until' => $mobile_user->locked_until,
                 'remaining_minutes' => $remaining,
                 'hint' => 'Le compte est verrouillé après trop de tentatives échouées'
             ]);
         }
 
-        if (password_verify($password, $user->password_hash)) {
+        if (password_verify($password, $mobile_user->password_hash)) {
             log_debug("Mobile user password verified");
 
             $db->query("UPDATE ".MAIN_DB_PREFIX."mv3_mobile_users
                         SET login_attempts = 0, locked_until = NULL, last_login = NOW()
-                        WHERE rowid = ".(int)$user->rowid);
+                        WHERE rowid = ".(int)$mobile_user->rowid);
 
             $token = bin2hex(random_bytes(32));
             $expires_at = date('Y-m-d H:i:s', time() + (30 * 24 * 3600));
@@ -96,7 +96,7 @@ if ($table_exists) {
                 $sql_session = "INSERT INTO ".MAIN_DB_PREFIX."mv3_mobile_sessions
                                 (user_id, session_token, device_info, ip_address, expires_at, last_activity)
                                 VALUES (
-                                    ".(int)$user->rowid.",
+                                    ".(int)$mobile_user->rowid.",
                                     '".$db->escape($token)."',
                                     '".$db->escape($_SERVER['HTTP_USER_AGENT'] ?? '')."',
                                     '".$db->escape($_SERVER['REMOTE_ADDR'])."',
@@ -113,14 +113,14 @@ if ($table_exists) {
             }
 
             $user_data = [
-                'id' => (int)$user->rowid,
-                'user_rowid' => (int)$user->rowid,
-                'email' => $user->email,
-                'firstname' => $user->firstname,
-                'lastname' => $user->lastname,
-                'name' => trim($user->firstname.' '.$user->lastname),
-                'role' => $user->role,
-                'dolibarr_user_id' => (int)$user->dolibarr_user_id,
+                'id' => (int)$mobile_user->rowid,
+                'user_rowid' => (int)$mobile_user->rowid,
+                'email' => $mobile_user->email,
+                'firstname' => $mobile_user->firstname,
+                'lastname' => $mobile_user->lastname,
+                'name' => trim($mobile_user->firstname.' '.$mobile_user->lastname),
+                'role' => $mobile_user->role,
+                'dolibarr_user_id' => (int)$mobile_user->dolibarr_user_id,
                 'auth_mode' => 'mobile'
             ];
 
@@ -129,7 +129,7 @@ if ($table_exists) {
         } else {
             log_debug("Mobile user password failed");
 
-            $attempts = (int)$user->login_attempts + 1;
+            $attempts = (int)$mobile_user->login_attempts + 1;
             $sql_update = "UPDATE ".MAIN_DB_PREFIX."mv3_mobile_users SET login_attempts = ".$attempts;
 
             if ($attempts >= 5) {
@@ -137,14 +137,14 @@ if ($table_exists) {
                 $sql_update .= ", locked_until = '".$locked_until."'";
             }
 
-            $sql_update .= " WHERE rowid = ".(int)$user->rowid;
+            $sql_update .= " WHERE rowid = ".(int)$mobile_user->rowid;
             $db->query($sql_update);
 
             if ($attempts >= 5) {
                 json_error('Compte verrouillé pour 15 minutes après 5 tentatives échouées.', 'TOO_MANY_ATTEMPTS', 403, [
                     'reason' => 'locked',
                     'email' => $email,
-                    'user_id' => (int)$user->rowid,
+                    'user_id' => (int)$mobile_user->rowid,
                     'attempts' => $attempts,
                     'locked_until' => $locked_until,
                     'hint' => 'Le compte est verrouillé après 5 tentatives échouées'
@@ -154,7 +154,7 @@ if ($table_exists) {
             json_error('Mot de passe incorrect.', 'INVALID_PASSWORD', 401, [
                 'reason' => 'password_mismatch',
                 'email' => $email,
-                'user_id' => (int)$user->rowid,
+                'user_id' => (int)$mobile_user->rowid,
                 'attempts' => $attempts,
                 'hint' => 'Le mot de passe ne correspond pas au hash stocké'
             ]);
