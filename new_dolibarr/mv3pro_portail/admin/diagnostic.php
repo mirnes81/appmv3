@@ -999,6 +999,16 @@ if ($action == 'run_tests' && !empty($all_results)) {
 
     print '<br>';
 
+    // Lien vers diagnostic approfondi si erreurs détectées
+    if ($stats['error'] > 0 || $stats['warning'] > 0) {
+        print '<div class="info" style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 15px; margin-bottom: 20px;">';
+        print '<h3>🔬 Analyse approfondie des erreurs</h3>';
+        print '<p>Des erreurs ou warnings ont été détectés. Pour une analyse détaillée avec fichiers sources, erreurs SQL complètes et stack traces:</p>';
+        print '<p><a href="diagnostic_deep.php" class="butAction">🔬 Lancer le diagnostic approfondi</a></p>';
+        print '<p><small>Le diagnostic approfondi affiche: fichier PHP exact, numéro de ligne, erreur SQL, stack trace, vérifications BDD, historique des erreurs</small></p>';
+        print '</div>';
+    }
+
     // Afficher les résultats par niveau
     if (!empty($all_results['level1_auth'])) {
         display_test_results('🔐 NIVEAU 1 - Authentification : Login/Logout', $all_results['level1_auth'], true);
