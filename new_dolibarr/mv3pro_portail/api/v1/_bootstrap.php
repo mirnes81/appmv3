@@ -111,6 +111,17 @@ require_once __DIR__ . '/debug_log.php';
 global $db, $conf, $user, $langs;
 
 /**
+ * Helper pour logger des messages de debug
+ *
+ * @param string $message Message à logger
+ * @param array $data Données supplémentaires (optionnel)
+ * @return void
+ */
+function log_debug($message, $data = null) {
+    DebugLogger::log($message, $data);
+}
+
+/**
  * Retourne une réponse JSON de succès
  *
  * @param mixed $data Données à retourner

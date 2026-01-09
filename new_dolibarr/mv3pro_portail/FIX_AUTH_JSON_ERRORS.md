@@ -21,7 +21,26 @@
 
 ## Solutions implémentées
 
-### 1. Gestionnaires d'erreurs JSON dans `_bootstrap.php`
+### 1. Fonction `log_debug()` manquante
+
+**Problème critique** : `login.php` appelle `log_debug()` (ligne 38 et autres) mais cette fonction n'était PAS définie.
+
+**Symptôme** : Erreur fatale PHP "Call to undefined function log_debug()" → pas de réponse JSON du serveur → "No response from server" dans le diagnostic.
+
+**Solution** : Ajout de la fonction `log_debug()` dans `_bootstrap.php` (après chargement de debug_log.php)
+
+```php
+/**
+ * Helper pour logger des messages de debug
+ */
+function log_debug($message, $data = null) {
+    DebugLogger::log($message, $data);
+}
+```
+
+**Impact** : ✅ BLOQUEUR résolu - login.php peut maintenant s'exécuter sans crash.
+
+### 2. Gestionnaires d'erreurs JSON dans `_bootstrap.php`
 
 **Fichier** : `/api/v1/_bootstrap.php`
 
@@ -307,11 +326,12 @@ Une fois le login fonctionnel, le diagnostic peut :
 ## Fichiers modifiés
 
 ### 1. `/api/v1/_bootstrap.php`
-**Lignes ajoutées** : 22-76 (55 lignes)
+**Lignes ajoutées** : 22-122 (101 lignes)
 **Changements** :
-- Ajout `set_error_handler()` (lignes 22-36)
-- Ajout `register_shutdown_function()` (lignes 38-58)
-- Ajout `set_exception_handler()` (lignes 60-76)
+- Ajout `set_error_handler()` (lignes 22-36) ← Protection erreurs PHP
+- Ajout `register_shutdown_function()` (lignes 38-58) ← Protection erreurs fatales
+- Ajout `set_exception_handler()` (lignes 60-76) ← Protection exceptions
+- 🔴 **CRITIQUE** : Ajout fonction `log_debug()` (lignes 113-122) ← Fix bloqueur
 
 ### 2. `/api/v1/auth/login.php`
 **Lignes modifiées** : 78-101
@@ -320,6 +340,15 @@ Une fois le login fonctionnel, le diagnostic peut :
 - Condition `if ($sessions_table_exists)` autour de INSERT (lignes 83-101)
 - Log détaillé si échec (ligne 96)
 - Message d'erreur avec détails SQL (ligne 97)
+
+### Analyse de la cause racine
+
+**Erreur** : "No response from server"
+**Cause** : `login.php` appelait `log_debug()` aux lignes 38, 47, 72, 111, 134, etc.
+**Problème** : Cette fonction n'était définie NULLE PART
+**Résultat** : PHP Fatal Error: Call to undefined function log_debug()
+**Impact** : Le serveur crashait avant de pouvoir retourner du JSON
+**Fix** : Ajout de `log_debug()` comme wrapper de `DebugLogger::log()`
 
 ---
 

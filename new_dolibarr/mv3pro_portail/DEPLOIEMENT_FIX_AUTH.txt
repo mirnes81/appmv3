@@ -18,6 +18,14 @@ Diagnostic QA bloqué par :
  SOLUTIONS APPLIQUÉES
 ───────────────────────────────────────────────────────────────
 
+🔴 CORRECTION CRITIQUE : Fonction log_debug() manquante
+   ❌ login.php appelait log_debug() qui n'existait pas
+   → Erreur fatale PHP: Call to undefined function
+   → "No response from server"
+
+   ✅ Ajout fonction log_debug() dans _bootstrap.php
+   → login.php peut maintenant s'exécuter
+
 1. Gestionnaires d'erreurs JSON dans _bootstrap.php
    ✅ set_error_handler() pour E_WARNING, E_NOTICE
    ✅ register_shutdown_function() pour E_ERROR, E_PARSE

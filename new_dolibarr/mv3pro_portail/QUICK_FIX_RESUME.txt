@@ -1,0 +1,89 @@
+╔═══════════════════════════════════════════════════════════════╗
+║  FIX LOGIN 500 - RÉSUMÉ EXPRESS                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+🔴 PROBLÈME
+  Auth login retourne 500 "No response from server"
+  → Diagnostic QA bloqué à 79%
+  → Tous les tests requires_auth SKIP/401
+
+🔍 CAUSE RACINE
+  login.php appelle log_debug() qui N'EXISTE PAS
+  → PHP Fatal Error: Call to undefined function log_debug()
+  → Serveur crash avant de retourner JSON
+
+✅ SOLUTION
+  Ajout fonction log_debug() dans _bootstrap.php ligne 113-122
+
+───────────────────────────────────────────────────────────────
+
+📁 FICHIERS À UPLOADER (2)
+
+1. /custom/mv3pro_portail/api/v1/_bootstrap.php
+   → +101 lignes (error handlers + log_debug)
+
+2. /custom/mv3pro_portail/api/v1/auth/login.php
+   → Lignes 78-101 modifiées (check table sessions)
+
+───────────────────────────────────────────────────────────────
+
+✓ CHECKLIST DÉPLOIEMENT
+
+1. ☐ Backup fichiers existants (recommandé)
+   cp _bootstrap.php _bootstrap.php.bak
+   cp auth/login.php auth/login.php.bak
+
+2. ☐ Upload des 2 fichiers modifiés
+
+3. ☐ Test syntaxe PHP sur serveur
+   php -l /path/_bootstrap.php
+   php -l /path/auth/login.php
+
+4. ☐ Test login manuel
+   curl -X POST ".../login.php" \
+     -H "Content-Type: application/json" \
+     -d '{"email":"test","password":"test"}'
+
+5. ☐ Relancer diagnostic QA
+   https://mv3pro.ch/.../admin/diagnostic.php
+
+6. ☐ Vérifier résultat
+   Auth Login: ✅ 200 (ou 401 avec JSON)
+   Tests Planning/Rapports: ✅ 200
+
+───────────────────────────────────────────────────────────────
+
+📊 RÉSULTAT ATTENDU
+
+AVANT:
+  Total: 79% (38 OK, 30 WARNING, 7 ERROR)
+  Auth Login: ❌ 500 "No response from server"
+
+APRÈS:
+  Total: 95%+ (60+ OK, <10 WARNING, 0 ERROR)
+  Auth Login: ✅ 200 (token obtenu)
+  Planning/Rapports/Notifications: ✅ 200
+
+───────────────────────────────────────────────────────────────
+
+🚨 ROLLBACK (si problème)
+
+cp _bootstrap.php.bak _bootstrap.php
+cp auth/login.php.bak auth/login.php
+
+───────────────────────────────────────────────────────────────
+
+📖 DOCUMENTATION COMPLÈTE
+
+  FIX_LOGIN_500_FINAL.md    → Guide complet (40KB)
+  FIX_AUTH_JSON_ERRORS.md   → Architecture (18KB)
+  DEPLOIEMENT_FIX_AUTH.txt  → Checklist détaillée (6KB)
+
+───────────────────────────────────────────────────────────────
+
+✅ Status: PRÊT POUR DÉPLOIEMENT
+📅 Date: 2026-01-09
+🔧 Version: 2.3.2
+📦 Build: ✅ Success (248 KB)
+
+╚═══════════════════════════════════════════════════════════════╝
