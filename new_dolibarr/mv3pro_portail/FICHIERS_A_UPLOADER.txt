@@ -1,0 +1,108 @@
+=====================================================
+FICHIERS À UPLOADER - FIX 404 AUTH + PLANNING
+=====================================================
+
+PRIORITÉ : CRITIQUE
+Date : 2026-01-09
+Version : 2.2.0
+Temps estimé : 10-15 minutes
+
+-----------------------------------------------------
+TOTAL : 7 FICHIERS
+-----------------------------------------------------
+
+GROUPE 1 - AUTH (4 fichiers - NOUVEAU RÉPERTOIRE)
+--------------------------------------------------
+
+Créer le répertoire :
+  /custom/mv3pro_portail/api/v1/auth/
+
+Uploader dans ce répertoire :
+
+1. auth/login.php
+   Source : api/v1/auth/login.php
+   Destination : /custom/mv3pro_portail/api/v1/auth/login.php
+
+2. auth/me.php
+   Source : api/v1/auth/me.php
+   Destination : /custom/mv3pro_portail/api/v1/auth/me.php
+
+3. auth/logout.php
+   Source : api/v1/auth/logout.php
+   Destination : /custom/mv3pro_portail/api/v1/auth/logout.php
+
+4. auth/.htaccess
+   Source : api/v1/auth/.htaccess
+   Destination : /custom/mv3pro_portail/api/v1/auth/.htaccess
+
+GROUPE 2 - PLANNING (2 fichiers - RÉPERTOIRE EXISTANT)
+------------------------------------------------------
+
+Uploader dans : /custom/mv3pro_portail/api/v1/
+
+5. planning_view.php
+   Source : api/v1/planning_view.php
+   Destination : /custom/mv3pro_portail/api/v1/planning_view.php
+
+6. planning_file.php
+   Source : api/v1/planning_file.php
+   Destination : /custom/mv3pro_portail/api/v1/planning_file.php
+
+-----------------------------------------------------
+PERMISSIONS
+-----------------------------------------------------
+
+Tous les fichiers : chmod 644
+
+-----------------------------------------------------
+TESTS RAPIDES
+-----------------------------------------------------
+
+Test 1 - Fichiers existent (doit retourner 401, pas 404) :
+  https://mv3pro.ch/custom/mv3pro_portail/api/v1/auth/login.php
+  https://mv3pro.ch/custom/mv3pro_portail/api/v1/planning_view.php
+
+Test 2 - Login API :
+  curl -X POST https://mv3pro.ch/custom/mv3pro_portail/api/v1/auth/login.php \
+    -H "Content-Type: application/json" \
+    -d '{"email":"admin@test.local","password":"Test2026!"}'
+
+  Résultat attendu : {"success":true,"data":{"token":"...","user":{...}}}
+
+Test 3 - PWA :
+  1. Ouvrir : https://mv3pro.ch/custom/mv3pro_portail/pwa_dist/
+  2. Se connecter
+  3. Aller dans Planning → Cliquer sur événement
+  4. Vérifier que le détail s'affiche
+
+-----------------------------------------------------
+FONCTIONNALITÉS DÉBLOCÉES
+-----------------------------------------------------
+
+✅ Login via API v1 (endpoint unifié)
+✅ Authentification diagnostic QA
+✅ Détail événements planning
+✅ Fichiers joints événements
+✅ Tests de diagnostic passent à 95-100%
+
+-----------------------------------------------------
+DOCUMENTATION COMPLÈTE
+-----------------------------------------------------
+
+Voir : GUIDE_DEPLOIEMENT_COMPLET.md
+  - Instructions détaillées
+  - Architecture complète
+  - Troubleshooting complet
+  - Tests de validation
+
+-----------------------------------------------------
+SUPPORT
+-----------------------------------------------------
+
+En cas de problème :
+  1. Vérifier logs : /path/to/dolibarr/documents/mv3pro_portail/debug.log
+  2. Vérifier .htaccess : /custom/mv3pro_portail/api/v1/auth/.htaccess
+  3. Vérifier permissions : ls -la auth/*.php
+  4. Consulter GUIDE_DEPLOIEMENT_COMPLET.md
+
+=====================================================
