@@ -1,6 +1,6 @@
 <?php
 /**
- * Configuration CORS centralisée pour les APIs
+ * Configuration CORS centralisée pour les APIs - VERSION CORRIGÉE
  *
  * IMPORTANT: En production, restreindre Access-Control-Allow-Origin
  * à votre domaine spécifique au lieu de "*"
@@ -40,6 +40,7 @@ function setCorsHeaders($allowed_origins = []) {
     }
 
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    // ✅ CORRECTION : Ajout de X-Auth-Token et X-MV3-Debug
     header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token, X-MV3-Debug, X-Client-Info, Apikey');
     header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Max-Age: 86400');
