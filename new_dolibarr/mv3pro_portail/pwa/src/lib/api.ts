@@ -315,3 +315,9 @@ export const api = {
     throw new ApiError('Endpoint non disponible (à créer)', 501);
   },
 };
+
+/**
+ * Client API générique pour les appels non couverts par l'objet `api`
+ * Usage: apiClient('/planning_view.php?id=123')
+ */
+export const apiClient = apiFetch;
