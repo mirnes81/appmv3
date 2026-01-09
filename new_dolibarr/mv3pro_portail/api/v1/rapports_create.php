@@ -46,8 +46,27 @@ require_rights('write', $auth);
 // Récupérer le body JSON
 $data = get_json_body(true);
 
-// Validation des champs obligatoires
-require_param($data['projet_id'] ?? null, 'projet_id');
+// Support des deux formats de champs (PWA et ancienne API)
+if (!isset($data['date']) && isset($data['date_rapport'])) {
+    $data['date'] = $data['date_rapport'];
+}
+if (!isset($data['gps_latitude']) && isset($data['latitude'])) {
+    $data['gps_latitude'] = $data['latitude'];
+}
+if (!isset($data['gps_longitude']) && isset($data['longitude'])) {
+    $data['gps_longitude'] = $data['longitude'];
+}
+if (!isset($data['meteo_temperature']) && isset($data['temperature'])) {
+    $data['meteo_temperature'] = $data['temperature'];
+}
+if (!isset($data['meteo_condition']) && isset($data['meteo'])) {
+    $data['meteo_condition'] = $data['meteo'];
+}
+if (!isset($data['travaux_realises']) && isset($data['description'])) {
+    $data['travaux_realises'] = $data['description'];
+}
+
+// Validation des champs obligatoires (projet_id est maintenant optionnel)
 require_param($data['date'] ?? null, 'date');
 require_param($data['heure_debut'] ?? null, 'heure_debut');
 require_param($data['heure_fin'] ?? null, 'heure_fin');
@@ -69,19 +88,22 @@ if (!$user_id) {
     json_error('Impossible de déterminer l\'ID utilisateur', 'NO_USER_ID', 400);
 }
 
-// Vérifier que le projet existe
-$sql_check = "SELECT p.rowid, p.fk_soc
-              FROM ".MAIN_DB_PREFIX."projet p
-              WHERE p.rowid = ".(int)$data['projet_id']."
-              AND p.entity = ".(int)$conf->entity;
+// Vérifier que le projet existe (si fourni)
+$projet = null;
+if (!empty($data['projet_id'])) {
+    $sql_check = "SELECT p.rowid, p.fk_soc
+                  FROM ".MAIN_DB_PREFIX."projet p
+                  WHERE p.rowid = ".(int)$data['projet_id']."
+                  AND p.entity = ".(int)$conf->entity;
 
-$resql_check = $db->query($sql_check);
+    $resql_check = $db->query($sql_check);
 
-if (!$resql_check || $db->num_rows($resql_check) === 0) {
-    json_error('Projet introuvable', 'PROJECT_NOT_FOUND', 404);
+    if (!$resql_check || $db->num_rows($resql_check) === 0) {
+        json_error('Projet introuvable', 'PROJECT_NOT_FOUND', 404);
+    }
+
+    $projet = $db->fetch_object($resql_check);
 }
-
-$projet = $db->fetch_object($resql_check);
 
 // Démarrer transaction
 $db->begin();
@@ -119,8 +141,8 @@ try {
         '".$db->escape($ref)."',
         ".(int)$conf->entity.",
         ".(int)$user_id.",
-        ".(int)$data['projet_id'].",
-        ".(int)$projet->fk_soc.",
+        ".(!empty($data['projet_id']) ? (int)$data['projet_id'] : 'NULL').",
+        ".($projet ? (int)$projet->fk_soc : 'NULL').",
         '".$db->escape($data['date'])."',
         '".$db->escape($data['heure_debut'])."',
         '".$db->escape($data['heure_fin'])."',
@@ -159,6 +181,37 @@ try {
                       WHERE rowid = ".(int)$rapport_id;
 
         $db->query($sql_meteo);
+    }
+
+    // Gérer les photos si fournies
+    if (!empty($data['photos']) && is_array($data['photos'])) {
+        require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+
+        // Créer le répertoire pour les photos du rapport
+        $upload_dir = $conf->mv3pro_portail->dir_output . '/rapports/' . $rapport_id;
+        if (!is_dir($upload_dir)) {
+            dol_mkdir($upload_dir);
+        }
+
+        foreach ($data['photos'] as $index => $photo_base64) {
+            // Extraire les données base64 (format: data:image/jpeg;base64,...)
+            if (preg_match('/^data:image\/(jpeg|jpg|png);base64,(.+)$/i', $photo_base64, $matches)) {
+                $extension = strtolower($matches[1]);
+                if ($extension === 'jpg') $extension = 'jpeg';
+
+                $image_data = base64_decode($matches[2]);
+
+                if ($image_data !== false) {
+                    $filename = 'photo_' . ($index + 1) . '_' . time() . '.' . $extension;
+                    $filepath = $upload_dir . '/' . $filename;
+
+                    if (file_put_contents($filepath, $image_data)) {
+                        // Photo sauvegardée avec succès
+                        @chmod($filepath, 0644);
+                    }
+                }
+            }
+        }
     }
 
     $frais_id = null;
