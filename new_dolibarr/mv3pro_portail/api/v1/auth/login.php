@@ -59,13 +59,25 @@ if ($table_exists) {
 
         if (!$user->is_active) {
             log_debug("Mobile user account inactive");
-            json_error('Compte désactivé. Contactez votre administrateur.', 'ACCOUNT_INACTIVE', 403);
+            json_error('Compte désactivé. Contactez votre administrateur.', 'ACCOUNT_INACTIVE', 403, [
+                'reason' => 'user_inactive',
+                'email' => $email,
+                'user_id' => (int)$user->rowid,
+                'hint' => 'Le compte mobile est désactivé (is_active = 0)'
+            ]);
         }
 
         if ($user->locked_until && strtotime($user->locked_until) > time()) {
             $remaining = ceil((strtotime($user->locked_until) - time()) / 60);
             log_debug("Mobile user account locked for ".$remaining." minutes");
-            json_error("Compte verrouillé temporairement. Réessayez dans $remaining minute(s).", 'ACCOUNT_LOCKED', 403);
+            json_error("Compte verrouillé temporairement. Réessayez dans $remaining minute(s).", 'ACCOUNT_LOCKED', 403, [
+                'reason' => 'locked',
+                'email' => $email,
+                'user_id' => (int)$user->rowid,
+                'locked_until' => $user->locked_until,
+                'remaining_minutes' => $remaining,
+                'hint' => 'Le compte est verrouillé après trop de tentatives échouées'
+            ]);
         }
 
         if (password_verify($password, $user->password_hash)) {
@@ -129,10 +141,23 @@ if ($table_exists) {
             $db->query($sql_update);
 
             if ($attempts >= 5) {
-                json_error('Compte verrouillé pour 15 minutes après 5 tentatives échouées.', 'TOO_MANY_ATTEMPTS', 403);
+                json_error('Compte verrouillé pour 15 minutes après 5 tentatives échouées.', 'TOO_MANY_ATTEMPTS', 403, [
+                    'reason' => 'locked',
+                    'email' => $email,
+                    'user_id' => (int)$user->rowid,
+                    'attempts' => $attempts,
+                    'locked_until' => $locked_until,
+                    'hint' => 'Le compte est verrouillé après 5 tentatives échouées'
+                ]);
             }
 
-            json_error('Mot de passe incorrect.', 'INVALID_PASSWORD', 401);
+            json_error('Mot de passe incorrect.', 'INVALID_PASSWORD', 401, [
+                'reason' => 'password_mismatch',
+                'email' => $email,
+                'user_id' => (int)$user->rowid,
+                'attempts' => $attempts,
+                'hint' => 'Le mot de passe ne correspond pas au hash stocké'
+            ]);
         }
     }
 }
@@ -150,14 +175,23 @@ if (!$token) {
 
     if (!$resql || $db->num_rows($resql) === 0) {
         log_debug("User not found in any table");
-        json_error('Identifiants invalides', 'INVALID_CREDENTIALS', 401);
+        json_error('Identifiants invalides', 'USER_NOT_FOUND', 401, [
+            'reason' => 'user_not_found',
+            'email' => $email,
+            'hint' => 'Utilisateur non trouvé dans les tables llx_mv3_mobile_users et llx_user'
+        ]);
     }
 
     $user_obj = $db->fetch_object($resql);
 
     if ($user_obj->statut != 1) {
         log_debug("Dolibarr user account inactive");
-        json_error('Compte désactivé', 'ACCOUNT_INACTIVE', 403);
+        json_error('Compte désactivé', 'ACCOUNT_INACTIVE', 403, [
+            'reason' => 'user_inactive',
+            'email' => $email,
+            'user_id' => (int)$user_obj->rowid,
+            'hint' => 'Le compte Dolibarr est désactivé (statut != 1)'
+        ]);
     }
 
     $hash = $user_obj->pass_crypted;
@@ -171,7 +205,12 @@ if (!$token) {
 
     if (!$valid_password) {
         log_debug("Dolibarr user password failed");
-        json_error('Mot de passe incorrect', 'INVALID_PASSWORD', 401);
+        json_error('Mot de passe incorrect', 'INVALID_PASSWORD', 401, [
+            'reason' => 'password_mismatch',
+            'email' => $email,
+            'user_id' => (int)$user_obj->rowid,
+            'hint' => 'Le mot de passe ne correspond pas au hash Dolibarr'
+        ]);
     }
 
     log_debug("Dolibarr user password verified");

@@ -60,7 +60,7 @@ function deep_test_login($api_url, $email, $password, $db) {
     ];
 
     // 1. Vérifier que l'utilisateur existe en BDD
-    $sql = "SELECT id, email, password_hash, nom, prenom, role, active, date_creation";
+    $sql = "SELECT rowid, email, password_hash, firstname, lastname, role, is_active, login_attempts, locked_until, created_at";
     $sql .= " FROM ".MAIN_DB_PREFIX."mv3_mobile_users";
     $sql .= " WHERE email = '".$db->escape($email)."'";
 
@@ -69,11 +69,25 @@ function deep_test_login($api_url, $email, $password, $db) {
         if ($db->num_rows($resql) > 0) {
             $user_obj = $db->fetch_object($resql);
             $result['sql_checks']['user_exists'] = true;
-            $result['sql_checks']['user_id'] = $user_obj->id;
+            $result['sql_checks']['user_id'] = (int)$user_obj->rowid;
             $result['sql_checks']['user_email'] = $user_obj->email;
-            $result['sql_checks']['user_active'] = $user_obj->active;
+            $result['sql_checks']['user_name'] = $user_obj->firstname.' '.$user_obj->lastname;
+            $result['sql_checks']['user_active'] = (int)$user_obj->is_active;
             $result['sql_checks']['user_role'] = $user_obj->role;
+            $result['sql_checks']['login_attempts'] = (int)$user_obj->login_attempts;
+            $result['sql_checks']['locked_until'] = $user_obj->locked_until;
+            $result['sql_checks']['created_at'] = $user_obj->created_at;
             $result['sql_checks']['password_hash_length'] = strlen($user_obj->password_hash);
+
+            // Vérifier si le compte est verrouillé
+            if ($user_obj->locked_until && strtotime($user_obj->locked_until) > time()) {
+                $result['details'][] = '⚠️ COMPTE VERROUILLÉ jusqu\'à '.$user_obj->locked_until;
+            }
+
+            // Vérifier si le compte est actif
+            if ($user_obj->is_active == 0) {
+                $result['details'][] = '⚠️ COMPTE DÉSACTIVÉ (is_active = 0)';
+            }
 
             // Vérifier le format du hash
             if (substr($user_obj->password_hash, 0, 4) === '$2y$') {

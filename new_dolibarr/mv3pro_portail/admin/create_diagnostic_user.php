@@ -42,7 +42,7 @@ if ($action === 'create') {
 
     try {
         // Vérifier si l'utilisateur existe déjà
-        $sql = "SELECT id FROM ".MAIN_DB_PREFIX."mv3_mobile_users WHERE email = '".$db->escape($diag_email)."'";
+        $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."mv3_mobile_users WHERE email = '".$db->escape($diag_email)."'";
         $resql = $db->query($sql);
 
         if ($resql) {
@@ -54,17 +54,19 @@ if ($action === 'create') {
                 // Générer le hash du mot de passe
                 $password_hash = password_hash($diag_password, PASSWORD_DEFAULT);
 
-                // Insérer l'utilisateur
+                // Insérer l'utilisateur avec le VRAI schéma
                 $sql = "INSERT INTO ".MAIN_DB_PREFIX."mv3_mobile_users (";
-                $sql .= " fk_user, email, password_hash, nom, prenom, role, active, date_creation";
+                $sql .= " email, password_hash, dolibarr_user_id, firstname, lastname, role, is_active, login_attempts, created_at, updated_at";
                 $sql .= ") VALUES (";
-                $sql .= " 1,"; // Admin Dolibarr
                 $sql .= " '".$db->escape($diag_email)."',";
                 $sql .= " '".$db->escape($password_hash)."',";
+                $sql .= " 1,"; // Admin Dolibarr
                 $sql .= " 'Diagnostic',";
                 $sql .= " 'QA',";
-                $sql .= " 'admin',";
+                $sql .= " 'diagnostic',";
                 $sql .= " 1,";
+                $sql .= " 0,";
+                $sql .= " NOW(),";
                 $sql .= " NOW()";
                 $sql .= ")";
 
@@ -75,6 +77,10 @@ if ($action === 'create') {
                     $result['success'] = true;
                     $result['message'] = "Utilisateur {$diag_email} créé avec succès !";
                     $result['user_id'] = $db->last_insert_id(MAIN_DB_PREFIX."mv3_mobile_users");
+
+                    // Test immédiat du hash
+                    $test_verify = password_verify($diag_password, $password_hash);
+                    $result['password_verify_test'] = $test_verify ? 'OK' : 'FAIL';
                 } else {
                     $db->rollback();
                     $error = "Erreur SQL lors de la création : ".$db->lasterror();
@@ -96,7 +102,7 @@ if ($action === 'create') {
 $user_exists = false;
 $user_info = null;
 
-$sql = "SELECT id, email, nom, prenom, role, active, date_creation";
+$sql = "SELECT rowid, email, firstname, lastname, role, is_active, login_attempts, locked_until, created_at";
 $sql .= " FROM ".MAIN_DB_PREFIX."mv3_mobile_users";
 $sql .= " WHERE email = '".$db->escape($diag_email)."'";
 
@@ -120,6 +126,13 @@ print '<div class="titre">Création utilisateur de diagnostic QA</div>';
 // Messages
 if (!empty($result['success'])) {
     print '<div class="ok">'.$result['message'].'</div>';
+    if (isset($result['password_verify_test'])) {
+        if ($result['password_verify_test'] === 'OK') {
+            print '<div class="ok">✅ Test password_verify: OK (le hash est valide)</div>';
+        } else {
+            print '<div class="error">❌ Test password_verify: FAIL (problème avec le hash)</div>';
+        }
+    }
 }
 if (!empty($error)) {
     print '<div class="error">'.$error.'</div>';
@@ -141,12 +154,14 @@ print '<h3>Statut utilisateur</h3>';
 if ($user_exists) {
     print '<div class="ok">✅ L\'utilisateur existe dans la base de données</div>';
     print '<table class="border centpercent" style="margin-top: 10px;">';
-    print '<tr><td width="30%">ID</td><td>'.$user_info->id.'</td></tr>';
+    print '<tr><td width="30%">ID (rowid)</td><td>'.$user_info->rowid.'</td></tr>';
     print '<tr><td>Email</td><td>'.$user_info->email.'</td></tr>';
-    print '<tr><td>Nom</td><td>'.$user_info->nom.' '.$user_info->prenom.'</td></tr>';
+    print '<tr><td>Nom</td><td>'.$user_info->firstname.' '.$user_info->lastname.'</td></tr>';
     print '<tr><td>Rôle</td><td>'.$user_info->role.'</td></tr>';
-    print '<tr><td>Actif</td><td>'.($user_info->active ? 'Oui' : 'Non').'</td></tr>';
-    print '<tr><td>Date création</td><td>'.$user_info->date_creation.'</td></tr>';
+    print '<tr><td>Actif (is_active)</td><td>'.($user_info->is_active ? '✅ Oui' : '❌ Non').'</td></tr>';
+    print '<tr><td>Tentatives login</td><td>'.$user_info->login_attempts.($user_info->login_attempts > 0 ? ' ⚠️' : '').'</td></tr>';
+    print '<tr><td>Verrouillé jusqu\'à</td><td>'.($user_info->locked_until ? '🔒 '.$user_info->locked_until : '-').'</td></tr>';
+    print '<tr><td>Date création</td><td>'.$user_info->created_at.'</td></tr>';
     print '</table>';
 
     print '<p style="margin-top: 20px;">';

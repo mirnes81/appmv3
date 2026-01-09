@@ -145,15 +145,59 @@ function json_ok($data, $code = 200) {
  * @param string $message Message d'erreur
  * @param string $code Code d'erreur
  * @param int $http_code Code HTTP (défaut: 400)
+ * @param array $extra_data Données supplémentaires (reason, hint, debug, etc.)
  * @return void
  */
-function json_error($message, $code = 'ERROR', $http_code = 400) {
+function json_error($message, $code = 'ERROR', $http_code = 400, $extra_data = []) {
+    global $db;
+
     http_response_code($http_code);
-    echo json_encode([
+
+    $response = [
         'success' => false,
         'error' => $message,
         'code' => $code
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    ];
+
+    // Générer debug_id unique
+    $debug_id = 'ERR_'.strtoupper(substr(md5(microtime(true).mt_rand()), 0, 12));
+    $response['debug_id'] = $debug_id;
+
+    // Ajouter les données supplémentaires
+    if (!empty($extra_data)) {
+        foreach ($extra_data as $key => $value) {
+            $response[$key] = $value;
+        }
+    }
+
+    // Ajouter debug info si disponible
+    $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = $backtrace[0] ?? null;
+
+    if ($caller) {
+        $response['debug'] = [
+            'file' => basename($caller['file'] ?? 'unknown'),
+            'line' => $caller['line'] ?? 0
+        ];
+    }
+
+    // Ajouter SQL error si disponible
+    if ($db && method_exists($db, 'lasterror')) {
+        $sql_error = $db->lasterror();
+        if (!empty($sql_error)) {
+            $response['sql_error'] = $sql_error;
+        }
+    }
+
+    // Log l'erreur
+    log_error(
+        $code,
+        $message,
+        array_merge(['debug_id' => $debug_id], $extra_data),
+        $db ? $db->lasterror() : null
+    );
+
+    echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
