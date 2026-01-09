@@ -1,122 +1,234 @@
-# 🚀 Démarrage Rapide - MV3 PRO Mobile PWA
+# 🚀 Comment se connecter - GUIDE SIMPLE
 
-## ⚡ Installation en 5 minutes
+## ⚠️ IMPORTANT À SAVOIR
 
-### 1️⃣ Créer les tables (30 secondes)
+**La PWA mobile N'utilise PAS vos identifiants Dolibarr!**
 
-```bash
-mysql -u root -p dolibarr < new_dolibarr/mv3pro_portail/sql/llx_mv3_mobile_users.sql
+Vous devez d'abord créer un "compte mobile" séparé.
+
+---
+
+## 📍 ÉTAPE 1: Créer votre compte mobile
+
+### Allez sur cette page EXACTEMENT:
+
+```
+https://votre-dolibarr.com/custom/mv3pro_portail/mobile_app/admin/manage_users.php
 ```
 
-### 2️⃣ Créer un utilisateur (1 minute)
+**Remplacez `votre-dolibarr.com` par votre vrai domaine!**
 
-**Option rapide:**
-```sql
-USE dolibarr;
-INSERT INTO llx_mv3_mobile_users
-(email, password_hash, firstname, lastname, role, is_active)
-VALUES
-('admin@test.com',
- '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
- 'Admin', 'Test', 'manager', 1);
+Exemples:
+- `https://erp.monentreprise.com/custom/mv3pro_portail/mobile_app/admin/manage_users.php`
+- `https://192.168.1.100/dolibarr/htdocs/custom/mv3pro_portail/mobile_app/admin/manage_users.php`
+
+### Sur cette page:
+
+1. **Connectez-vous d'abord avec votre compte admin Dolibarr** (compte habituel)
+
+2. **Faites défiler EN BAS de la page**
+
+3. **Remplissez le formulaire "Créer un nouvel utilisateur mobile":**
+   - Email: `votre.email@exemple.com` (NOTEZ-LE!)
+   - Mot de passe: `ChoisissezUnMotDePasse` (NOTEZ-LE!)
+   - Prénom: `Votre prénom`
+   - Nom: `Votre nom`
+   - Rôle: Choisissez (employee/manager/admin)
+
+4. **Cliquez sur le bouton "Créer l'utilisateur"**
+
+5. **Vous devriez voir: "Utilisateur créé avec succès"**
+
+**🔴 NOTEZ bien votre email et mot de passe quelque part!**
+
+---
+
+## 📍 ÉTAPE 2: Se connecter à la PWA mobile
+
+### Allez sur l'application EXACTEMENT:
+
+```
+https://votre-dolibarr.com/custom/mv3pro_portail/pwa_dist/
 ```
 
-Login: `admin@test.com` / Mot de passe: `test123`
+**Remplacez `votre-dolibarr.com` par votre vrai domaine!**
 
-**Option interface:**
+Exemples:
+- `https://erp.monentreprise.com/custom/mv3pro_portail/pwa_dist/`
+- `https://192.168.1.100/dolibarr/htdocs/custom/mv3pro_portail/pwa_dist/`
 
-Accédez à: `https://votre-dolibarr.com/custom/mv3pro_portail/mobile_app/admin/create_mobile_user.php`
+### Sur la page de connexion:
 
-### 3️⃣ Copier les fichiers (2 minutes)
+1. **Entrez l'EMAIL que vous avez créé à l'étape 1**
+   (PAS votre login Dolibarr, mais l'email du compte mobile!)
 
-Copiez le dossier `new_dolibarr/mv3pro_portail/` vers votre serveur Dolibarr:
+2. **Entrez le MOT DE PASSE que vous avez créé à l'étape 1**
+   (PAS votre mot de passe Dolibarr, mais celui du compte mobile!)
 
-```bash
-# Exemple avec SCP
-scp -r new_dolibarr/mv3pro_portail/* user@serveur:/var/www/html/dolibarr/htdocs/custom/mv3pro_portail/
+3. **Cliquez sur "Se connecter"**
 
-# Ou avec SFTP/FTP selon votre configuration
-```
+4. **Vous devriez voir le dashboard!**
 
-### 4️⃣ Permissions (30 secondes)
+---
 
-Sur le serveur:
-```bash
-cd /var/www/html/dolibarr/htdocs/custom/mv3pro_portail
-chmod -R 755 pwa_dist/
-chmod -R 755 mobile_app/
-chown -R www-data:www-data .
-```
+## 🎉 Si ça marche:
 
-### 5️⃣ Activer mod_rewrite (30 secondes)
+**Bravo! Vous êtes connecté!**
 
+Sur mobile:
+- **iPhone:** Safari > Partager > "Sur l'écran d'accueil"
+- **Android:** Chrome > Menu (3 points) > "Ajouter à l'écran d'accueil"
+
+---
+
+## 🆘 Ça ne marche PAS? Voici les solutions:
+
+### ❌ Erreur: "Compte mobile introuvable"
+
+**Vous voyez ce message?** Votre compte n'existe pas encore!
+
+**Solution:**
+1. Retournez à l'ÉTAPE 1 ci-dessus
+2. Créez votre compte sur `manage_users.php`
+3. Réessayez de vous connecter
+
+---
+
+### ❌ Erreur: "Email ou mot de passe incorrect"
+
+**3 causes possibles:**
+
+#### Cause 1: Mauvais mot de passe
+
+**Solution:** Réinitialisez votre mot de passe:
+1. Allez sur: `https://votre-dolibarr.com/custom/mv3pro_portail/mobile_app/admin/manage_users.php`
+2. Trouvez votre utilisateur dans la liste
+3. Cliquez sur "Réinitialiser mot de passe"
+4. Entrez un nouveau mot de passe
+5. Réessayez de vous connecter
+
+#### Cause 2: Compte désactivé
+
+Vérifiez sur `manage_users.php` que votre compte est marqué "Actif" (pas "Inactif").
+
+#### Cause 3: Compte verrouillé (trop de tentatives)
+
+Après 5 tentatives échouées, le compte est bloqué 15 minutes.
+
+**Solution rapide:** Sur `manage_users.php`, cliquez sur "Réinitialiser mot de passe" pour débloquer.
+
+---
+
+### ❌ Page blanche (rien ne s'affiche)
+
+**Cause:** Apache mod_rewrite désactivé
+
+**Solution:**
 ```bash
 a2enmod rewrite
 systemctl restart apache2
 ```
 
-### ✅ Test final (30 secondes)
+---
 
-Ouvrez: `https://votre-dolibarr.com/custom/mv3pro_portail/pwa_dist/`
+### ❌ Erreur 404 (page non trouvée)
 
-Login: `admin@test.com` / `test123`
+**Cause:** Les fichiers ne sont pas au bon endroit
+
+**Vérifiez:**
+```bash
+ls /var/www/html/dolibarr/htdocs/custom/mv3pro_portail/pwa_dist/index.html
+```
+
+Si ce fichier n'existe pas, les fichiers ne sont pas installés.
 
 ---
 
-## 🎯 Que faire si ça ne marche pas?
+### ❌ Je n'arrive pas à accéder à manage_users.php
 
-### Problème 1: Page blanche
+**Causes possibles:**
 
-**Solution:**
-```bash
-# Vérifiez que mod_rewrite est activé
-apache2ctl -M | grep rewrite
+1. **Vous n'êtes pas admin Dolibarr**
+   - Solution: Demandez à un administrateur de créer votre compte mobile
 
-# Si pas de résultat:
-a2enmod rewrite
-systemctl restart apache2
+2. **URL incorrecte**
+   - Vérifiez bien: `/custom/mv3pro_portail/mobile_app/admin/manage_users.php`
+   - Pas de `/htdocs/` dans l'URL du navigateur!
+
+3. **Module pas installé**
+   - Vérifiez que le dossier existe sur le serveur
+
+---
+
+## 📋 RÉCAP: Les 2 URLs importantes
+
+**Pour CRÉER votre compte:**
+```
+https://votre-dolibarr.com/custom/mv3pro_portail/mobile_app/admin/manage_users.php
 ```
 
-### Problème 2: Erreur "Table doesn't exist"
-
-**Solution:**
-```bash
-# Vérifiez que les tables existent
-mysql -u root -p dolibarr -e "SHOW TABLES LIKE 'llx_mv3_mobile%';"
-
-# Si vide, créez-les:
-mysql -u root -p dolibarr < new_dolibarr/mv3pro_portail/sql/llx_mv3_mobile_users.sql
+**Pour vous CONNECTER:**
 ```
-
-### Problème 3: Erreur CORS ou API
-
-**Solution:**
-Ouvrez F12 dans votre navigateur, regardez l'onglet Console et Network.
-
-Copiez l'erreur exacte et consultez: `DIAGNOSTIC_ET_INSTALLATION.md`
-
-### Problème 4: "Impossible de charger Dolibarr"
-
-Le chemin vers `main.inc.php` est incorrect.
-
-**Solution:**
-```bash
-# Testez manuellement
-php -r "require_once '/var/www/html/dolibarr/htdocs/main.inc.php'; echo 'OK';"
+https://votre-dolibarr.com/custom/mv3pro_portail/pwa_dist/
 ```
 
 ---
 
-## 📱 Installation sur téléphone
+## 💡 À RETENIR
 
-1. **Ouvrez l'URL sur votre téléphone**
-2. **Chrome:** Menu > "Ajouter à l'écran d'accueil"
-3. **Safari:** Partager > "Sur l'écran d'accueil"
-4. **Profitez!**
+```
+┌─────────────────────────────────────────────┐
+│                                             │
+│  ❌ Identifiants Dolibarr                  │
+│     ≠                                       │
+│  ✅ Identifiants PWA mobile                │
+│                                             │
+│  Ce sont 2 systèmes différents!            │
+│                                             │
+└─────────────────────────────────────────────┘
+```
+
+**Dolibarr:**
+- Pour: Back-office (admin)
+- Table: `llx_user`
+- Login avec: Identifiant Dolibarr
+
+**PWA Mobile:**
+- Pour: Application mobile (employés)
+- Table: `llx_mv3_mobile_users`
+- Login avec: Email du compte mobile
 
 ---
 
-## 🎨 Personnalisation rapide
+## 🎯 Checklist de vérification
+
+Avant de dire "ça ne marche pas", vérifiez:
+
+- [ ] J'ai créé un compte mobile (pas juste Dolibarr)
+- [ ] J'utilise l'email du compte mobile (pas le login Dolibarr)
+- [ ] J'utilise le mot de passe du compte mobile
+- [ ] J'ai bien les bonnes URLs (avec `/custom/mv3pro_portail/`)
+- [ ] Mon compte est actif sur `manage_users.php`
+- [ ] J'ai essayé de réinitialiser le mot de passe
+- [ ] J'ai vidé le cache (Ctrl+F5)
+- [ ] J'ai essayé dans un autre navigateur
+
+---
+
+## 🔗 Identifiants de test
+
+Si vous avez exécuté le fichier `sql/INSTALLATION_RAPIDE.sql`, un compte test existe:
+
+```
+Email: admin@test.local
+Mot de passe: test123
+```
+
+**Testez avec ce compte d'abord pour vérifier que tout fonctionne!**
+
+---
+
+## 🎨 Personnalisation (optionnel)
 
 ### Changer les couleurs
 
