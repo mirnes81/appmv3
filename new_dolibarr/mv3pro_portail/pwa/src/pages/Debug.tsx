@@ -32,11 +32,28 @@ interface BackendReport {
   test_results: TestResult[];
 }
 
+interface PlanningDebugReport {
+  success: boolean;
+  user_info: {
+    auth_mode: string;
+    mobile_user_id: number | null;
+    dolibarr_user_id: number | null;
+    email: string;
+    name: string;
+    is_unlinked: boolean;
+  };
+  dolibarr_user: any;
+  events_stats: any;
+  events_samples: any[];
+  diagnostic: any[];
+}
+
 export function Debug() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [backendReport, setBackendReport] = useState<BackendReport | null>(null);
   const [frontendTests, setFrontendTests] = useState<TestResult[]>([]);
+  const [planningDebug, setPlanningDebug] = useState<PlanningDebugReport | null>(null);
   const [debugMode, setDebugMode] = useState(
     localStorage.getItem('mv3pro_debug') === 'true'
   );
@@ -123,6 +140,54 @@ export function Debug() {
     setLoading(false);
   };
 
+
+  const testPlanningDebug = async () => {
+    setLoading(true);
+    const token = storage.getToken();
+
+    try {
+      const from = new Date();
+      from.setDate(from.getDate() - 30);
+      const to = new Date();
+      to.setDate(to.getDate() + 60);
+
+      const response = await fetch(
+        `${API_PATHS.base}/planning_debug.php?from=${from.toISOString().split('T')[0]}&to=${to.toISOString().split('T')[0]}`,
+        {
+          headers: {
+            'X-Auth-Token': token || '',
+            Authorization: token ? `Bearer ${token}` : '',
+          },
+        }
+      );
+
+      const data = await response.json();
+      setPlanningDebug(data);
+    } catch (error: any) {
+      setPlanningDebug({
+        success: false,
+        user_info: {
+          auth_mode: 'error',
+          mobile_user_id: null,
+          dolibarr_user_id: null,
+          email: '',
+          name: '',
+          is_unlinked: true,
+        },
+        dolibarr_user: null,
+        events_stats: {},
+        events_samples: [],
+        diagnostic: [
+          {
+            type: 'ERROR',
+            message: 'Erreur lors du diagnostic: ' + error.message,
+          },
+        ],
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const runFullDiagnostic = async () => {
     setLoading(true);
@@ -277,7 +342,24 @@ export function Debug() {
             Frontend API
           </button>
 
-          {(backendReport || frontendTests.length > 0) && (
+          <button
+            onClick={testPlanningDebug}
+            disabled={loading}
+            style={{
+              padding: '12px 24px',
+              background: loading ? '#9ca3af' : '#059669',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Diagnostic Planning
+          </button>
+
+          {(backendReport || frontendTests.length > 0 || planningDebug) && (
             <button
               onClick={exportReport}
               style={{
@@ -597,6 +679,261 @@ export function Debug() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Planning Debug */}
+        {planningDebug && !loading && (
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px' }}>
+              📅 Diagnostic Planning & Lien Utilisateur
+            </h3>
+
+            {/* User Info */}
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                Utilisateur connecté
+              </h4>
+              <div style={{ background: 'white', borderRadius: '8px', padding: '12px', border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>Mode auth:</strong> {planningDebug.user_info.auth_mode}
+                </div>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>Email:</strong> {planningDebug.user_info.email}
+                </div>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>Nom:</strong> {planningDebug.user_info.name}
+                </div>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>ID Mobile:</strong> {planningDebug.user_info.mobile_user_id || 'N/A'}
+                </div>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>ID Dolibarr:</strong>{' '}
+                  <span
+                    style={{
+                      color: planningDebug.user_info.dolibarr_user_id ? '#059669' : '#ef4444',
+                      fontWeight: '600',
+                    }}
+                  >
+                    {planningDebug.user_info.dolibarr_user_id || 'NON LIÉ'}
+                  </span>
+                </div>
+                {planningDebug.user_info.is_unlinked && (
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      padding: '8px',
+                      background: '#fef2f2',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      color: '#991b1b',
+                    }}
+                  >
+                    ⚠️ Compte non lié à un utilisateur Dolibarr. Le planning sera vide.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Dolibarr User */}
+            {planningDebug.dolibarr_user && (
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  Utilisateur Dolibarr lié
+                </h4>
+                <div style={{ background: 'white', borderRadius: '8px', padding: '12px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                    <strong>Login:</strong> {planningDebug.dolibarr_user.login}
+                  </div>
+                  <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                    <strong>Nom:</strong> {planningDebug.dolibarr_user.firstname}{' '}
+                    {planningDebug.dolibarr_user.lastname}
+                  </div>
+                  <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                    <strong>Statut:</strong>{' '}
+                    <span
+                      style={{
+                        color: planningDebug.dolibarr_user.statut === 1 ? '#059669' : '#ef4444',
+                        fontWeight: '600',
+                      }}
+                    >
+                      {planningDebug.dolibarr_user.statut_label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Events Stats */}
+            {planningDebug.events_stats && (
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  Statistiques événements
+                </h4>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                    gap: '8px',
+                  }}
+                >
+                  <div
+                    style={{
+                      background: 'white',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#0891b2' }}>
+                      {planningDebug.events_stats.as_author || 0}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Créés</div>
+                  </div>
+                  <div
+                    style={{
+                      background: 'white',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#059669' }}>
+                      {planningDebug.events_stats.as_action_user || 0}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Assignés</div>
+                  </div>
+                  <div
+                    style={{
+                      background: 'white',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>
+                      {planningDebug.events_stats.as_resource || 0}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Ressources</div>
+                  </div>
+                  <div
+                    style={{
+                      background: '#f0fdf4',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '2px solid #059669',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#059669' }}>
+                      {planningDebug.events_stats.total_in_period || 0}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#047857', marginTop: '4px' }}>Total période</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Diagnostic */}
+            {planningDebug.diagnostic && planningDebug.diagnostic.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Diagnostic</h4>
+                <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                  {planningDebug.diagnostic.map((diag, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '12px',
+                        borderBottom:
+                          idx < planningDebug.diagnostic.length - 1 ? '1px solid #e5e7eb' : 'none',
+                        background:
+                          diag.type === 'ERROR'
+                            ? '#fef2f2'
+                            : diag.type === 'WARNING'
+                            ? '#fffbeb'
+                            : '#f0fdf4',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color:
+                            diag.type === 'ERROR'
+                              ? '#991b1b'
+                              : diag.type === 'WARNING'
+                              ? '#92400e'
+                              : '#047857',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        {getStatusIcon(diag.type)} {diag.message}
+                      </div>
+                      {diag.solution && (
+                        <div
+                          style={{
+                            fontSize: '12px',
+                            color: '#374151',
+                            fontFamily: 'monospace',
+                            marginTop: '4px',
+                          }}
+                        >
+                          {diag.solution}
+                        </div>
+                      )}
+                      {diag.explanation && (
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px', fontSize: '12px', color: '#6b7280' }}>
+                          {diag.explanation.map((exp: string, i: number) => (
+                            <li key={i}>{exp}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Event Samples */}
+            {planningDebug.events_samples && planningDebug.events_samples.length > 0 && (
+              <div>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  Exemples d'événements (max 5)
+                </h4>
+                <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                  {planningDebug.events_samples.map((event, idx) => (
+                    <details
+                      key={idx}
+                      style={{
+                        borderBottom:
+                          idx < planningDebug.events_samples.length - 1 ? '1px solid #e5e7eb' : 'none',
+                      }}
+                    >
+                      <summary
+                        style={{
+                          padding: '12px',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {event.label} - {event.datep}
+                      </summary>
+                      <div style={{ padding: '12px', background: '#f9fafb', fontSize: '12px' }}>
+                        <div><strong>Client:</strong> {event.client || 'N/A'}</div>
+                        <div><strong>Projet:</strong> {event.projet || 'N/A'}</div>
+                        <div><strong>Auteur ID:</strong> {event.fk_user_author}</div>
+                        <div><strong>Assigné ID:</strong> {event.fk_user_action}</div>
+                        <div><strong>Terminé ID:</strong> {event.fk_user_done}</div>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
