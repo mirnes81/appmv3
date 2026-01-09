@@ -83,15 +83,21 @@ switch ($action) {
  * Gère le login
  */
 function handleLogin($db, $conf, $data) {
-    $email = isset($data['email']) ? trim($data['email']) : '';
-    $password = isset($data['password']) ? trim($data['password']) : '';
+    // Normaliser input: trim + lowercase email, ne PAS trim password (espaces intentionnels possibles)
+    $email = isset($data['email']) ? strtolower(trim($data['email'])) : '';
+    $password = isset($data['password']) ? (string)$data['password'] : '';
+
+    // Log pour debug (JAMAIS dans la réponse JSON, seulement error_log serveur)
+    error_log("[MV3 AUTH] Login attempt - email_provided=" . (!empty($email) ? 'yes' : 'no') . " pw_length=" . strlen($password));
 
     if (empty($email) || empty($password)) {
+        error_log("[MV3 AUTH] MISSING_CREDENTIALS email=" . $email);
         jsonResponse(['success' => false, 'message' => 'Email et mot de passe requis'], 400);
     }
 
     // Valider email
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        error_log("[MV3 AUTH] INVALID_EMAIL_FORMAT email=" . $email);
         jsonResponse(['success' => false, 'message' => 'Email invalide'], 400);
     }
 
@@ -105,6 +111,7 @@ function handleLogin($db, $conf, $data) {
     $resql = $db->query($sql);
 
     if (!$resql || $db->num_rows($resql) === 0) {
+        error_log("[MV3 AUTH] USER_NOT_FOUND email=" . $email);
         jsonResponse([
             'success' => false,
             'message' => 'Compte mobile introuvable.',
@@ -115,8 +122,12 @@ function handleLogin($db, $conf, $data) {
 
     $user = $db->fetch_object($resql);
 
+    // Log user trouvé
+    error_log("[MV3 AUTH] USER_FOUND email=" . $email . " rowid=" . $user->rowid . " is_active=" . $user->is_active . " hash_length=" . strlen($user->password_hash));
+
     // Vérifier si compte actif
     if (!$user->is_active) {
+        error_log("[MV3 AUTH] ACCOUNT_INACTIVE email=" . $email . " rowid=" . $user->rowid);
         jsonResponse([
             'success' => false,
             'message' => 'Compte désactivé. Contactez votre administrateur.',
@@ -135,7 +146,11 @@ function handleLogin($db, $conf, $data) {
     }
 
     // Vérifier le mot de passe
-    if (!password_verify($password, $user->password_hash)) {
+    $password_ok = password_verify($password, $user->password_hash);
+
+    if (!$password_ok) {
+        error_log("[MV3 AUTH] PASSWORD_FAIL email=" . $email . " rowid=" . $user->rowid . " pw_length=" . strlen($password) . " hash_prefix=" . substr($user->password_hash, 0, 7));
+
         // Incrémenter tentatives échouées
         $attempts = (int)$user->login_attempts + 1;
 
@@ -167,7 +182,10 @@ function handleLogin($db, $conf, $data) {
         ], 401);
     }
 
-    // Connexion réussie - Réinitialiser tentatives
+    // Connexion réussie
+    error_log("[MV3 AUTH] PASSWORD_OK email=" . $email . " rowid=" . $user->rowid . " - LOGIN SUCCESS");
+
+    // Réinitialiser tentatives
     $db->query("UPDATE ".MAIN_DB_PREFIX."mv3_mobile_users
                 SET login_attempts = 0, locked_until = NULL, last_login = NOW()
                 WHERE rowid = ".(int)$user->rowid);
