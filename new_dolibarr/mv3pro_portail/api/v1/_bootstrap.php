@@ -122,6 +122,37 @@ function log_debug($message, $data = null) {
 }
 
 /**
+ * Helper pour logger des erreurs
+ *
+ * @param string $code Code d'erreur
+ * @param string $message Message d'erreur
+ * @param array $extra_data Données supplémentaires
+ * @param string|null $sql_error Erreur SQL éventuelle
+ * @return void
+ */
+function log_error($code, $message, $extra_data = [], $sql_error = null) {
+    try {
+        $error_data = [
+            'code' => $code,
+            'message' => $message,
+            'extra' => $extra_data,
+        ];
+
+        if ($sql_error) {
+            $error_data['sql_error'] = $sql_error;
+        }
+
+        DebugLogger::log('[ERROR] ' . $message, $error_data);
+    } catch (Exception $e) {
+        // Fallback sur error_log natif si DebugLogger échoue
+        error_log("[MV3PRO ERROR] $code: $message | " . json_encode($extra_data));
+        if ($sql_error) {
+            error_log("[MV3PRO SQL ERROR] $sql_error");
+        }
+    }
+}
+
+/**
  * Retourne une réponse JSON de succès
  *
  * @param mixed $data Données à retourner
@@ -189,13 +220,19 @@ function json_error($message, $code = 'ERROR', $http_code = 400, $extra_data = [
         }
     }
 
-    // Log l'erreur
-    log_error(
-        $code,
-        $message,
-        array_merge(['debug_id' => $debug_id], $extra_data),
-        $db ? $db->lasterror() : null
-    );
+    // Log l'erreur (ne doit jamais casser la réponse)
+    try {
+        log_error(
+            $code,
+            $message,
+            array_merge(['debug_id' => $debug_id], $extra_data),
+            $db ? $db->lasterror() : null
+        );
+    } catch (Exception $e) {
+        // Fallback si le logging échoue - on log avec error_log natif
+        error_log("[MV3PRO CRITICAL] Failed to log error: " . $e->getMessage());
+        error_log("[MV3PRO ERROR] Original error: $code - $message");
+    }
 
     echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
