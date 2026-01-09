@@ -393,13 +393,14 @@ $tests_config = [
         ['name' => '🔌 API - Materiel list', 'url' => $full_api_url.'materiel_list.php', 'method' => 'GET', 'requires_auth' => true],
     ],
     'level1_database' => [
-        ['name' => '🗄️ Table - mv3_config', 'table' => 'mv3_config'],
-        ['name' => '🗄️ Table - mv3_error_log', 'table' => 'mv3_error_log'],
-        ['name' => '🗄️ Table - mv3_mobile_users', 'table' => 'mv3_mobile_users'],
-        ['name' => '🗄️ Table - mv3_mobile_sessions', 'table' => 'mv3_mobile_sessions'],
-        ['name' => '🗄️ Table - mv3_rapport', 'table' => 'mv3_rapport'],
-        ['name' => '🗄️ Table - mv3_materiel', 'table' => 'mv3_materiel'],
-        ['name' => '🗄️ Table - mv3_notifications', 'table' => 'mv3_notifications'],
+        ['name' => '🗄️ Table - mv3_config', 'table' => MAIN_DB_PREFIX.'mv3_config'],
+        ['name' => '🗄️ Table - mv3_error_log', 'table' => MAIN_DB_PREFIX.'mv3_error_log'],
+        ['name' => '🗄️ Table - mv3_mobile_users', 'table' => MAIN_DB_PREFIX.'mv3_mobile_users'],
+        ['name' => '🗄️ Table - mv3_mobile_sessions', 'table' => MAIN_DB_PREFIX.'mv3_mobile_sessions'],
+        ['name' => '🗄️ Table - mv3_rapport', 'table' => MAIN_DB_PREFIX.'mv3_rapport'],
+        ['name' => '🗄️ Table - mv3_materiel', 'table' => MAIN_DB_PREFIX.'mv3_materiel'],
+        ['name' => '🗄️ Table - mv3_notifications', 'table' => MAIN_DB_PREFIX.'mv3_notifications'],
+        ['name' => '🗄️ Table - mv3_sens_pose', 'table' => MAIN_DB_PREFIX.'mv3_sens_pose'],
     ],
     'level1_files' => [
         ['name' => '📁 Config class', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/class/mv3_config.class.php'],
@@ -458,6 +459,24 @@ if ($action == 'run_tests') {
         $all_results['level1_auth'][] = $result;
         $stats['total']++;
         $stats[strtolower($result['status'])]++;
+
+        // Afficher un avertissement si le login a échoué
+        if (!$login_result['success'] || !$auth_token) {
+            $result = [
+                'name' => '⚠️ WARNING - Login failed',
+                'status' => 'WARNING',
+                'http_code' => null,
+                'response_time' => 0,
+                'error_message' => 'Les tests nécessitant authentification seront SKIP. Vérifier credentials dans config (DIAGNOSTIC_USER_EMAIL / DIAGNOSTIC_USER_PASSWORD)',
+                'debug_id' => null,
+                'sql_error' => null,
+                'details' => ['Solution: Créer utilisateur mobile admin diagnostic@test.local']
+            ];
+            $all_results['level1_auth'][] = $result;
+            $stats['total']++;
+            $stats['warning']++;
+        }
+
         // Frontend pages
         foreach ($tests_config['level1_frontend_pages'] as $test) {
             $result = run_http_test($test);
@@ -468,7 +487,25 @@ if ($action == 'run_tests') {
 
         // API lists
         foreach ($tests_config['level1_api_list'] as $test) {
-            $result = run_http_test($test, $auth_token);
+            // Ne passer le token que si le test requiert l'authentification
+            $token_to_use = (!empty($test['requires_auth']) && $test['requires_auth'] === true) ? $auth_token : null;
+
+            // Si le test requiert auth mais qu'on n'a pas de token, afficher un warning
+            if (!empty($test['requires_auth']) && $test['requires_auth'] === true && !$auth_token) {
+                $result = [
+                    'name' => $test['name'],
+                    'status' => 'WARNING',
+                    'http_code' => null,
+                    'response_time' => 0,
+                    'error_message' => 'Auth token not available (login failed)',
+                    'debug_id' => null,
+                    'sql_error' => null,
+                    'details' => ['Skipped - Login required']
+                ];
+            } else {
+                $result = run_http_test($test, $token_to_use);
+            }
+
             $all_results['level1_api_list'][] = $result;
             $stats['total']++;
             $stats[strtolower($result['status'])]++;
