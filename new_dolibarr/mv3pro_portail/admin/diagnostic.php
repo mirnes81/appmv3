@@ -47,26 +47,102 @@ $error_stats = $error_logger->getStats(7);
 // ========================================
 
 /**
- * Récupère un token mobile admin valide pour les tests
+ * Récupère les credentials de diagnostic depuis la config
  */
-function get_test_admin_token($db) {
-    // Chercher un utilisateur mobile admin actif avec session valide
-    $sql = "SELECT s.session_token
-            FROM ".MAIN_DB_PREFIX."mv3_mobile_sessions s
-            INNER JOIN ".MAIN_DB_PREFIX."mv3_mobile_users u ON u.rowid = s.user_id
-            WHERE s.expires_at > NOW()
-            AND u.is_active = 1
-            AND u.role = 'admin'
-            ORDER BY s.expires_at DESC
-            LIMIT 1";
+function get_diagnostic_credentials($mv3_config) {
+    return [
+        'email' => $mv3_config->get('DIAGNOSTIC_USER_EMAIL', 'diagnostic@test.local'),
+        'password' => $mv3_config->get('DIAGNOSTIC_USER_PASSWORD', 'DiagTest2026!')
+    ];
+}
 
-    $resql = $db->query($sql);
-    if ($resql && $db->num_rows($resql) > 0) {
-        $obj = $db->fetch_object($resql);
-        return $obj->session_token;
+/**
+ * Effectue un login réel et retourne le token
+ */
+function perform_real_login($api_url, $credentials) {
+    $result = [
+        'success' => false,
+        'token' => null,
+        'user' => null,
+        'error' => null,
+        'http_code' => null
+    ];
+
+    try {
+        $ch = curl_init($api_url.'auth_login.php');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($credentials));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $result['http_code'] = $http_code;
+
+        if ($response) {
+            $json = json_decode($response, true);
+            if ($json && isset($json['success']) && $json['success']) {
+                $result['success'] = true;
+                $result['token'] = $json['token'] ?? null;
+                $result['user'] = $json['user'] ?? null;
+            } else {
+                $result['error'] = $json['error'] ?? 'Login failed';
+            }
+        } else {
+            $result['error'] = 'No response from server';
+        }
+    } catch (Exception $e) {
+        $result['error'] = $e->getMessage();
     }
 
-    return null;
+    return $result;
+}
+
+/**
+ * Effectue un logout réel
+ */
+function perform_real_logout($api_url, $token) {
+    $result = [
+        'success' => false,
+        'error' => null,
+        'http_code' => null
+    ];
+
+    try {
+        $ch = curl_init($api_url.'auth_logout.php');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'X-Auth-Token: '.$token,
+            'Authorization: Bearer '.$token
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $result['http_code'] = $http_code;
+
+        if ($response) {
+            $json = json_decode($response, true);
+            if ($json && isset($json['success']) && $json['success']) {
+                $result['success'] = true;
+            } else {
+                $result['error'] = $json['error'] ?? 'Logout failed';
+            }
+        }
+    } catch (Exception $e) {
+        $result['error'] = $e->getMessage();
+    }
+
+    return $result;
 }
 
 /**
@@ -361,10 +437,27 @@ $stats = [
 ];
 
 if ($action == 'run_tests') {
-    $auth_token = get_test_admin_token($db);
+    // Obtenir credentials et effectuer login réel
+    $credentials = get_diagnostic_credentials($mv3_config);
+    $login_result = perform_real_login($full_api_url, $credentials);
+    $auth_token = $login_result['token'];
 
     // NIVEAU 1 : SMOKE TESTS
     if ($test_level == 'all' || $test_level == 'level1') {
+        // Test Auth Login
+        $result = [
+            'name' => '🔐 Auth - Login (POST JSON)',
+            'status' => $login_result['success'] ? 'OK' : 'ERROR',
+            'http_code' => $login_result['http_code'],
+            'response_time' => 0,
+            'error_message' => $login_result['error'],
+            'debug_id' => null,
+            'sql_error' => null,
+            'details' => $login_result['user'] ? ['User: '.$login_result['user']['nom']] : []
+        ];
+        $all_results['level1_auth'][] = $result;
+        $stats['total']++;
+        $stats[strtolower($result['status'])]++;
         // Frontend pages
         foreach ($tests_config['level1_frontend_pages'] as $test) {
             $result = run_http_test($test);
@@ -404,35 +497,255 @@ if ($action == 'run_tests') {
         $planning_id = get_real_id($db, 'actioncomm', '1=1');
         $rapport_id = get_real_id($db, 'mv3_rapport', '1=1');
         $notif_id = get_real_id($db, 'mv3_notifications', 'is_read = 0');
+        $sens_pose_id = get_real_id($db, 'mv3_sens_pose', '1=1');
+        $regie_id = get_real_id($db, 'mv3_rapport', "type = 'regie'");
 
-        // Tests API view avec IDs réels
+        // ===== TESTS PLANNING =====
+        // Test Planning list
+        $test = ['name' => '📋 Planning - List', 'url' => $full_api_url.'planning.php', 'method' => 'GET', 'requires_auth' => true];
+        $result = run_http_test($test, $auth_token);
+        $all_results['level2_planning'][] = $result;
+        $stats['total']++;
+        $stats[strtolower($result['status'])]++;
+
+        // Test Planning detail avec ID réel
         if ($planning_id) {
-            $test = ['name' => '🔌 API - Planning view (ID réel: '.$planning_id.')', 'url' => $full_api_url.'planning_view.php?id='.$planning_id, 'method' => 'GET', 'requires_auth' => true];
+            $test = ['name' => '📋 Planning - Detail (ID: '.$planning_id.')', 'url' => $full_api_url.'planning_view.php?id='.$planning_id, 'method' => 'GET', 'requires_auth' => true];
             $result = run_http_test($test, $auth_token);
-            $all_results['level2_api_view'][] = $result;
+            $all_results['level2_planning'][] = $result;
             $stats['total']++;
             $stats[strtolower($result['status'])]++;
+
+            // Test sous-page PWA Planning detail
+            $test = ['name' => '📋 Planning - PWA Detail page #/planning/'.$planning_id, 'url' => $full_pwa_url.'#/planning/'.$planning_id, 'method' => 'GET'];
+            $result = run_http_test($test);
+            $all_results['level2_planning'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+
+            // Test accès fichier attaché planning
+            $sql = "SELECT ecm.filename
+                    FROM ".MAIN_DB_PREFIX."ecm_files ecm
+                    WHERE ecm.src_object_type = 'action'
+                    AND ecm.src_object_id = ".(int)$planning_id."
+                    LIMIT 1";
+            $resql = $db->query($sql);
+            if ($resql && $db->num_rows($resql) > 0) {
+                $obj = $db->fetch_object($resql);
+                $test = ['name' => '📋 Planning - Open attachment ('.$obj->filename.')', 'url' => $full_api_url.'planning_file.php?id='.$planning_id.'&file='.$obj->filename, 'method' => 'GET', 'requires_auth' => true];
+                $result = run_http_test($test, $auth_token);
+                $all_results['level2_planning'][] = $result;
+                $stats['total']++;
+                $stats[strtolower($result['status'])]++;
+            }
         }
 
+        // ===== TESTS RAPPORTS =====
+        // Test Rapports list
+        $test = ['name' => '📝 Rapports - List', 'url' => $full_api_url.'rapports.php', 'method' => 'GET', 'requires_auth' => true];
+        $result = run_http_test($test, $auth_token);
+        $all_results['level2_rapports'][] = $result;
+        $stats['total']++;
+        $stats[strtolower($result['status'])]++;
+
+        // Test Rapport view avec ID réel
         if ($rapport_id) {
-            $test = ['name' => '🔌 API - Rapport view (ID réel: '.$rapport_id.')', 'url' => $full_api_url.'rapports_view.php?id='.$rapport_id, 'method' => 'GET', 'requires_auth' => true];
+            $test = ['name' => '📝 Rapports - View (ID: '.$rapport_id.')', 'url' => $full_api_url.'rapports_view.php?id='.$rapport_id, 'method' => 'GET', 'requires_auth' => true];
             $result = run_http_test($test, $auth_token);
-            $all_results['level2_api_view'][] = $result;
+            $all_results['level2_rapports'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+
+            // Test sous-page PWA Rapport detail
+            $test = ['name' => '📝 Rapports - PWA Detail page #/rapports/'.$rapport_id, 'url' => $full_pwa_url.'#/rapports/'.$rapport_id, 'method' => 'GET'];
+            $result = run_http_test($test);
+            $all_results['level2_rapports'][] = $result;
             $stats['total']++;
             $stats[strtolower($result['status'])]++;
         }
 
-        // Test marquer notification lue
-        if ($notif_id) {
-            $test = [
-                'name' => '🔌 API - Marquer notification lue (ID: '.$notif_id.')',
-                'url' => $full_api_url.'notifications_mark_read.php',
-                'method' => 'POST',
-                'data' => ['notification_id' => $notif_id],
-                'requires_auth' => true
+        // Test Create Rapport (DEV mode admin only)
+        if ($mv3_config->isDevMode() && $user->admin) {
+            $test_rapport_data = [
+                'titre' => 'TEST DIAGNOSTIC - Rapport '.date('Y-m-d H:i:s'),
+                'description' => 'Test créé automatiquement par diagnostic QA',
+                'date_rapport' => date('Y-m-d'),
+                'temps_passe' => '02:00',
+                'type' => 'standard'
             ];
+            $test = ['name' => '📝 Rapports - Create (DEV only)', 'url' => $full_api_url.'rapports_create.php', 'method' => 'POST', 'data' => $test_rapport_data, 'requires_auth' => true];
             $result = run_http_test($test, $auth_token);
-            $all_results['level2_api_actions'][] = $result;
+            $all_results['level2_rapports'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+
+            // Récupérer l'ID du rapport créé pour les tests suivants
+            $created_rapport_id = null;
+            if ($result['status'] == 'OK' && $result['http_code'] == 201) {
+                $created_rapport_id = get_real_id($db, 'mv3_rapport', "titre LIKE 'TEST DIAGNOSTIC%'");
+            }
+
+            // Test Update Rapport
+            if ($created_rapport_id) {
+                $test = ['name' => '📝 Rapports - Update (ID: '.$created_rapport_id.')', 'url' => $full_api_url.'rapports_view.php?id='.$created_rapport_id, 'method' => 'PUT', 'data' => ['description' => 'Description mise à jour par diagnostic'], 'requires_auth' => true];
+                $result = run_http_test($test, $auth_token);
+                $all_results['level2_rapports'][] = $result;
+                $stats['total']++;
+                $stats[strtolower($result['status'])]++;
+
+                // Test Submit Rapport
+                $test = ['name' => '📝 Rapports - Submit (ID: '.$created_rapport_id.')', 'url' => $full_api_url.'rapports_view.php?id='.$created_rapport_id.'&action=submit', 'method' => 'POST', 'requires_auth' => true];
+                $result = run_http_test($test, $auth_token);
+                $all_results['level2_rapports'][] = $result;
+                $stats['total']++;
+                $stats[strtolower($result['status'])]++;
+
+                // Test Delete Rapport
+                $test = ['name' => '📝 Rapports - Delete (ID: '.$created_rapport_id.')', 'url' => $full_api_url.'rapports_view.php?id='.$created_rapport_id, 'method' => 'DELETE', 'requires_auth' => true];
+                $result = run_http_test($test, $auth_token);
+                $all_results['level2_rapports'][] = $result;
+                $stats['total']++;
+                $stats[strtolower($result['status'])]++;
+            }
+        }
+
+        // ===== TESTS NOTIFICATIONS =====
+        // Test Notifications list
+        $test = ['name' => '🔔 Notifications - List', 'url' => $full_api_url.'notifications_list.php', 'method' => 'GET', 'requires_auth' => true];
+        $result = run_http_test($test, $auth_token);
+        $all_results['level2_notifications'][] = $result;
+        $stats['total']++;
+        $stats[strtolower($result['status'])]++;
+
+        // Test Notifications unread count
+        $test = ['name' => '🔔 Notifications - Unread count', 'url' => $full_api_url.'notifications_unread_count.php', 'method' => 'GET', 'requires_auth' => true];
+        $result = run_http_test($test, $auth_token);
+        $all_results['level2_notifications'][] = $result;
+        $stats['total']++;
+        $stats[strtolower($result['status'])]++;
+
+        // Test Create Notification (DEV only)
+        if ($mv3_config->isDevMode() && $user->admin) {
+            $test_user_id = $login_result['user']['id'] ?? 1;
+            $test_notif_data = [
+                'user_id' => $test_user_id,
+                'titre' => 'TEST DIAGNOSTIC - Notification',
+                'message' => 'Test créé par diagnostic QA',
+                'type' => 'info',
+                'priority' => 'normal'
+            ];
+            $test = ['name' => '🔔 Notifications - Create (DEV only)', 'url' => $full_api_url.'notifications_list.php', 'method' => 'POST', 'data' => $test_notif_data, 'requires_auth' => true];
+            $result = run_http_test($test, $auth_token);
+            $all_results['level2_notifications'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+
+            // Récupérer l'ID de la notification créée
+            $created_notif_id = get_real_id($db, 'mv3_notifications', "titre LIKE 'TEST DIAGNOSTIC%'");
+        }
+
+        // Test Mark as read
+        $notif_to_mark = $created_notif_id ?? $notif_id;
+        if ($notif_to_mark) {
+            $test = ['name' => '🔔 Notifications - Mark as read (ID: '.$notif_to_mark.')', 'url' => $full_api_url.'notifications_mark_read.php', 'method' => 'POST', 'data' => ['notification_id' => $notif_to_mark], 'requires_auth' => true];
+            $result = run_http_test($test, $auth_token);
+            $all_results['level2_notifications'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
+
+        // Test Delete Notification (DEV only)
+        if ($created_notif_id && $mv3_config->isDevMode() && $user->admin) {
+            $test = ['name' => '🔔 Notifications - Delete (ID: '.$created_notif_id.')', 'url' => $full_api_url.'notifications_list.php?id='.$created_notif_id, 'method' => 'DELETE', 'requires_auth' => true];
+            $result = run_http_test($test, $auth_token);
+            $all_results['level2_notifications'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
+
+        // ===== TESTS SENS DE POSE =====
+        // Test Sens de pose list
+        $test = ['name' => '📐 Sens de pose - List', 'url' => $full_api_url.'sens_pose_list.php', 'method' => 'GET', 'requires_auth' => true];
+        $result = run_http_test($test, $auth_token);
+        $all_results['level2_sens_pose'][] = $result;
+        $stats['total']++;
+        $stats[strtolower($result['status'])]++;
+
+        // Test Sens de pose view avec ID réel
+        if ($sens_pose_id) {
+            $test = ['name' => '📐 Sens de pose - View (ID: '.$sens_pose_id.')', 'url' => $full_api_url.'sens_pose_view.php?id='.$sens_pose_id, 'method' => 'GET', 'requires_auth' => true];
+            $result = run_http_test($test, $auth_token);
+            $all_results['level2_sens_pose'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+
+            // Test sous-page PWA Sens de pose detail
+            $test = ['name' => '📐 Sens de pose - PWA Detail page #/sens-pose/'.$sens_pose_id, 'url' => $full_pwa_url.'#/sens-pose/'.$sens_pose_id, 'method' => 'GET'];
+            $result = run_http_test($test);
+            $all_results['level2_sens_pose'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
+
+        // Test Create Sens de pose (DEV only)
+        if ($mv3_config->isDevMode() && $user->admin) {
+            $test_sens_pose_data = [
+                'client_name' => 'TEST CLIENT DIAGNOSTIC',
+                'chantier' => 'Chantier test diagnostic',
+                'date_pose' => date('Y-m-d'),
+                'surface_total' => 50.00,
+                'type_pose' => 'simple'
+            ];
+            $test = ['name' => '📐 Sens de pose - Create (DEV only)', 'url' => $full_api_url.'sens_pose_create.php', 'method' => 'POST', 'data' => $test_sens_pose_data, 'requires_auth' => true];
+            $result = run_http_test($test, $auth_token);
+            $all_results['level2_sens_pose'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+
+            // Récupérer l'ID créé
+            $created_sens_pose_id = null;
+            if ($result['status'] == 'OK' && $result['http_code'] == 201) {
+                $created_sens_pose_id = get_real_id($db, 'mv3_sens_pose', "client_name LIKE 'TEST CLIENT DIAGNOSTIC%'");
+            }
+
+            // Test Sign
+            if ($created_sens_pose_id) {
+                $test = ['name' => '📐 Sens de pose - Sign (ID: '.$created_sens_pose_id.')', 'url' => $full_api_url.'sens_pose_signature.php?id='.$created_sens_pose_id, 'method' => 'POST', 'data' => ['signature' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg'], 'requires_auth' => true];
+                $result = run_http_test($test, $auth_token);
+                $all_results['level2_sens_pose'][] = $result;
+                $stats['total']++;
+                $stats[strtolower($result['status'])]++;
+
+                // Test PDF
+                $test = ['name' => '📐 Sens de pose - Generate PDF (ID: '.$created_sens_pose_id.')', 'url' => $full_api_url.'sens_pose_pdf.php?id='.$created_sens_pose_id, 'method' => 'GET', 'requires_auth' => true];
+                $result = run_http_test($test, $auth_token);
+                $all_results['level2_sens_pose'][] = $result;
+                $stats['total']++;
+                $stats[strtolower($result['status'])]++;
+
+                // Test Delete
+                $test = ['name' => '📐 Sens de pose - Delete (ID: '.$created_sens_pose_id.')', 'url' => $full_api_url.'sens_pose_view.php?id='.$created_sens_pose_id, 'method' => 'DELETE', 'requires_auth' => true];
+                $result = run_http_test($test, $auth_token);
+                $all_results['level2_sens_pose'][] = $result;
+                $stats['total']++;
+                $stats[strtolower($result['status'])]++;
+            }
+        }
+
+        // ===== TEST AUTH LOGOUT =====
+        if ($auth_token) {
+            $logout_result = perform_real_logout($full_api_url, $auth_token);
+            $result = [
+                'name' => '🔐 Auth - Logout (with token)',
+                'status' => $logout_result['success'] ? 'OK' : 'WARNING',
+                'http_code' => $logout_result['http_code'],
+                'response_time' => 0,
+                'error_message' => $logout_result['error'],
+                'debug_id' => null,
+                'sql_error' => null,
+                'details' => []
+            ];
+            $all_results['level2_auth'][] = $result;
             $stats['total']++;
             $stats[strtolower($result['status'])]++;
         }
@@ -646,6 +959,10 @@ if ($action == 'run_tests' && !empty($all_results)) {
     print '<br>';
 
     // Afficher les résultats par niveau
+    if (!empty($all_results['level1_auth'])) {
+        display_test_results('🔐 NIVEAU 1 - Authentification : Login/Logout', $all_results['level1_auth'], true);
+    }
+
     if (!empty($all_results['level1_frontend_pages'])) {
         display_test_results('🌟 NIVEAU 1 - Smoke Tests : Pages PWA Frontend', $all_results['level1_frontend_pages'], false);
     }
@@ -662,12 +979,24 @@ if ($action == 'run_tests' && !empty($all_results)) {
         display_test_results('🌟 NIVEAU 1 - Smoke Tests : Structure fichiers', $all_results['level1_files'], false);
     }
 
-    if (!empty($all_results['level2_api_view'])) {
-        display_test_results('⚡ NIVEAU 2 - Tests Fonctionnels : API View (IDs réels)', $all_results['level2_api_view'], true);
+    if (!empty($all_results['level2_planning'])) {
+        display_test_results('📋 NIVEAU 2 - Planning : List + Detail + Attachments + PWA pages', $all_results['level2_planning'], true);
     }
 
-    if (!empty($all_results['level2_api_actions'])) {
-        display_test_results('⚡ NIVEAU 2 - Tests Fonctionnels : Actions (créer/modifier)', $all_results['level2_api_actions'], true);
+    if (!empty($all_results['level2_rapports'])) {
+        display_test_results('📝 NIVEAU 2 - Rapports : CRUD complet + PWA pages (DEV mode)', $all_results['level2_rapports'], true);
+    }
+
+    if (!empty($all_results['level2_notifications'])) {
+        display_test_results('🔔 NIVEAU 2 - Notifications : Create + Mark Read + Delete (DEV mode)', $all_results['level2_notifications'], true);
+    }
+
+    if (!empty($all_results['level2_sens_pose'])) {
+        display_test_results('📐 NIVEAU 2 - Sens de pose : Create + Sign + PDF + Delete + PWA pages (DEV mode)', $all_results['level2_sens_pose'], true);
+    }
+
+    if (!empty($all_results['level2_auth'])) {
+        display_test_results('🔐 NIVEAU 2 - Authentification : Logout avec token', $all_results['level2_auth'], true);
     }
 
     if (!empty($all_results['level3_permissions'])) {
@@ -677,8 +1006,16 @@ if ($action == 'run_tests' && !empty($all_results)) {
 
 // Documentation
 print '<div class="info">';
-print '<h3>📚 Guide du diagnostic QA</h3>';
-print '<h4>🌟 Niveau 1 - Smoke Tests (Lecture)</h4>';
+print '<h3>📚 Guide du diagnostic QA complet</h3>';
+
+print '<h4>🔐 Authentification (Login/Logout réels)</h4>';
+print '<ul>';
+print '<li><b>Login</b> : POST JSON avec credentials depuis config (DIAGNOSTIC_USER_EMAIL / DIAGNOSTIC_USER_PASSWORD)</li>';
+print '<li><b>Logout</b> : POST avec token obtenu du login</li>';
+print '<li>Le token est utilisé pour tous les tests API nécessitant authentification</li>';
+print '</ul>';
+
+print '<h4>🌟 Niveau 1 - Smoke Tests (Lecture uniquement)</h4>';
 print '<ul>';
 print '<li>Vérifie que toutes les <b>pages PWA</b> chargent (GET)</li>';
 print '<li>Vérifie que tous les <b>endpoints API list</b> répondent</li>';
@@ -687,12 +1024,14 @@ print '<li>Vérifie que tous les <b>fichiers structure</b> sont présents</li>';
 print '<li><b>Pas de modifications</b> - Lecture uniquement</li>';
 print '</ul>';
 
-print '<h4>⚡ Niveau 2 - Tests Fonctionnels (Boutons/Formulaires)</h4>';
+print '<h4>⚡ Niveau 2 - Tests Fonctionnels (Boutons/Formulaires avec IDs réels)</h4>';
 print '<ul>';
-print '<li>Teste les <b>endpoints View</b> avec des <b>IDs réels</b> récupérés depuis les listes</li>';
-print '<li>Teste les <b>actions</b> : créer, modifier, supprimer (en mode DEV admin uniquement)</li>';
-print '<li>Exemple : Marquer une notification comme lue, créer un rapport test, etc.</li>';
-print '<li>⚠️ <b>Attention</b> : Ces tests modifient les données (mode DEV recommandé)</li>';
+print '<li><b>Planning</b> : List + Detail (ID réel) + Open attachment inline + PWA pages (#/planning/:id)</li>';
+print '<li><b>Rapports</b> : List + View + Create + Update + Submit + Delete + PWA pages (#/rapports/:id)</li>';
+print '<li><b>Notifications</b> : List + Unread count + Create + Mark as read + Delete</li>';
+print '<li><b>Sens de pose</b> : List + View + Create + Sign + Generate PDF + Delete + PWA pages (#/sens-pose/:id)</li>';
+print '<li>⚠️ <b>Attention</b> : Les tests CRUD (Create/Update/Delete) nécessitent <b>mode DEV ON + admin</b></li>';
+print '<li>Tous les tests affichent : <b>HTTP code + debug_id + SQL error</b> si applicable</li>';
 print '</ul>';
 
 print '<h4>🔐 Niveau 3 - Tests Permissions</h4>';

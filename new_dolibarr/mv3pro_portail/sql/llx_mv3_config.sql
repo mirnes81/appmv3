@@ -23,5 +23,7 @@ INSERT INTO llx_mv3_config (name, value, description, type, date_creation) VALUE
 ('DEBUG_CONSOLE_ENABLED', '0', 'Activer les logs console dans la PWA', 'boolean', NOW()),
 ('SERVICE_WORKER_CACHE_ENABLED', '1', 'Activer le cache du service worker', 'boolean', NOW()),
 ('PLANNING_ACCESS_POLICY', 'employee_own_only', 'Politique d''accès au planning (all=tout voir, employee_own_only=seulement ses RDV)', 'select', NOW()),
-('ERROR_LOG_RETENTION_DAYS', '30', 'Nombre de jours de rétention des logs d''erreurs', 'number', NOW())
+('ERROR_LOG_RETENTION_DAYS', '30', 'Nombre de jours de rétention des logs d''erreurs', 'number', NOW()),
+('DIAGNOSTIC_USER_EMAIL', 'diagnostic@test.local', 'Email utilisateur pour tests diagnostic QA', 'string', NOW()),
+('DIAGNOSTIC_USER_PASSWORD', 'DiagTest2026!', 'Mot de passe utilisateur pour tests diagnostic QA', 'string', NOW())
 ON DUPLICATE KEY UPDATE date_modification=NOW();
