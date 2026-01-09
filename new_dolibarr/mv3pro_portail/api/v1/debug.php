@@ -204,23 +204,39 @@ function test_endpoint($endpoint_config, $token = null) {
         'sql_error' => null,
         'file' => null,
         'line' => null,
+        'initial_url' => null,
+        'final_url' => null,
+        'redirect_count' => 0,
     ];
 
     try {
+        // Déterminer le protocole (préférer HTTPS si disponible)
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+
+        // Si on est en HTTP, forcer HTTPS car nginx redirige probablement
+        if ($protocol === 'http://') {
+            $protocol = 'https://';
+        }
+
         // Construire l'URL complète
-        $base_url = 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/' . $endpoint_config['url'];
+        $base_url = $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/' . $endpoint_config['url'];
 
         // Ajouter les paramètres GET
         if (!empty($endpoint_config['params'])) {
             $base_url .= '?' . http_build_query($endpoint_config['params']);
         }
 
+        $result['initial_url'] = $base_url;
+
         // Initialiser curl
         $ch = curl_init($base_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, false);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // SUIVRE LES REDIRECTIONS
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 5); // Max 5 redirections
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Pour dev/test
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false); // Pour dev/test
 
         // Ajouter le token si nécessaire
         $headers = ['Content-Type: application/json'];
@@ -233,12 +249,16 @@ function test_endpoint($endpoint_config, $token = null) {
         // Exécuter
         $response_body = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $final_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        $redirect_count = curl_getinfo($ch, CURLINFO_REDIRECT_COUNT);
         $curl_error = curl_error($ch);
         curl_close($ch);
 
         $end_time = microtime(true);
         $result['response_time_ms'] = round(($end_time - $start_time) * 1000, 2);
         $result['http_code'] = $http_code;
+        $result['final_url'] = $final_url;
+        $result['redirect_count'] = $redirect_count;
 
         // Analyser la réponse
         if ($curl_error) {

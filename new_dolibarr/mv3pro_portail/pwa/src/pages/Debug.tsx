@@ -12,6 +12,9 @@ interface TestResult {
   response_time_ms?: number;
   error?: string;
   response_preview?: any;
+  initial_url?: string;
+  final_url?: string;
+  redirect_count?: number;
 }
 
 interface BackendReport {
@@ -467,6 +470,40 @@ export function Debug() {
                     </div>
                   </summary>
                   <div style={{ padding: '12px 16px', background: '#f9fafb' }}>
+                    {result.initial_url && (
+                      <div style={{ marginBottom: '8px' }}>
+                        <strong style={{ fontSize: '12px', color: '#0891b2' }}>URL initiale:</strong>
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            color: '#374151',
+                            marginTop: '4px',
+                            fontFamily: 'monospace',
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          {result.initial_url}
+                        </div>
+                      </div>
+                    )}
+                    {result.final_url && result.final_url !== result.initial_url && (
+                      <div style={{ marginBottom: '8px' }}>
+                        <strong style={{ fontSize: '12px', color: '#8b5cf6' }}>
+                          URL finale {result.redirect_count ? `(${result.redirect_count} redirect${result.redirect_count > 1 ? 's' : ''})` : ''}:
+                        </strong>
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            color: '#374151',
+                            marginTop: '4px',
+                            fontFamily: 'monospace',
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          {result.final_url}
+                        </div>
+                      </div>
+                    )}
                     {result.error && (
                       <div style={{ marginBottom: '8px' }}>
                         <strong style={{ fontSize: '12px', color: '#ef4444' }}>Erreur:</strong>
