@@ -176,14 +176,95 @@ export interface PlanningEvent {
 
 export interface Rapport {
   rowid: number;
+  id: number;
+  ref?: string;
   fk_user: number;
   projet_nom?: string;
+  projet_ref?: string;
+  projet_title?: string;
+  client?: string;
   date_rapport: string;
+  date?: string;
   heure_debut?: string;
   heure_fin?: string;
+  heures?: number;
   description?: string;
+  travaux?: string;
+  observations?: string;
   statut?: string;
   type?: string;
+  zones?: string;
+  surface?: number;
+  format?: string;
+  type_carrelage?: string;
+  user?: string;
+  has_photos?: boolean;
+  nb_photos?: number;
+  url?: string;
+}
+
+export interface RapportPhoto {
+  id: number;
+  filename: string;
+  filepath?: string;
+  url?: string;
+  description?: string;
+  legende?: string;
+  categorie?: string;
+  zone?: string;
+  date_ajout?: string;
+  ordre?: number;
+}
+
+export interface RapportProbleme {
+  id: number;
+  titre: string;
+  description?: string;
+  photo?: string;
+  photo_url?: string;
+  statut?: string;
+  date_creation?: string;
+}
+
+export interface RapportDetail {
+  rapport: {
+    id: number;
+    date_rapport: string;
+    zone_travail?: string;
+    description?: string;
+    heures_debut?: string;
+    heures_fin?: string;
+    temps_total?: number;
+    travaux_realises?: string;
+    observations?: string;
+    statut?: string;
+    date_creation?: string;
+    date_modification?: string;
+    auteur?: {
+      id: number;
+      login: string;
+      nom: string;
+    };
+    projet?: {
+      id: number;
+      ref: string;
+      title: string;
+      client?: string;
+    } | null;
+    photos_count?: number;
+    frais_count?: number;
+    gps?: {
+      latitude: number;
+      longitude: number;
+      precision: number;
+    };
+    meteo?: {
+      temperature: number;
+      condition: string;
+    };
+  };
+  photos: RapportPhoto[];
+  frais?: any[];
 }
 
 export interface RapportCreatePayload {
@@ -282,6 +363,10 @@ export const api = {
 
   async rapportsList(limit = 50, page = 1): Promise<Rapport[]> {
     return apiFetch<Rapport[]>(`/rapports.php?limit=${limit}&page=${page}`);
+  },
+
+  async rapportsView(id: number): Promise<RapportDetail> {
+    return apiFetch<RapportDetail>(`/rapports_view.php?id=${id}`);
   },
 
   async rapportsCreate(payload: RapportCreatePayload): Promise<any> {

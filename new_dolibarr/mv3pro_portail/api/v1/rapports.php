@@ -92,12 +92,14 @@ $sql = "SELECT r.rowid, r.ref, r.date_rapport, r.heure_debut, r.heure_fin,
         p.ref as projet_ref, p.title as projet_title,
         s.nom as client_nom,
         u.firstname, u.lastname,
-        0 as nb_photos
+        COUNT(DISTINCT rp.rowid) as nb_photos
         FROM ".MAIN_DB_PREFIX."mv3_rapport r
         LEFT JOIN ".MAIN_DB_PREFIX."projet p ON p.rowid = r.fk_projet
         LEFT JOIN ".MAIN_DB_PREFIX."societe s ON s.rowid = r.fk_soc
         LEFT JOIN ".MAIN_DB_PREFIX."user u ON u.rowid = r.fk_user
+        LEFT JOIN ".MAIN_DB_PREFIX."mv3_rapport_photo rp ON rp.fk_rapport = r.rowid
         WHERE ".$where_clause."
+        GROUP BY r.rowid
         ORDER BY r.date_rapport DESC, r.rowid DESC
         LIMIT ".(int)$limit." OFFSET ".(int)$offset;
 
