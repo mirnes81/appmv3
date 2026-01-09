@@ -82,8 +82,38 @@ export function PlanningDetail() {
     });
   };
 
-  const openFile = (fileUrl: string) => {
-    window.open(fileUrl, '_blank');
+  const openFile = async (fileUrl: string, fileName: string) => {
+    try {
+      const token = localStorage.getItem('mv3pro_token');
+      if (!token) {
+        alert('Token manquant. Veuillez vous reconnecter.');
+        return;
+      }
+
+      const response = await fetch(fileUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-Auth-Token': token
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      const newWindow = window.open(url, '_blank');
+
+      if (newWindow) {
+        newWindow.document.title = fileName;
+      }
+    } catch (err: any) {
+      console.error('Erreur ouverture fichier:', err);
+      alert('Erreur lors de l\'ouverture du fichier: ' + (err.message || 'Erreur inconnue'));
+    }
   };
 
   if (loading) {
@@ -249,7 +279,7 @@ export function PlanningDetail() {
                     border: '1px solid #e5e7eb'
                   }}
                 >
-                  {/* Icône ou miniature */}
+                  {/* Icône */}
                   <div style={{
                     width: '48px',
                     height: '48px',
@@ -260,15 +290,7 @@ export function PlanningDetail() {
                     borderRadius: '8px',
                     fontSize: '24px'
                   }}>
-                    {file.is_image ? (
-                      <img
-                        src={file.url}
-                        alt={file.name}
-                        style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }}
-                      />
-                    ) : (
-                      '📄'
-                    )}
+                    {file.is_image ? '🖼️' : file.mime === 'application/pdf' ? '📕' : '📄'}
                   </div>
 
                   {/* Info fichier */}
@@ -283,7 +305,7 @@ export function PlanningDetail() {
 
                   {/* Bouton ouvrir */}
                   <button
-                    onClick={() => openFile(file.url)}
+                    onClick={() => openFile(file.url, file.name)}
                     style={{
                       padding: '8px 16px',
                       backgroundColor: '#3b82f6',

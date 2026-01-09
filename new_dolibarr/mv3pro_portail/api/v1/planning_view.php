@@ -192,7 +192,7 @@ if (is_dir($upload_dir)) {
             'size_human' => format_file_size($filesize),
             'mime' => $mime,
             'is_image' => $is_image,
-            'url' => '/custom/mv3pro_portail/api/v1/file.php?module=actioncomm&id='.$id.'&file='.urlencode($file)
+            'url' => '/custom/mv3pro_portail/api/v1/planning_file.php?id='.$id.'&file='.urlencode($file)
         ];
     }
 }
