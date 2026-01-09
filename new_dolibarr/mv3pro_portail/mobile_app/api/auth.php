@@ -107,8 +107,9 @@ function handleLogin($db, $conf, $data) {
     if (!$resql || $db->num_rows($resql) === 0) {
         jsonResponse([
             'success' => false,
-            'message' => 'Compte mobile introuvable ou mot de passe incorrect.',
-            'hint' => 'Créez ou éditez l\'utilisateur mobile dans Dolibarr: Accueil > MV3 PRO > Gestion Utilisateurs Mobiles'
+            'message' => 'Compte mobile introuvable.',
+            'hint' => 'Votre administrateur doit créer votre compte mobile sur: /custom/mv3pro_portail/mobile_app/admin/manage_users.php',
+            'admin_url' => '/custom/mv3pro_portail/mobile_app/admin/manage_users.php'
         ], 401);
     }
 

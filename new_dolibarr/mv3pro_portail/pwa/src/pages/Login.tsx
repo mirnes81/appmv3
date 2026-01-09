@@ -75,7 +75,7 @@ export function Login() {
                 paddingTop: '8px',
                 borderTop: '1px solid rgba(255,255,255,0.2)'
               }}>
-                💡 {hint}
+                {hint}
               </div>
             )}
           </div>
@@ -133,7 +133,26 @@ export function Login() {
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '24px', color: '#9ca3af', fontSize: '14px' }}>
+        <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #e5e7eb' }}>
+          <p style={{ color: '#6b7280', fontSize: '13px', marginBottom: '12px' }}>
+            Pas de compte mobile?
+          </p>
+          <a
+            href="/custom/mv3pro_portail/mobile_app/admin/manage_users.php"
+            style={{
+              color: '#0891b2',
+              fontSize: '13px',
+              textDecoration: 'none',
+              fontWeight: '500'
+            }}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Demandez à votre administrateur de créer votre compte
+          </a>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: '16px', color: '#9ca3af', fontSize: '12px' }}>
           MV3 Carrelage - Version 1.0.0
         </div>
       </div>

@@ -3,21 +3,37 @@
 ## 📦 Build Status: ✅ SUCCESS
 
 ### Build Details
-- **Date**: 2026-01-07
-- **Location**: Racine du projet
-- **Total Size**: 248 KB (gzipped: ~62 KB)
+- **Date**: 2026-01-09
+- **Version**: 1.0.1
+- **Location**: new_dolibarr/mv3pro_portail/pwa_dist/
+- **Total Size**: 201.53 KB (gzipped: 61.58 KB)
+- **Build Time**: 2.51s
+
+## 🔄 Dernière mise à jour (2026-01-09)
+
+### Messages d'erreur améliorés
+- ✅ Message 401 plus clair: "Compte mobile introuvable"
+- ✅ Lien vers l'interface d'administration
+- ✅ Instructions précises pour l'administrateur
+- ✅ Lien permanent sur la page de login
+
+### Fichiers modifiés
+- `mobile_app/api/auth.php` - Message d'erreur amélioré
+- `pwa/src/pages/Login.tsx` - Lien d'aide ajouté
+- `pwa_dist/assets/index-BG4ySEry.js` - Build mis à jour
 
 ### Files Structure
 ```
-/
+new_dolibarr/mv3pro_portail/pwa_dist/
 ├── index.html              # 1.16 kB - Point d'entrée PWA
+├── .htaccess               # Configuration Apache (routing + cache)
 ├── assets/
-│   ├── index-Docusysw.js   # 196 kB - Bundle JS React/TS
-│   └── index-BQiQB-1j.css  # 3.6 kB - Styles
-├── manifest.webmanifest    # 387 B - Manifest PWA
-├── registerSW.js           # 196 B - Service Worker registration
-├── sw.js                   # 1.6 kB - Service Worker
-├── workbox-1d305bb8.js     # 22 kB - Workbox runtime
+│   ├── index-BG4ySEry.js   # 201 kB - Bundle JS React/TS
+│   └── index-BQiQB-1j.css  # 3.68 kB - Styles
+├── manifest.webmanifest    # 0.39 kB - Manifest PWA
+├── registerSW.js           # 0.20 kB - Service Worker registration
+├── sw.js                   # Service Worker
+├── workbox-1d305bb8.js     # Workbox runtime
 ├── icon-192.png            # Icône PWA 192x192
 └── icon-512.png            # Icône PWA 512x512
 ```
@@ -31,9 +47,12 @@ Le dev server Vite est démarré automatiquement.
 Pour rebuilder la PWA:
 ```bash
 cd new_dolibarr/mv3pro_portail/pwa
+npm install  # Si nécessaire
 npm run build
-cp -r ../pwa_dist/* ../../..
+# Les fichiers sont générés dans ../pwa_dist/
 ```
+
+Puis déployez `pwa_dist/` sur votre serveur Dolibarr.
 
 ## 📱 Fonctionnalités
 
@@ -51,7 +70,18 @@ cp -r ../pwa_dist/* ../../..
 
 La PWA communique avec:
 - **API REST**: `/custom/mv3pro_portail/api/v1/`
-- **Auth**: Session Dolibarr via cookies
+- **Auth Mobile**: `/custom/mv3pro_portail/mobile_app/api/auth.php`
+- **Auth**: Tokens JWT (stockés dans localStorage)
+- **Durée session**: 30 jours
+
+### Authentification Mobile Indépendante
+
+⚠️ **Important:** La PWA utilise une authentification mobile dédiée (table `llx_mv3_mobile_users`),
+pas les identifiants Dolibarr standard.
+
+**Pour créer un utilisateur mobile:**
+1. Interface web: `/custom/mv3pro_portail/mobile_app/admin/manage_users.php`
+2. Ou SQL: `mysql -u root -p dolibarr < sql/INSTALLATION_RAPIDE.sql`
 
 ## 📊 Modules Inclus
 
