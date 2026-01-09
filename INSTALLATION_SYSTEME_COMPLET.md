@@ -19,6 +19,8 @@
 **Fichiers** :
 - `/sql/llx_mv3_config.sql` (nouveau)
 - `/sql/llx_mv3_error_log.sql` (nouveau)
+- `/sql/llx_mv3_config_SAFE.sql` (nouveau - version sécurisée)
+- `/sql/FIX_ERREUR_1054.md` (nouveau - guide dépannage)
 
 **Action** : Exécuter ces scripts SQL dans la base de données Dolibarr
 
@@ -28,6 +30,11 @@ mysql -u user -p database_name < llx_mv3_error_log.sql
 ```
 
 Ou via phpMyAdmin : Importer > Sélectionner les fichiers > Exécuter
+
+**⚠️ Si vous rencontrez l'erreur "#1054 - Champ 'name' inconnu" :**
+- Utilisez `llx_mv3_config_SAFE.sql` à la place
+- Ou consultez `FIX_ERREUR_1054.md` pour le guide complet de dépannage
+- Cette erreur signifie qu'une ancienne version de la table existe déjà
 
 ---
 

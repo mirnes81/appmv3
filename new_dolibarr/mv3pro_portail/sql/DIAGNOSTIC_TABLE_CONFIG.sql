@@ -1,9 +1,17 @@
--- Table de configuration du module MV3 PRO Portail
--- Stocke les paramètres configurables du module
---
--- ⚠️ SI VOUS AVEZ L'ERREUR "#1054 - Champ 'name' inconnu" :
--- Utilisez le fichier llx_mv3_config_SAFE.sql ou consultez FIX_ERREUR_1054.md
+-- Diagnostic et correction de la table llx_mv3_config
+-- Exécuter ce fichier si vous avez l'erreur "Champ 'name' inconnu"
 
+-- ÉTAPE 1 : Voir la structure actuelle de la table
+SHOW CREATE TABLE llx_mv3_config;
+
+-- ÉTAPE 2 : Voir les colonnes actuelles
+DESCRIBE llx_mv3_config;
+
+-- ÉTAPE 3 : Si la table existe avec une mauvaise structure, la supprimer et recréer
+-- ⚠️ ATTENTION : Ceci supprime toutes les données de configuration !
+-- DROP TABLE IF EXISTS llx_mv3_config;
+
+-- ÉTAPE 4 : Créer la table avec la bonne structure
 CREATE TABLE IF NOT EXISTS llx_mv3_config (
     rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -14,8 +22,7 @@ CREATE TABLE IF NOT EXISTS llx_mv3_config (
     date_modification DATETIME
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- Insertion des valeurs par défaut
--- Si cette partie échoue, exécutez les INSERT un par un (voir llx_mv3_config_SAFE.sql)
+-- ÉTAPE 5 : Insérer les valeurs par défaut
 INSERT INTO llx_mv3_config (name, value, description, type, date_creation) VALUES
 ('API_BASE_URL', '/custom/mv3pro_portail/api/v1/', 'URL de base de l''API', 'string', NOW()),
 ('PWA_BASE_URL', '/custom/mv3pro_portail/pwa_dist/', 'URL de base de la PWA', 'string', NOW()),
