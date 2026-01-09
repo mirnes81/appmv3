@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { AccountUnlinked } from './pages/AccountUnlinked';
+import { Maintenance } from './pages/Maintenance';
 import { Debug } from './pages/Debug';
 import { Planning } from './pages/Planning';
 import { PlanningDetail } from './pages/PlanningDetail';
@@ -25,6 +26,7 @@ function App() {
       <HashRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/maintenance" element={<Maintenance />} />
 
           <Route
             path="/account-unlinked"

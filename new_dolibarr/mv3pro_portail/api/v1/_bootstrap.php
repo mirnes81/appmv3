@@ -505,6 +505,52 @@ function require_rights($rights, $auth_data) {
 }
 
 /**
+ * Vérifie le mode DEV et bloque les non-admins si activé
+ *
+ * @param array|null $auth_data Données d'authentification (retour de require_auth)
+ * @return void
+ */
+function check_dev_mode($auth_data = null) {
+    global $db;
+
+    // Charger la config
+    require_once DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/class/mv3_config.class.php';
+    $mv3_config = new Mv3Config($db);
+
+    // Vérifier si mode DEV actif
+    if (!$mv3_config->isDevMode()) {
+        return; // Mode DEV OFF = tout le monde passe
+    }
+
+    // Mode DEV actif - vérifier si admin
+    $is_admin = false;
+
+    if ($auth_data) {
+        // Vérifier si l'utilisateur a les droits admin
+        if (!empty($auth_data['dolibarr_user'])) {
+            $is_admin = !empty($auth_data['dolibarr_user']->admin);
+        } elseif (isset($auth_data['is_admin'])) {
+            $is_admin = $auth_data['is_admin'];
+        }
+    }
+
+    if (!$is_admin) {
+        // Non-admin en mode DEV = accès refusé
+        http_response_code(503);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Application en maintenance',
+            'message' => 'L\'application est actuellement en cours de mise à jour. Veuillez réessayer dans quelques instants.',
+            'code' => 'DEV_MODE_ACTIVE',
+            'dev_mode' => true
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // Admin = accès autorisé même en mode DEV
+}
+
+/**
  * Valide un paramètre requis
  *
  * @param mixed $value Valeur à vérifier
