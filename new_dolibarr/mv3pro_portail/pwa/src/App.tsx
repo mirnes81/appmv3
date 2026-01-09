@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { AccountUnlinked } from './pages/AccountUnlinked';
+import { Debug } from './pages/Debug';
 import { Planning } from './pages/Planning';
 import { PlanningDetail } from './pages/PlanningDetail';
 import { Rapports } from './pages/Rapports';
@@ -150,6 +151,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profil />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/debug"
+            element={
+              <ProtectedRoute>
+                <Debug />
               </ProtectedRoute>
             }
           />

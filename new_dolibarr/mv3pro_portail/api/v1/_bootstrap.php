@@ -48,6 +48,9 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 
+// Charger le système de debug
+require_once __DIR__ . '/debug_log.php';
+
 // Variables globales disponibles
 global $db, $conf, $user, $langs;
 
@@ -166,11 +169,21 @@ function get_json_body($required = false) {
 function require_auth($required = true) {
     global $db, $conf, $user;
 
+    DebugLogger::log('require_auth() called', [
+        'required' => $required,
+        'request_uri' => $_SERVER['REQUEST_URI'] ?? 'N/A',
+        'request_method' => $_SERVER['REQUEST_METHOD'],
+    ]);
+
     $auth_result = null;
     $auth_mode = null;
 
     // MODE A: Session Dolibarr (priorité la plus haute)
     if (!empty($user->id) && isset($_SESSION['dol_login'])) {
+        DebugLogger::log('MODE A: Dolibarr Session detected', [
+            'user_id' => $user->id,
+            'login' => $user->login,
+        ]);
         $auth_mode = 'dolibarr_session';
         $auth_result = [
             'mode' => $auth_mode,
@@ -190,12 +203,20 @@ function require_auth($required = true) {
 
     // MODE B: Token Mobile (Bearer)
     if (!$auth_result) {
+        DebugLogger::log('MODE B: Checking Mobile Token');
+
         $bearer = null;
         if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
             $auth = $_SERVER['HTTP_AUTHORIZATION'];
             if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
                 $bearer = $matches[1];
+                DebugLogger::log('Bearer token extracted', [
+                    'token_length' => strlen($bearer),
+                    'token_preview' => substr($bearer, 0, 20) . '...',
+                ]);
             }
+        } else {
+            DebugLogger::log('No Authorization header found');
         }
 
         if ($bearer) {
@@ -208,21 +229,48 @@ function require_auth($required = true) {
                     AND s.expires_at > NOW()
                     AND u.is_active = 1";
 
+            DebugLogger::log('Executing SQL query for mobile session', ['sql' => $sql]);
+
             $resql = $db->query($sql);
 
             if ($resql && $db->num_rows($resql) > 0) {
                 $session = $db->fetch_object($resql);
 
+                DebugLogger::log('Mobile session found in DB', [
+                    'mobile_user_id' => $session->mobile_user_id,
+                    'email' => $session->email,
+                    'dolibarr_user_id' => $session->dolibarr_user_id,
+                    'expires_at' => $session->expires_at,
+                ]);
+
                 // Détecter si le compte mobile n'est pas lié à Dolibarr
                 $is_unlinked = empty($session->dolibarr_user_id) || $session->dolibarr_user_id == 0;
 
+                DebugLogger::log('Checking if account is unlinked', [
+                    'dolibarr_user_id' => $session->dolibarr_user_id,
+                    'is_unlinked' => $is_unlinked,
+                ]);
+
                 // Charger l'utilisateur Dolibarr lié (si existe)
                 if (!$is_unlinked) {
+                    DebugLogger::log('Loading Dolibarr user', ['dolibarr_user_id' => $session->dolibarr_user_id]);
                     $dol_user = new User($db);
-                    if ($dol_user->fetch($session->dolibarr_user_id) > 0) {
+                    $fetch_result = $dol_user->fetch($session->dolibarr_user_id);
+                    if ($fetch_result > 0) {
                         $dol_user->getrights();
                         $user = $dol_user; // Mettre à jour la variable globale $user
+                        DebugLogger::log('Dolibarr user loaded successfully', [
+                            'user_id' => $dol_user->id,
+                            'login' => $dol_user->login,
+                        ]);
+                    } else {
+                        DebugLogger::log('Failed to load Dolibarr user', [
+                            'dolibarr_user_id' => $session->dolibarr_user_id,
+                            'fetch_result' => $fetch_result,
+                        ]);
                     }
+                } else {
+                    DebugLogger::log('Account is unlinked, skipping Dolibarr user loading');
                 }
 
                 $auth_mode = 'mobile_token';
@@ -242,11 +290,24 @@ function require_auth($required = true) {
                     ]
                 ];
 
+                DebugLogger::log('Auth result created', [
+                    'mode' => $auth_mode,
+                    'is_unlinked' => $is_unlinked,
+                    'write_permission' => !$is_unlinked,
+                ]);
+
                 // Mettre à jour last_activity
                 $db->query("UPDATE ".MAIN_DB_PREFIX."mv3_mobile_sessions
                            SET last_activity = NOW()
                            WHERE session_token = '".$db->escape($bearer)."'");
+            } else {
+                DebugLogger::log('Mobile session NOT found in DB or expired', [
+                    'num_rows' => $resql ? $db->num_rows($resql) : 0,
+                    'db_error' => $db->lasterror(),
+                ]);
             }
+        } else {
+            DebugLogger::log('No bearer token found, skipping MODE B');
         }
     }
 
@@ -306,11 +367,26 @@ function require_auth($required = true) {
 
     // Si authentification requise et pas d'auth valide
     if ($required && !$auth_result) {
+        DebugLogger::log('Authentication FAILED - No valid auth found', [
+            'required' => $required,
+            'tried_modes' => ['dolibarr_session', 'mobile_token', 'api_token'],
+        ]);
         json_error(
             'Authentification requise. Utilisez session Dolibarr, Bearer token ou X-Auth-Token',
             'UNAUTHORIZED',
             401
         );
+    }
+
+    if ($auth_result) {
+        DebugLogger::log('Authentication SUCCESS', [
+            'mode' => $auth_result['mode'],
+            'user_id' => $auth_result['user_id'] ?? 'null',
+            'mobile_user_id' => $auth_result['mobile_user_id'] ?? 'N/A',
+            'is_unlinked' => $auth_result['is_unlinked'] ?? false,
+        ]);
+    } else {
+        DebugLogger::log('Authentication returned null (optional auth)');
     }
 
     return $auth_result;

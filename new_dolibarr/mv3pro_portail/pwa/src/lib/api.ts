@@ -2,6 +2,13 @@ const API_BASE_URL = '/custom/mv3pro_portail/api/v1';
 const AUTH_API_URL = '/custom/mv3pro_portail/mobile_app/api/auth.php';
 
 const TOKEN_KEY = 'mv3pro_token';
+const DEBUG_MODE = localStorage.getItem('mv3pro_debug') === 'true';
+
+function debugLog(message: string, data?: any) {
+  if (DEBUG_MODE) {
+    console.log(`[MV3PRO DEBUG] ${message}`, data || '');
+  }
+}
 
 export const storage = {
   getToken: (): string | null => localStorage.getItem(TOKEN_KEY),
@@ -60,13 +67,28 @@ async function apiFetch<T = any>(
 
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
 
+  debugLog('API Request', {
+    url,
+    method: options.method || 'GET',
+    hasToken: !!token,
+    tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+  });
+
   try {
     const response = await fetch(url, {
       ...options,
       headers,
     });
 
+    debugLog('API Response', {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+    });
+
     if (response.status === 401) {
+      debugLog('401 Unauthorized - Clearing token and redirecting to login');
       storage.clearToken();
       window.location.href = '/custom/mv3pro_portail/pwa_dist/#/login';
       throw new ApiError('Non autorisé', 401);
@@ -177,6 +199,7 @@ export interface RapportCreatePayload {
 
 export const api = {
   async login(email: string, password: string): Promise<LoginResponse> {
+    debugLog('Login attempt', { email });
     try {
       const response = await fetch(`${AUTH_API_URL}?action=login`, {
         method: 'POST',
@@ -187,11 +210,20 @@ export const api = {
       const data = await safeJson(response);
 
       if (!data) {
+        debugLog('Login failed: Empty response');
         throw new ApiError('Réponse vide du serveur', response.status);
       }
 
+      debugLog('Login response', {
+        success: data.success,
+        hasToken: !!data.token,
+        tokenPreview: data.token ? data.token.substring(0, 20) + '...' : 'none',
+        user: data.user,
+      });
+
       if (data.success && data.token) {
         storage.setToken(data.token);
+        debugLog('Token saved to localStorage');
       }
 
       return data;
@@ -217,8 +249,15 @@ export const api = {
   },
 
   async me(): Promise<User> {
+    debugLog('Fetching /me.php');
     const response = await apiFetch<{ success: boolean; user: any }>('/me.php');
     const user = response.user;
+
+    debugLog('/me.php response', {
+      success: response.success,
+      user: user,
+      is_unlinked: user.is_unlinked,
+    });
 
     // Extraire firstname/lastname depuis name si nécessaire
     if (!user.firstname && !user.lastname && user.name) {
