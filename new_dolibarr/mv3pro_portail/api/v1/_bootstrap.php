@@ -19,6 +19,62 @@ if (!defined('SHOW_PHP_ERRORS')) {
 // Headers JSON + UTF-8
 header('Content-Type: application/json; charset=utf-8');
 
+// Gestionnaire d'erreurs pour retourner du JSON
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Erreur serveur: ' . $errstr,
+        'code' => 'SERVER_ERROR',
+        'debug_info' => [
+            'file' => basename($errfile),
+            'line' => $errline,
+            'errno' => $errno
+        ]
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+});
+
+// Gestionnaire d'erreurs fatales pour retourner du JSON
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(500);
+        }
+        echo json_encode([
+            'success' => false,
+            'error' => 'Erreur fatale: ' . $error['message'],
+            'code' => 'FATAL_ERROR',
+            'debug_info' => [
+                'file' => basename($error['file']),
+                'line' => $error['line'],
+                'type' => $error['type']
+            ]
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+});
+
+// Gestionnaire d'exceptions pour retourner du JSON
+set_exception_handler(function($exception) {
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+    }
+    echo json_encode([
+        'success' => false,
+        'error' => 'Exception: ' . $exception->getMessage(),
+        'code' => 'EXCEPTION',
+        'debug_info' => [
+            'file' => basename($exception->getFile()),
+            'line' => $exception->getLine()
+        ]
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+});
+
 // CORS
 require_once __DIR__ . '/../cors_config.php';
 setCorsHeaders();

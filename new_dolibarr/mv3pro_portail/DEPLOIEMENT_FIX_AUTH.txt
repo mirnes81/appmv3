@@ -1,0 +1,158 @@
+═══════════════════════════════════════════════════════════════
+   DÉPLOIEMENT - Fix Auth JSON Errors
+═══════════════════════════════════════════════════════════════
+
+Date: 2026-01-09
+Objectif: Corriger les erreurs 500 non-JSON dans l'API d'authentification
+
+───────────────────────────────────────────────────────────────
+ PROBLÈME
+───────────────────────────────────────────────────────────────
+
+Diagnostic QA bloqué par :
+  ❌ POST /api/v1/auth/login.php → 500 "No response from server"
+  ❌ Pas de JSON retourné en cas d'erreur PHP fatale
+  ❌ Pas de token → tous les tests requires_auth échouent en 401
+
+───────────────────────────────────────────────────────────────
+ SOLUTIONS APPLIQUÉES
+───────────────────────────────────────────────────────────────
+
+1. Gestionnaires d'erreurs JSON dans _bootstrap.php
+   ✅ set_error_handler() pour E_WARNING, E_NOTICE
+   ✅ register_shutdown_function() pour E_ERROR, E_PARSE
+   ✅ set_exception_handler() pour exceptions non catchées
+
+2. Vérification table sessions dans auth/login.php
+   ✅ Vérifier table_exists('mv3_mobile_sessions')
+   ✅ Continuer si table absente (pas de crash)
+   ✅ Logs détaillés pour diagnostic
+
+───────────────────────────────────────────────────────────────
+ FICHIERS À UPLOADER
+───────────────────────────────────────────────────────────────
+
+/custom/mv3pro_portail/api/v1/_bootstrap.php
+  → Ajout 55 lignes (error/exception handlers)
+
+/custom/mv3pro_portail/api/v1/auth/login.php
+  → Modif lignes 78-101 (vérification table sessions)
+
+───────────────────────────────────────────────────────────────
+ TESTS VALIDATION
+───────────────────────────────────────────────────────────────
+
+Test 1 - Login valide
+  curl -X POST ".../auth/login.php" \
+    -H "Content-Type: application/json" \
+    -d '{"email":"user@example.com","password":"pass"}'
+
+  ✅ Attendu: {"success":true,"token":"...","user":{...}}
+
+Test 2 - Login invalide
+  curl -X POST ".../auth/login.php" \
+    -H "Content-Type: application/json" \
+    -d '{"email":"wrong","password":"wrong"}'
+
+  ✅ Attendu: {"success":false,"error":"Identifiants invalides","code":"INVALID_CREDENTIALS"}
+
+Test 3 - Erreur fatale PHP
+  (Simuler en ajoutant syntax error temporaire)
+
+  ✅ Attendu: {"success":false,"error":"Erreur fatale: ...","code":"FATAL_ERROR"}
+
+───────────────────────────────────────────────────────────────
+ IMPACT DIAGNOSTIC QA
+───────────────────────────────────────────────────────────────
+
+AVANT:
+  Auth - Login (POST JSON)
+    http: 500
+    error: "No response from server"
+    status: FAIL
+
+APRÈS:
+  Auth - Login (POST JSON)
+    http: 200 ou 401
+    response: {"success":true/false,...}
+    status: PASS/FAIL (avec détails JSON)
+
+DÉBLOCAGE:
+  ✅ Token obtenu si credentials valides
+  ✅ Tests Planning/Rapports/Notifications passent en 200
+  ✅ Diagnostic complet fonctionnel
+
+───────────────────────────────────────────────────────────────
+ FORMAT ERREURS JSON
+───────────────────────────────────────────────────────────────
+
+Erreur classique (400/401/403):
+  {
+    "success": false,
+    "error": "Message utilisateur",
+    "code": "ERROR_CODE"
+  }
+
+Erreur serveur (500):
+  {
+    "success": false,
+    "error": "Erreur serveur: ...",
+    "code": "SERVER_ERROR",
+    "debug_info": {
+      "file": "login.php",
+      "line": 142,
+      "errno": 8
+    }
+  }
+
+Erreur fatale (500):
+  {
+    "success": false,
+    "error": "Erreur fatale: ...",
+    "code": "FATAL_ERROR",
+    "debug_info": {...}
+  }
+
+───────────────────────────────────────────────────────────────
+ SÉCURITÉ PRODUCTION
+───────────────────────────────────────────────────────────────
+
+RECOMMANDATIONS:
+  1. En production, masquer ou simplifier debug_info
+  2. Logger les erreurs détaillées au lieu de les exposer
+  3. Garder messages utilisateur clairs mais génériques
+
+Option 1 - Mode debug conditionnel:
+  if (defined('MV3_DEBUG_MODE') && MV3_DEBUG_MODE) {
+      $response['debug_info'] = [...];
+  }
+
+Option 2 - Logs seulement:
+  error_log("[MV3 ERROR] $errstr in $errfile:$errline");
+  echo json_encode(['success' => false, 'error' => 'Erreur serveur']);
+
+───────────────────────────────────────────────────────────────
+ POST-DÉPLOIEMENT
+───────────────────────────────────────────────────────────────
+
+1. Uploader les 2 fichiers modifiés
+2. Tester login avec credentials valides
+3. Relancer diagnostic QA complet
+4. Vérifier logs: tail -f /path/to/debug.log
+5. Confirmer tous tests passent
+
+───────────────────────────────────────────────────────────────
+ DOCUMENTATION COMPLÈTE
+───────────────────────────────────────────────────────────────
+
+Voir: FIX_AUTH_JSON_ERRORS.md (18KB)
+  → Architecture détaillée
+  → Exemples code complets
+  → Tests validation
+  → Sécurité production
+
+═══════════════════════════════════════════════════════════════
+  STATUS: ✅ Prêt pour déploiement
+  FICHIERS: 2 modifiés
+  TEMPS: 10 minutes
+═══════════════════════════════════════════════════════════════

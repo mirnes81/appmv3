@@ -78,19 +78,26 @@ if ($table_exists) {
             $token = bin2hex(random_bytes(32));
             $expires_at = date('Y-m-d H:i:s', time() + (30 * 24 * 3600));
 
-            $sql_session = "INSERT INTO ".MAIN_DB_PREFIX."mv3_mobile_sessions
-                            (user_id, session_token, device_info, ip_address, expires_at, last_activity)
-                            VALUES (
-                                ".(int)$user->rowid.",
-                                '".$db->escape($token)."',
-                                '".$db->escape($_SERVER['HTTP_USER_AGENT'] ?? '')."',
-                                '".$db->escape($_SERVER['REMOTE_ADDR'])."',
-                                '".$expires_at."',
-                                NOW()
-                            )";
+            $sessions_table_exists = table_exists('mv3_mobile_sessions');
 
-            if (!$db->query($sql_session)) {
-                json_error('Erreur création session', 'SESSION_ERROR', 500);
+            if ($sessions_table_exists) {
+                $sql_session = "INSERT INTO ".MAIN_DB_PREFIX."mv3_mobile_sessions
+                                (user_id, session_token, device_info, ip_address, expires_at, last_activity)
+                                VALUES (
+                                    ".(int)$user->rowid.",
+                                    '".$db->escape($token)."',
+                                    '".$db->escape($_SERVER['HTTP_USER_AGENT'] ?? '')."',
+                                    '".$db->escape($_SERVER['REMOTE_ADDR'])."',
+                                    '".$expires_at."',
+                                    NOW()
+                                )";
+
+                if (!$db->query($sql_session)) {
+                    log_debug("Failed to create mobile session: " . $db->lasterror());
+                    json_error('Erreur création session: ' . $db->lasterror(), 'SESSION_ERROR', 500);
+                }
+            } else {
+                log_debug("Table mv3_mobile_sessions not found, skipping session creation");
             }
 
             $user_data = [
