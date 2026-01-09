@@ -4,8 +4,8 @@
   "private": true,
   "description": "Workspace pour développer la PWA MV3 PRO dans Bolt",
   "scripts": {
-    "dev": "npm --prefix ./new_dolibarr/mv3pro_portail run dev",
-    "build": "npm --prefix ./new_dolibarr/mv3pro_portail run build",
-    "preview": "npm --prefix ./new_dolibarr/mv3pro_portail run preview"
+    "dev": "npm --prefix ./new_dolibarr/mv3pro_portail/pwa run dev -- --host 0.0.0.0 --port 3100 --strictPort",
+    "build": "npm --prefix ./new_dolibarr/mv3pro_portail/pwa run build",
+    "preview": "npm --prefix ./new_dolibarr/mv3pro_portail/pwa run preview -- --host 0.0.0.0 --port 3100 --strictPort"
   }
 }
