@@ -16,8 +16,8 @@ export default defineConfig({
         background_color: '#f9fafb',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
+        scope: '/custom/mv3pro_portail/pwa_dist/',
+        start_url: '/custom/mv3pro_portail/pwa_dist/#/dashboard',
         icons: [
           {
             src: 'icon-192.png',

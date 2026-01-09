@@ -1,5 +1,7 @@
-const API_BASE_URL = '/custom/mv3pro_portail/api/v1';
-const AUTH_API_URL = '/custom/mv3pro_portail/mobile_app/api/auth.php';
+import { API_PATHS, PWA_URLS } from '../config';
+
+const API_BASE_URL = API_PATHS.base;
+const AUTH_API_URL = API_PATHS.auth;
 
 const TOKEN_KEY = 'mv3pro_token';
 const DEBUG_MODE = localStorage.getItem('mv3pro_debug') === 'true';
@@ -91,7 +93,7 @@ async function apiFetch<T = any>(
     if (response.status === 401) {
       debugLog('401 Unauthorized - Clearing token and redirecting to login');
       storage.clearToken();
-      window.location.href = '/custom/mv3pro_portail/pwa_dist/#/login';
+      window.location.href = PWA_URLS.login;
       throw new ApiError('Non autorisé', 401);
     }
 

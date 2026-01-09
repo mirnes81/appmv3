@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PWA_URLS } from '../config';
 
 interface DebugStep {
   step: number;
@@ -257,7 +258,7 @@ export function Login() {
       setLoading(false);
 
       // Force un reload complet pour que AuthContext recharge l'utilisateur depuis le token
-      window.location.href = '/#/dashboard';
+      window.location.href = PWA_URLS.dashboard;
 
     } catch (err: any) {
       console.error('[DEBUG] Unexpected error:', err);
