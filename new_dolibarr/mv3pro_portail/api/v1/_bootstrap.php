@@ -211,33 +211,61 @@ function require_auth($required = true) {
         ];
     }
 
-    // MODE B: Token Mobile (Bearer)
+    // MODE B: Token Mobile (X-Auth-Token or Bearer)
     if (!$auth_result) {
         DebugLogger::log('MODE B: Checking Mobile Token');
 
         $bearer = null;
-        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+
+        // PRIORITY 1: X-Auth-Token (fonctionne toujours avec NGINX)
+        if (!empty($_SERVER['HTTP_X_AUTH_TOKEN'])) {
+            $bearer = trim($_SERVER['HTTP_X_AUTH_TOKEN']);
+
+            if ($is_debug) {
+                error_log('[MV3 API] token_source=X-Auth-Token');
+                error_log('[MV3 API] x_auth_token_present=1');
+            }
+
+            DebugLogger::log('Token extracted from X-Auth-Token', [
+                'token_length' => strlen($bearer),
+                'token_preview' => substr($bearer, 0, 20) . '...',
+            ]);
+        }
+        // PRIORITY 2: Authorization header (fallback, peut être bloqué par NGINX)
+        elseif (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
             $auth = $_SERVER['HTTP_AUTHORIZATION'];
             if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
-                $bearer = $matches[1];
-                $token_mask = strlen($bearer) > 10 ? substr($bearer, 0, 6) . '....' . substr($bearer, -4) : 'short';
+                $bearer = trim($matches[1]);
+            } else {
+                $bearer = trim($auth);
+            }
 
-                if ($is_debug) {
-                    error_log('[MV3 API] token_extracted=1');
-                    error_log('[MV3 API] token_mask=' . $token_mask);
-                    error_log('[MV3 API] token_length=' . strlen($bearer));
-                }
+            if ($is_debug) {
+                error_log('[MV3 API] token_source=Authorization');
+                error_log('[MV3 API] authorization_header_present=1');
+            }
 
-                DebugLogger::log('Bearer token extracted', [
-                    'token_length' => strlen($bearer),
-                    'token_preview' => substr($bearer, 0, 20) . '...',
-                ]);
+            DebugLogger::log('Token extracted from Authorization header', [
+                'token_length' => strlen($bearer),
+                'token_preview' => substr($bearer, 0, 20) . '...',
+            ]);
+        }
+
+        if ($bearer) {
+            $token_mask = strlen($bearer) > 10 ? substr($bearer, 0, 6) . '....' . substr($bearer, -4) : 'short';
+
+            if ($is_debug) {
+                error_log('[MV3 API] token_extracted=1');
+                error_log('[MV3 API] token_mask=' . $token_mask);
+                error_log('[MV3 API] token_length=' . strlen($bearer));
             }
         } else {
             if ($is_debug) {
-                error_log('[MV3 API] auth_header_missing=1');
+                error_log('[MV3 API] token_not_found=1');
+                error_log('[MV3 API] x_auth_token=' . (!empty($_SERVER['HTTP_X_AUTH_TOKEN']) ? 'PRESENT' : 'NONE'));
+                error_log('[MV3 API] authorization=' . (!empty($_SERVER['HTTP_AUTHORIZATION']) ? 'PRESENT' : 'NONE'));
             }
-            DebugLogger::log('No Authorization header found');
+            DebugLogger::log('No token found in X-Auth-Token or Authorization header');
         }
 
         if ($bearer) {
