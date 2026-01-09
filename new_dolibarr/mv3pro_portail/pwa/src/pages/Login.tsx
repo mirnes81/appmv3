@@ -253,9 +253,11 @@ export function Login() {
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log('[DEBUG] Authentication flow complete, navigating to dashboard');
+      console.log('[DEBUG] Authentication flow complete, reloading to dashboard');
       setLoading(false);
-      navigate('/dashboard', { replace: true });
+
+      // Force un reload complet pour que AuthContext recharge l'utilisateur depuis le token
+      window.location.href = '/#/dashboard';
 
     } catch (err: any) {
       console.error('[DEBUG] Unexpected error:', err);
