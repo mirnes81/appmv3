@@ -3,13 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
-import { api } from '../lib/api';
+import { api, storage } from '../lib/api';
 
 export function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+
+  const isDebugMode = localStorage.getItem('mv3_debug') === '1';
 
   useEffect(() => {
     if (user?.is_unlinked) {
@@ -35,6 +38,44 @@ export function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!isDebugMode) return;
+
+    const token = storage.getToken();
+    const debugData: any = {
+      token_present: !!token,
+      token_masked: token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'none',
+      current_route: window.location.href,
+      user_id: user?.id || 'null',
+      user_email: user?.email || 'null',
+      timestamp: new Date().toISOString(),
+    };
+
+    fetch('/custom/mv3pro_portail/api/v1/me.php', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-Auth-Token': token || '',
+      },
+    })
+      .then(async (response) => {
+        debugData.me_status = response.status;
+        debugData.me_ok = response.ok;
+        try {
+          const data = await response.json();
+          debugData.me_response = data;
+          debugData.me_success = data.success;
+        } catch (e) {
+          debugData.me_error = 'Failed to parse JSON';
+        }
+      })
+      .catch((error) => {
+        debugData.me_error = error.message;
+      })
+      .finally(() => {
+        setDebugInfo(debugData);
+      });
+  }, [isDebugMode, user]);
+
   const quickActions = [
     { icon: '📋', label: 'Nouveau rapport', path: '/rapports/new', color: '#0891b2' },
     { icon: '📝', label: 'Nouvelle régie', path: '/regie/new', color: '#10b981' },
@@ -45,6 +86,67 @@ export function Dashboard() {
   return (
     <Layout title="Accueil">
       <div style={{ padding: '20px' }}>
+        {isDebugMode && debugInfo && (
+          <div
+            style={{
+              background: '#1f2937',
+              color: '#f3f4f6',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '20px',
+              fontSize: '12px',
+              fontFamily: 'monospace',
+              maxHeight: '300px',
+              overflow: 'auto',
+            }}
+          >
+            <div style={{ fontWeight: 'bold', marginBottom: '12px', color: '#fbbf24' }}>
+              🐛 DEBUG MODE ACTIF
+            </div>
+            <div style={{ display: 'grid', gap: '8px' }}>
+              <div>
+                <strong>Token présent:</strong> {debugInfo.token_present ? '✅ YES' : '❌ NO'}
+              </div>
+              <div>
+                <strong>Token masqué:</strong> {debugInfo.token_masked}
+              </div>
+              <div>
+                <strong>Route actuelle:</strong> {debugInfo.current_route}
+              </div>
+              <div>
+                <strong>User ID:</strong> {debugInfo.user_id}
+              </div>
+              <div>
+                <strong>User Email:</strong> {debugInfo.user_email}
+              </div>
+              <div style={{ borderTop: '1px solid #4b5563', paddingTop: '8px', marginTop: '8px' }}>
+                <strong>Test /me.php:</strong>
+              </div>
+              <div>
+                <strong>Status:</strong>{' '}
+                <span style={{ color: debugInfo.me_ok ? '#10b981' : '#ef4444' }}>
+                  {debugInfo.me_status || 'N/A'}
+                </span>
+              </div>
+              <div>
+                <strong>Success:</strong> {debugInfo.me_success ? '✅' : '❌'}
+              </div>
+              {debugInfo.me_error && (
+                <div style={{ color: '#ef4444' }}>
+                  <strong>Erreur:</strong> {debugInfo.me_error}
+                </div>
+              )}
+              {debugInfo.me_response && (
+                <div>
+                  <strong>Response:</strong>
+                  <pre style={{ margin: '4px 0', fontSize: '11px', whiteSpace: 'pre-wrap' }}>
+                    {JSON.stringify(debugInfo.me_response, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <div
           style={{
             background: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',

@@ -63,6 +63,7 @@ async function apiFetch<T = any>(
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    headers['X-Auth-Token'] = token;
   }
 
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
