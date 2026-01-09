@@ -6,6 +6,10 @@
  * TOUJOURS renvoie du JSON (même en erreur)
  */
 
+// DEV MODE: Désactiver le verrouillage anti-brute-force (15 min)
+// IMPORTANT: Mettre à false en PRODUCTION !
+define('MV3_AUTH_DISABLE_LOCK', true);
+
 // Headers JSON + CORS
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -135,14 +139,20 @@ function handleLogin($db, $conf, $data) {
         ], 403);
     }
 
-    // Vérifier si compte verrouillé
-    if ($user->locked_until && strtotime($user->locked_until) > time()) {
+    // Vérifier si compte verrouillé (sauf si DEV MODE)
+    if (!MV3_AUTH_DISABLE_LOCK && $user->locked_until && strtotime($user->locked_until) > time()) {
         $remaining = ceil((strtotime($user->locked_until) - time()) / 60);
+        error_log("[MV3 AUTH] ACCOUNT_LOCKED email=" . $email . " remaining=" . $remaining . "min");
         jsonResponse([
             'success' => false,
             'message' => "Compte verrouillé temporairement. Réessayez dans $remaining minute(s).",
             'hint' => 'Sécurité: Compte verrouillé automatiquement après 5 tentatives échouées (15 min)'
         ], 403);
+    }
+
+    // Log si DEV MODE et locked_until présent (mais ignoré)
+    if (MV3_AUTH_DISABLE_LOCK && $user->locked_until && strtotime($user->locked_until) > time()) {
+        error_log("[MV3 AUTH] DEV_MODE: Ignoring locked_until for email=" . $email);
     }
 
     // Vérifier le mot de passe
@@ -157,16 +167,23 @@ function handleLogin($db, $conf, $data) {
         $sql_update = "UPDATE ".MAIN_DB_PREFIX."mv3_mobile_users SET";
         $sql_update .= " login_attempts = ".$attempts;
 
-        // Verrouiller après 5 tentatives
-        if ($attempts >= 5) {
+        // Verrouiller après 5 tentatives (sauf si DEV MODE)
+        if (!MV3_AUTH_DISABLE_LOCK && $attempts >= 5) {
             $locked_until = date('Y-m-d H:i:s', time() + 900); // 15 minutes
             $sql_update .= ", locked_until = '".$locked_until."'";
+            error_log("[MV3 AUTH] LOCKING_ACCOUNT email=" . $email . " attempts=" . $attempts . " locked_until=" . $locked_until);
+        }
+
+        // Log si DEV MODE et 5 tentatives atteintes (mais pas de lock)
+        if (MV3_AUTH_DISABLE_LOCK && $attempts >= 5) {
+            error_log("[MV3 AUTH] DEV_MODE: Would lock account but disabled - email=" . $email . " attempts=" . $attempts);
         }
 
         $sql_update .= " WHERE rowid = ".(int)$user->rowid;
         $db->query($sql_update);
 
-        if ($attempts >= 5) {
+        // Réponse si verrouillage effectif (seulement en PROD)
+        if (!MV3_AUTH_DISABLE_LOCK && $attempts >= 5) {
             jsonResponse([
                 'success' => false,
                 'message' => 'Compte verrouillé pour 15 minutes après 5 tentatives échouées.',
@@ -174,11 +191,16 @@ function handleLogin($db, $conf, $data) {
             ], 403);
         }
 
+        // Message normal si DEV MODE ou < 5 tentatives
         $remaining_attempts = 5 - $attempts;
+        $hint_message = MV3_AUTH_DISABLE_LOCK
+            ? "Tentative $attempts/5. DEV MODE: Verrouillage désactivé."
+            : "Il vous reste $remaining_attempts tentative(s) avant verrouillage automatique (15 min).";
+
         jsonResponse([
             'success' => false,
             'message' => 'Mot de passe incorrect.',
-            'hint' => "Il vous reste $remaining_attempts tentative(s) avant verrouillage automatique (15 min)."
+            'hint' => $hint_message
         ], 401);
     }
 
