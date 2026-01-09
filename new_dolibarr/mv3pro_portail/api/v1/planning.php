@@ -47,9 +47,13 @@ if (!$user_id) {
 
 $events = [];
 
+// Vérifier si la colonne note_private existe
+$columns_check = $db->query("SHOW COLUMNS FROM ".MAIN_DB_PREFIX."actioncomm LIKE 'note_private'");
+$has_note_private = ($columns_check && $db->num_rows($columns_check) > 0);
+
 // Requête SQL pour récupérer les événements
 $sql = "SELECT DISTINCT a.id, a.label, a.datep, a.datep2, a.fulldayevent, a.location,
-        a.note_private, a.percent,
+        ".($has_note_private ? "a.note_private" : "'' as note_private").", a.percent,
         s.nom as client_nom, s.rowid as client_id,
         p.ref as projet_ref, p.title as projet_title, p.rowid as projet_id
         FROM ".MAIN_DB_PREFIX."actioncomm a
@@ -79,7 +83,7 @@ if (!$resql) {
     }
     error_log('[MV3 Planning] SQL Error: ' . $error_msg);
     error_log('[MV3 Planning] SQL Query: ' . $sql);
-    json_error($error_msg, 'DATABASE_ERROR', 500);
+    json_error($error_msg . ' | SQL: ' . $sql, 'DATABASE_ERROR', 500);
 }
 
 while ($obj = $db->fetch_object($resql)) {
