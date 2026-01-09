@@ -1,7 +1,12 @@
 <?php
 /**
- * Diagnostic système MV3 PRO Portail
- * Teste automatiquement toutes les pages et endpoints
+ * Diagnostic QA complet - MV3 PRO Portail
+ *
+ * 3 niveaux de tests :
+ * 1. Smoke tests (lecture) - Vérifier que tout charge
+ * 2. Tests fonctionnels (boutons/formulaires) - Tester les actions en mode DEV admin
+ * 3. Tests permissions (admin vs employé) - Vérifier les droits d'accès
+ *
  * Système évolutif pour ajouter facilement de nouveaux tests
  */
 
@@ -26,6 +31,7 @@ $mv3_config = new Mv3Config($db);
 $error_logger = new Mv3ErrorLogger($db);
 
 $action = GETPOST('action', 'alpha');
+$test_level = GETPOST('test_level', 'alpha') ?: 'all';
 
 // Récupération des URLs
 $api_base_url = $mv3_config->get('API_BASE_URL', '/custom/mv3pro_portail/api/v1/');
@@ -36,60 +42,64 @@ $full_api_url = dol_buildpath($api_base_url, 2);
 // Statistiques erreurs
 $error_stats = $error_logger->getStats(7);
 
-// CONFIGURATION DES TESTS - ÉVOLUTIF
-// Pour ajouter un nouveau test, il suffit d'ajouter une ligne ici
-$tests_config = [
-    'frontend_pages' => [
-        ['name' => '📱 PWA - Page d\'accueil', 'url' => $full_pwa_url, 'method' => 'GET'],
-        ['name' => '📱 PWA - Login', 'url' => $full_pwa_url.'#/login', 'method' => 'GET'],
-        ['name' => '📱 PWA - Dashboard', 'url' => $full_pwa_url.'#/dashboard', 'method' => 'GET'],
-        ['name' => '📱 PWA - Planning', 'url' => $full_pwa_url.'#/planning', 'method' => 'GET'],
-        ['name' => '📱 PWA - Rapports', 'url' => $full_pwa_url.'#/rapports', 'method' => 'GET'],
-        ['name' => '📱 PWA - Régie', 'url' => $full_pwa_url.'#/regie', 'method' => 'GET'],
-        ['name' => '📱 PWA - Sens de pose', 'url' => $full_pwa_url.'#/sens-pose', 'method' => 'GET'],
-        ['name' => '📱 PWA - Matériel', 'url' => $full_pwa_url.'#/materiel', 'method' => 'GET'],
-        ['name' => '📱 PWA - Notifications', 'url' => $full_pwa_url.'#/notifications', 'method' => 'GET'],
-        ['name' => '📱 PWA - Profil', 'url' => $full_pwa_url.'#/profil', 'method' => 'GET'],
-        ['name' => '📱 PWA - Debug', 'url' => $full_pwa_url.'#/debug', 'method' => 'GET'],
-    ],
-    'backend_api' => [
-        ['name' => '🔌 API - Index', 'url' => $full_api_url.'index.php', 'method' => 'GET', 'requires_auth' => false],
-        ['name' => '🔌 API - Me', 'url' => $full_api_url.'me.php', 'method' => 'GET', 'requires_auth' => true],
-        ['name' => '🔌 API - Planning list', 'url' => $full_api_url.'planning.php', 'method' => 'GET', 'requires_auth' => true],
-        ['name' => '🔌 API - Planning view', 'url' => $full_api_url.'planning_view.php?id=1', 'method' => 'GET', 'requires_auth' => true],
-        ['name' => '🔌 API - Rapports list', 'url' => $full_api_url.'rapports.php', 'method' => 'GET', 'requires_auth' => true],
-        ['name' => '🔌 API - Notifications list', 'url' => $full_api_url.'notifications_list.php', 'method' => 'GET', 'requires_auth' => true],
-        ['name' => '🔌 API - Materiel list', 'url' => $full_api_url.'materiel_list.php', 'method' => 'GET', 'requires_auth' => true],
-    ],
-    'backend_auth' => [
-        ['name' => '🔐 Auth - Login endpoint', 'url' => dol_buildpath('/custom/mv3pro_portail/mobile_app/api/auth.php?action=login', 2), 'method' => 'POST'],
-        ['name' => '🔐 Auth - Logout endpoint', 'url' => dol_buildpath('/custom/mv3pro_portail/mobile_app/api/auth.php?action=logout', 2), 'method' => 'POST'],
-    ],
-    'database_tables' => [
-        ['name' => '🗄️ Table - mv3_config', 'table' => MAIN_DB_PREFIX.'mv3_config'],
-        ['name' => '🗄️ Table - mv3_error_log', 'table' => MAIN_DB_PREFIX.'mv3_error_log'],
-        ['name' => '🗄️ Table - mv3_mobile_users', 'table' => MAIN_DB_PREFIX.'mv3_mobile_users'],
-        ['name' => '🗄️ Table - mv3_rapport', 'table' => MAIN_DB_PREFIX.'mv3_rapport'],
-        ['name' => '🗄️ Table - mv3_materiel', 'table' => MAIN_DB_PREFIX.'mv3_materiel'],
-        ['name' => '🗄️ Table - mv3_notifications', 'table' => MAIN_DB_PREFIX.'mv3_notifications'],
-    ],
-    'files_structure' => [
-        ['name' => '📁 Fichier - API bootstrap', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/api/v1/_bootstrap.php'],
-        ['name' => '📁 Fichier - Config class', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/class/mv3_config.class.php'],
-        ['name' => '📁 Fichier - Error logger class', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/class/mv3_error_logger.class.php'],
-        ['name' => '📁 Fichier - PWA index.html', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/pwa_dist/index.html'],
-        ['name' => '📁 Dossier - PWA assets', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/pwa_dist/assets', 'is_dir' => true],
-    ],
-];
+// ========================================
+// HELPERS - Fonctions utilitaires
+// ========================================
 
-// Fonction de test HTTP
-function run_http_test($test) {
+/**
+ * Récupère un token mobile admin valide pour les tests
+ */
+function get_test_admin_token($db) {
+    // Chercher un utilisateur mobile admin actif avec session valide
+    $sql = "SELECT s.session_token
+            FROM ".MAIN_DB_PREFIX."mv3_mobile_sessions s
+            INNER JOIN ".MAIN_DB_PREFIX."mv3_mobile_users u ON u.rowid = s.user_id
+            WHERE s.expires_at > NOW()
+            AND u.is_active = 1
+            AND u.role = 'admin'
+            ORDER BY s.expires_at DESC
+            LIMIT 1";
+
+    $resql = $db->query($sql);
+    if ($resql && $db->num_rows($resql) > 0) {
+        $obj = $db->fetch_object($resql);
+        return $obj->session_token;
+    }
+
+    return null;
+}
+
+/**
+ * Récupère un ID réel depuis une table pour les tests
+ */
+function get_real_id($db, $table, $conditions = '') {
+    $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX.$table;
+    if ($conditions) {
+        $sql .= " WHERE ".$conditions;
+    }
+    $sql .= " ORDER BY rowid DESC LIMIT 1";
+
+    $resql = $db->query($sql);
+    if ($resql && $db->num_rows($resql) > 0) {
+        $obj = $db->fetch_object($resql);
+        return $obj->rowid;
+    }
+
+    return null;
+}
+
+/**
+ * Exécute un test HTTP avec détails complets
+ */
+function run_http_test($test, $auth_token = null) {
     $result = [
         'name' => $test['name'],
         'status' => 'UNKNOWN',
         'http_code' => null,
         'response_time' => 0,
         'error_message' => null,
+        'debug_id' => null,
+        'sql_error' => null,
         'details' => []
     ];
 
@@ -102,17 +112,33 @@ function run_http_test($test) {
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-        if ($test['method'] == 'POST') {
-            curl_setopt($ch, CURLOPT_POST, true);
+        // Headers
+        $headers = [];
+        if ($auth_token) {
+            $headers[] = 'X-Auth-Token: '.$auth_token;
+            $headers[] = 'Authorization: Bearer '.$auth_token;
+        }
+        if (!empty($headers)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         }
 
-        // Si nécessite auth, ajouter un token de test
-        if (!empty($test['requires_auth'])) {
-            // Note: En production, utiliser un vrai token de test
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Authorization: Bearer test_token',
-                'X-Auth-Token: test_token'
-            ]);
+        // Method
+        if (!empty($test['method'])) {
+            if ($test['method'] == 'POST') {
+                curl_setopt($ch, CURLOPT_POST, true);
+                if (!empty($test['data'])) {
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($test['data']));
+                    $headers[] = 'Content-Type: application/json';
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                }
+            } elseif ($test['method'] == 'PUT') {
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+                if (!empty($test['data'])) {
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($test['data']));
+                }
+            } elseif ($test['method'] == 'DELETE') {
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            }
         }
 
         $response = curl_exec($ch);
@@ -123,22 +149,55 @@ function run_http_test($test) {
 
         $result['http_code'] = $http_code;
 
+        // Parser la réponse JSON pour extraire debug_id et erreurs
+        if ($response) {
+            $json = json_decode($response, true);
+            if ($json) {
+                if (isset($json['debug_id'])) {
+                    $result['debug_id'] = $json['debug_id'];
+                }
+                if (isset($json['sql_error'])) {
+                    $result['sql_error'] = $json['sql_error'];
+                }
+                if (isset($json['error'])) {
+                    $result['error_message'] = $json['error'];
+                }
+                if (isset($json['code'])) {
+                    $result['details'][] = 'Code: '.$json['code'];
+                }
+            }
+        }
+
         if ($curl_error) {
             $result['status'] = 'ERROR';
-            $result['error_message'] = 'cURL Error: '.$curl_error;
+            $result['error_message'] = 'cURL: '.$curl_error;
         } elseif ($http_code == 200) {
             $result['status'] = 'OK';
-        } elseif ($http_code == 401 && !empty($test['requires_auth'])) {
-            $result['status'] = 'OK'; // Normal si pas de token valide
+        } elseif ($http_code == 201) {
+            $result['status'] = 'OK';
+            $result['details'][] = 'Created';
+        } elseif ($http_code == 401 && !empty($test['expect_401'])) {
+            $result['status'] = 'OK';
             $result['details'][] = 'Auth required (expected)';
+        } elseif ($http_code == 403 && !empty($test['expect_403'])) {
+            $result['status'] = 'OK';
+            $result['details'][] = 'Forbidden (expected)';
+        } elseif ($http_code == 503 && !empty($test['expect_503'])) {
+            $result['status'] = 'OK';
+            $result['details'][] = 'Maintenance mode (expected)';
         } elseif ($http_code >= 400 && $http_code < 500) {
             $result['status'] = 'WARNING';
-            $result['error_message'] = 'Client error';
+            if (!$result['error_message']) {
+                $result['error_message'] = 'Client error '.$http_code;
+            }
         } elseif ($http_code >= 500) {
             $result['status'] = 'ERROR';
-            $result['error_message'] = 'Server error';
+            if (!$result['error_message']) {
+                $result['error_message'] = 'Server error '.$http_code;
+            }
         } else {
             $result['status'] = 'WARNING';
+            $result['details'][] = 'Unexpected code';
         }
     } catch (Exception $e) {
         $result['status'] = 'ERROR';
@@ -150,12 +209,15 @@ function run_http_test($test) {
     return $result;
 }
 
-// Fonction de test table BDD
+/**
+ * Test table BDD
+ */
 function run_database_test($test, $db) {
     $result = [
         'name' => $test['name'],
         'status' => 'UNKNOWN',
         'error_message' => null,
+        'sql_error' => null,
         'details' => []
     ];
 
@@ -176,16 +238,20 @@ function run_database_test($test, $db) {
         } else {
             $result['status'] = 'ERROR';
             $result['error_message'] = 'Table not found';
+            $result['sql_error'] = $db->lasterror();
         }
     } catch (Exception $e) {
         $result['status'] = 'ERROR';
         $result['error_message'] = $e->getMessage();
+        $result['sql_error'] = $db->lasterror();
     }
 
     return $result;
 }
 
-// Fonction de test fichier/dossier
+/**
+ * Test fichier/dossier
+ */
 function run_file_test($test) {
     $result = [
         'name' => $test['name'],
@@ -197,7 +263,7 @@ function run_file_test($test) {
     if (!empty($test['is_dir'])) {
         if (is_dir($test['path'])) {
             $result['status'] = 'OK';
-            $count = count(scandir($test['path'])) - 2; // -2 pour . et ..
+            $count = count(scandir($test['path'])) - 2;
             $result['details'][] = $count.' files';
         } else {
             $result['status'] = 'ERROR';
@@ -217,7 +283,74 @@ function run_file_test($test) {
     return $result;
 }
 
-// Exécuter tous les tests
+// ========================================
+// CONFIGURATION DES TESTS - ÉVOLUTIF
+// ========================================
+
+$tests_config = [
+    // NIVEAU 1 : SMOKE TESTS (LECTURE)
+    'level1_frontend_pages' => [
+        ['name' => '📱 PWA - Index', 'url' => $full_pwa_url, 'method' => 'GET'],
+        ['name' => '📱 PWA - Login', 'url' => $full_pwa_url.'#/login', 'method' => 'GET'],
+        ['name' => '�� PWA - Dashboard', 'url' => $full_pwa_url.'#/dashboard', 'method' => 'GET'],
+        ['name' => '📱 PWA - Planning list', 'url' => $full_pwa_url.'#/planning', 'method' => 'GET'],
+        ['name' => '📱 PWA - Rapports list', 'url' => $full_pwa_url.'#/rapports', 'method' => 'GET'],
+        ['name' => '📱 PWA - Rapports new', 'url' => $full_pwa_url.'#/rapports/new', 'method' => 'GET'],
+        ['name' => '📱 PWA - Rapports new pro', 'url' => $full_pwa_url.'#/rapports/new-pro', 'method' => 'GET'],
+        ['name' => '📱 PWA - Régie list', 'url' => $full_pwa_url.'#/regie', 'method' => 'GET'],
+        ['name' => '📱 PWA - Régie new', 'url' => $full_pwa_url.'#/regie/new', 'method' => 'GET'],
+        ['name' => '📱 PWA - Sens pose list', 'url' => $full_pwa_url.'#/sens-pose', 'method' => 'GET'],
+        ['name' => '📱 PWA - Sens pose new', 'url' => $full_pwa_url.'#/sens-pose/new', 'method' => 'GET'],
+        ['name' => '📱 PWA - Matériel', 'url' => $full_pwa_url.'#/materiel', 'method' => 'GET'],
+        ['name' => '📱 PWA - Notifications', 'url' => $full_pwa_url.'#/notifications', 'method' => 'GET'],
+        ['name' => '📱 PWA - Profil', 'url' => $full_pwa_url.'#/profil', 'method' => 'GET'],
+        ['name' => '📱 PWA - Debug', 'url' => $full_pwa_url.'#/debug', 'method' => 'GET'],
+        ['name' => '📱 PWA - Maintenance', 'url' => $full_pwa_url.'#/maintenance', 'method' => 'GET'],
+    ],
+    'level1_api_list' => [
+        ['name' => '🔌 API - Index', 'url' => $full_api_url.'index.php', 'method' => 'GET', 'requires_auth' => false],
+        ['name' => '🔌 API - Me', 'url' => $full_api_url.'me.php', 'method' => 'GET', 'requires_auth' => true],
+        ['name' => '🔌 API - Planning list', 'url' => $full_api_url.'planning.php', 'method' => 'GET', 'requires_auth' => true],
+        ['name' => '🔌 API - Rapports list', 'url' => $full_api_url.'rapports.php', 'method' => 'GET', 'requires_auth' => true],
+        ['name' => '🔌 API - Notifications list', 'url' => $full_api_url.'notifications_list.php', 'method' => 'GET', 'requires_auth' => true],
+        ['name' => '🔌 API - Notifications unread count', 'url' => $full_api_url.'notifications_unread_count.php', 'method' => 'GET', 'requires_auth' => true],
+        ['name' => '🔌 API - Materiel list', 'url' => $full_api_url.'materiel_list.php', 'method' => 'GET', 'requires_auth' => true],
+    ],
+    'level1_database' => [
+        ['name' => '🗄️ Table - mv3_config', 'table' => 'mv3_config'],
+        ['name' => '🗄️ Table - mv3_error_log', 'table' => 'mv3_error_log'],
+        ['name' => '🗄️ Table - mv3_mobile_users', 'table' => 'mv3_mobile_users'],
+        ['name' => '🗄️ Table - mv3_mobile_sessions', 'table' => 'mv3_mobile_sessions'],
+        ['name' => '🗄️ Table - mv3_rapport', 'table' => 'mv3_rapport'],
+        ['name' => '🗄️ Table - mv3_materiel', 'table' => 'mv3_materiel'],
+        ['name' => '🗄️ Table - mv3_notifications', 'table' => 'mv3_notifications'],
+    ],
+    'level1_files' => [
+        ['name' => '📁 Config class', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/class/mv3_config.class.php'],
+        ['name' => '📁 Error logger class', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/class/mv3_error_logger.class.php'],
+        ['name' => '📁 API bootstrap', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/api/v1/_bootstrap.php'],
+        ['name' => '📁 PWA index', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/pwa_dist/index.html'],
+        ['name' => '📁 PWA assets', 'path' => DOL_DOCUMENT_ROOT.'/custom/mv3pro_portail/pwa_dist/assets', 'is_dir' => true],
+    ],
+
+    // NIVEAU 2 : TESTS FONCTIONNELS (avec IDs réels)
+    'level2_api_view' => [
+        // Ces tests seront remplis dynamiquement avec des IDs réels
+    ],
+    'level2_api_actions' => [
+        // Tests de création/modification/suppression
+    ],
+
+    // NIVEAU 3 : TESTS PERMISSIONS
+    'level3_permissions' => [
+        // Tests mode DEV, admin vs employé, fichiers
+    ],
+];
+
+// ========================================
+// EXÉCUTION DES TESTS
+// ========================================
+
 $all_results = [];
 $stats = [
     'total' => 0,
@@ -228,98 +361,283 @@ $stats = [
 ];
 
 if ($action == 'run_tests') {
-    // Tests pages frontend
-    foreach ($tests_config['frontend_pages'] as $test) {
-        $result = run_http_test($test);
-        $all_results['frontend_pages'][] = $result;
-        $stats['total']++;
-        $stats[strtolower($result['status'])]++;
+    $auth_token = get_test_admin_token($db);
+
+    // NIVEAU 1 : SMOKE TESTS
+    if ($test_level == 'all' || $test_level == 'level1') {
+        // Frontend pages
+        foreach ($tests_config['level1_frontend_pages'] as $test) {
+            $result = run_http_test($test);
+            $all_results['level1_frontend_pages'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
+
+        // API lists
+        foreach ($tests_config['level1_api_list'] as $test) {
+            $result = run_http_test($test, $auth_token);
+            $all_results['level1_api_list'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
+
+        // Database
+        foreach ($tests_config['level1_database'] as $test) {
+            $result = run_database_test($test, $db);
+            $all_results['level1_database'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
+
+        // Files
+        foreach ($tests_config['level1_files'] as $test) {
+            $result = run_file_test($test);
+            $all_results['level1_files'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
     }
 
-    // Tests API backend
-    foreach ($tests_config['backend_api'] as $test) {
-        $result = run_http_test($test);
-        $all_results['backend_api'][] = $result;
-        $stats['total']++;
-        $stats[strtolower($result['status'])]++;
+    // NIVEAU 2 : TESTS FONCTIONNELS avec IDs réels
+    if ($test_level == 'all' || $test_level == 'level2') {
+        // Récupérer des IDs réels pour les tests
+        $planning_id = get_real_id($db, 'actioncomm', '1=1');
+        $rapport_id = get_real_id($db, 'mv3_rapport', '1=1');
+        $notif_id = get_real_id($db, 'mv3_notifications', 'is_read = 0');
+
+        // Tests API view avec IDs réels
+        if ($planning_id) {
+            $test = ['name' => '🔌 API - Planning view (ID réel: '.$planning_id.')', 'url' => $full_api_url.'planning_view.php?id='.$planning_id, 'method' => 'GET', 'requires_auth' => true];
+            $result = run_http_test($test, $auth_token);
+            $all_results['level2_api_view'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
+
+        if ($rapport_id) {
+            $test = ['name' => '🔌 API - Rapport view (ID réel: '.$rapport_id.')', 'url' => $full_api_url.'rapports_view.php?id='.$rapport_id, 'method' => 'GET', 'requires_auth' => true];
+            $result = run_http_test($test, $auth_token);
+            $all_results['level2_api_view'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
+
+        // Test marquer notification lue
+        if ($notif_id) {
+            $test = [
+                'name' => '🔌 API - Marquer notification lue (ID: '.$notif_id.')',
+                'url' => $full_api_url.'notifications_mark_read.php',
+                'method' => 'POST',
+                'data' => ['notification_id' => $notif_id],
+                'requires_auth' => true
+            ];
+            $result = run_http_test($test, $auth_token);
+            $all_results['level2_api_actions'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
     }
 
-    // Tests Auth
-    foreach ($tests_config['backend_auth'] as $test) {
-        $result = run_http_test($test);
-        $all_results['backend_auth'][] = $result;
-        $stats['total']++;
-        $stats[strtolower($result['status'])]++;
-    }
+    // NIVEAU 3 : TESTS PERMISSIONS
+    if ($test_level == 'all' || $test_level == 'level3') {
+        $dev_mode = $mv3_config->isDevMode();
 
-    // Tests tables BDD
-    foreach ($tests_config['database_tables'] as $test) {
-        $result = run_database_test($test, $db);
-        $all_results['database_tables'][] = $result;
+        // Test 1: Vérifier que mode DEV est bien configuré
+        $test = ['name' => '🔐 Config - Mode DEV status', 'url' => '', 'method' => 'GET'];
+        $result = [
+            'name' => '🔐 Config - Mode DEV status',
+            'status' => 'OK',
+            'http_code' => null,
+            'response_time' => 0,
+            'error_message' => null,
+            'debug_id' => null,
+            'sql_error' => null,
+            'details' => ['Mode: '.($dev_mode ? 'DEV (ON)' : 'PRODUCTION (OFF)')]
+        ];
+        $all_results['level3_permissions'][] = $result;
         $stats['total']++;
-        $stats[strtolower($result['status'])]++;
-    }
+        $stats['ok']++;
 
-    // Tests fichiers
-    foreach ($tests_config['files_structure'] as $test) {
-        $result = run_file_test($test);
-        $all_results['files_structure'][] = $result;
-        $stats['total']++;
-        $stats[strtolower($result['status'])]++;
+        // Test 2: Si mode DEV ON, vérifier que l'API bloque bien les non-admins
+        if ($dev_mode) {
+            $test = [
+                'name' => '🔐 Mode DEV - API bloque non-admin (expect 503)',
+                'url' => $full_api_url.'planning.php',
+                'method' => 'GET',
+                'expect_503' => true
+            ];
+            $result = run_http_test($test, null); // Pas de token = non-admin
+            $all_results['level3_permissions'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
+
+        // Test 3: Vérifier accès fichier avec token valide
+        if ($auth_token) {
+            $planning_id = get_real_id($db, 'actioncomm', '1=1');
+            if ($planning_id) {
+                // D'abord récupérer les fichiers de ce planning
+                $sql = "SELECT ecm.filename
+                        FROM ".MAIN_DB_PREFIX."ecm_files ecm
+                        WHERE ecm.src_object_type = 'action'
+                        AND ecm.src_object_id = ".(int)$planning_id."
+                        LIMIT 1";
+                $resql = $db->query($sql);
+                if ($resql && $db->num_rows($resql) > 0) {
+                    $obj = $db->fetch_object($resql);
+                    $test = [
+                        'name' => '🔐 Permissions - Accès fichier planning avec token',
+                        'url' => $full_api_url.'planning_file.php?id='.$planning_id.'&file='.$obj->filename,
+                        'method' => 'GET',
+                        'requires_auth' => true
+                    ];
+                    $result = run_http_test($test, $auth_token);
+                    $all_results['level3_permissions'][] = $result;
+                    $stats['total']++;
+                    $stats[strtolower($result['status'])]++;
+                }
+            }
+        }
+
+        // Test 4: Vérifier que fichier sans token est refusé
+        $planning_id = get_real_id($db, 'actioncomm', '1=1');
+        if ($planning_id) {
+            $test = [
+                'name' => '🔐 Permissions - Accès fichier SANS token (expect 401)',
+                'url' => $full_api_url.'planning_file.php?id='.$planning_id.'&file=test.pdf',
+                'method' => 'GET',
+                'expect_401' => true
+            ];
+            $result = run_http_test($test, null);
+            $all_results['level3_permissions'][] = $result;
+            $stats['total']++;
+            $stats[strtolower($result['status'])]++;
+        }
     }
 }
 
 // Export JSON
 if ($action == 'export_json' && !empty($all_results)) {
     header('Content-Type: application/json');
-    header('Content-Disposition: attachment; filename="diagnostic_mv3pro_'.date('Y-m-d_H-i-s').'.json"');
+    header('Content-Disposition: attachment; filename="diagnostic_qa_mv3pro_'.date('Y-m-d_H-i-s').'.json"');
     echo json_encode([
         'date' => date('Y-m-d H:i:s'),
+        'test_level' => $test_level,
         'stats' => $stats,
         'results' => $all_results
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// Header
-llxHeader('', 'Diagnostic système MV3 PRO', '');
+// ========================================
+// AFFICHAGE HTML
+// ========================================
 
-print load_fiche_titre('Diagnostic système MV3 PRO', '', 'fa-stethoscope');
+llxHeader('', 'Diagnostic QA complet - MV3 PRO', '');
+
+print load_fiche_titre('Diagnostic QA complet - MV3 PRO', '', 'fa-stethoscope');
 
 // Navigation tabs
 $head = [
     [DOL_URL_ROOT.'/custom/mv3pro_portail/admin/setup.php', 'Configuration', 'config'],
     [DOL_URL_ROOT.'/custom/mv3pro_portail/admin/errors.php', 'Journal d\'erreurs ('.$error_stats['total'].')', 'errors'],
-    [DOL_URL_ROOT.'/custom/mv3pro_portail/admin/diagnostic.php', 'Diagnostic système', 'diagnostic'],
+    [DOL_URL_ROOT.'/custom/mv3pro_portail/admin/diagnostic.php', 'Diagnostic QA', 'diagnostic'],
 ];
 
 print dol_get_fiche_head($head, 'diagnostic', '', -1);
 
-// Actions
+// Boutons actions
 print '<div style="margin-bottom: 20px; text-align: center;">';
 if (empty($action) || $action != 'run_tests') {
-    print '<a href="'.$_SERVER['PHP_SELF'].'?action=run_tests" class="butAction" style="font-size: 16px; padding: 12px 24px;">🚀 Lancer le diagnostic complet</a>';
+    print '<a href="'.$_SERVER['PHP_SELF'].'?action=run_tests&test_level=all" class="butAction" style="font-size: 16px; padding: 12px 24px;">🚀 Lancer diagnostic complet (tous niveaux)</a><br><br>';
+    print '<a href="'.$_SERVER['PHP_SELF'].'?action=run_tests&test_level=level1" class="butAction">Niveau 1 : Smoke tests</a> ';
+    print '<a href="'.$_SERVER['PHP_SELF'].'?action=run_tests&test_level=level2" class="butAction">Niveau 2 : Tests fonctionnels</a> ';
+    print '<a href="'.$_SERVER['PHP_SELF'].'?action=run_tests&test_level=level3" class="butAction">Niveau 3 : Permissions</a>';
 } else {
     print '<a href="'.$_SERVER['PHP_SELF'].'" class="butAction">🔄 Nouveau diagnostic</a> ';
     print '<a href="'.$_SERVER['PHP_SELF'].'?action=export_json" class="butAction">📥 Exporter JSON</a>';
 }
 print '</div>';
 
-// Afficher les statistiques si tests exécutés
-if ($action == 'run_tests' && !empty($all_results)) {
+// Fonction d'affichage d'une catégorie de tests
+function display_test_results($title, $results, $show_details = true) {
+    if (empty($results)) return;
+
     print '<div class="div-table-responsive-no-min">';
     print '<table class="noborder centpercent">';
 
     print '<tr class="liste_titre">';
-    print '<th colspan="5">📊 Résumé du diagnostic</th>';
+    print '<th colspan="'.($show_details ? '8' : '6').'">'.$title.'</th>';
+    print '</tr>';
+
+    print '<tr style="background: #f0f0f0;">';
+    print '<th width="30%">Test</th>';
+    print '<th width="10%">Status</th>';
+    print '<th width="10%">HTTP</th>';
+    print '<th width="10%">Temps (ms)</th>';
+    if ($show_details) {
+        print '<th width="15%">Debug ID</th>';
+        print '<th width="25%">SQL Error</th>';
+    }
+    print '</tr>';
+
+    foreach ($results as $result) {
+        $status_color = $result['status'] == 'OK' ? 'green' : ($result['status'] == 'WARNING' ? 'orange' : 'red');
+        $status_icon = $result['status'] == 'OK' ? '✅' : ($result['status'] == 'WARNING' ? '⚠️' : '❌');
+
+        print '<tr class="oddeven">';
+        print '<td>'.$result['name'].'</td>';
+        print '<td style="text-align: center;"><span style="color: '.$status_color.'; font-weight: bold; font-size: 16px;">'.$status_icon.'</span> '.$result['status'].'</td>';
+        print '<td style="text-align: center;">'.($result['http_code'] ?? '-').'</td>';
+        print '<td style="text-align: center;">'.($result['response_time'] ?? '-').'</td>';
+
+        if ($show_details) {
+            print '<td>';
+            if ($result['debug_id']) {
+                print '<a href="errors.php?debug_id='.$result['debug_id'].'" target="_blank" style="font-family: monospace; font-size: 11px;">'.$result['debug_id'].'</a>';
+            } else {
+                print '-';
+            }
+            print '</td>';
+
+            print '<td>';
+            if ($result['sql_error']) {
+                print '<span style="color: red; font-size: 11px;">'.substr($result['sql_error'], 0, 80).'...</span>';
+            } elseif ($result['error_message']) {
+                print '<span style="color: orange; font-size: 11px;">'.$result['error_message'].'</span>';
+            } elseif (!empty($result['details'])) {
+                print '<span style="color: gray; font-size: 11px;">'.implode(', ', $result['details']).'</span>';
+            } else {
+                print '-';
+            }
+            print '</td>';
+        }
+
+        print '</tr>';
+    }
+
+    print '</table>';
+    print '</div>';
+    print '<br>';
+}
+
+// Afficher les résultats si tests exécutés
+if ($action == 'run_tests' && !empty($all_results)) {
+    // Résumé global
+    print '<div class="div-table-responsive-no-min">';
+    print '<table class="noborder centpercent">';
+
+    print '<tr class="liste_titre">';
+    print '<th colspan="5">📊 Résumé global - Niveau: '.strtoupper($test_level).'</th>';
     print '</tr>';
 
     print '<tr class="oddeven">';
-    print '<td style="text-align: center; font-size: 18px; padding: 20px;"><b>Total tests</b><br><span style="font-size: 32px; font-weight: bold;">'.$stats['total'].'</span></td>';
+    print '<td style="text-align: center; font-size: 18px; padding: 20px;"><b>Total</b><br><span style="font-size: 32px; font-weight: bold;">'.$stats['total'].'</span></td>';
     print '<td style="text-align: center; font-size: 18px; padding: 20px;"><b>✅ OK</b><br><span style="font-size: 32px; font-weight: bold; color: green;">'.$stats['ok'].'</span></td>';
-    print '<td style="text-align: center; font-size: 18px; padding: 20px;"><b>⚠️ Warnings</b><br><span style="font-size: 32px; font-weight: bold; color: orange;">'.$stats['warning'].'</span></td>';
-    print '<td style="text-align: center; font-size: 18px; padding: 20px;"><b>❌ Erreurs</b><br><span style="font-size: 32px; font-weight: bold; color: red;">'.$stats['error'].'</span></td>';
-    print '<td style="text-align: center; font-size: 18px; padding: 20px;"><b>Taux de réussite</b><br><span style="font-size: 32px; font-weight: bold; color: '.($stats['ok'] / $stats['total'] > 0.8 ? 'green' : 'orange').';">'.round(($stats['ok'] / $stats['total']) * 100).'%</span></td>';
+    print '<td style="text-align: center; font-size: 18px; padding: 20px;"><b>⚠️ Warning</b><br><span style="font-size: 32px; font-weight: bold; color: orange;">'.$stats['warning'].'</span></td>';
+    print '<td style="text-align: center; font-size: 18px; padding: 20px;"><b>❌ Error</b><br><span style="font-size: 32px; font-weight: bold; color: red;">'.$stats['error'].'</span></td>';
+    $success_rate = $stats['total'] > 0 ? round(($stats['ok'] / $stats['total']) * 100) : 0;
+    print '<td style="text-align: center; font-size: 18px; padding: 20px;"><b>Taux</b><br><span style="font-size: 32px; font-weight: bold; color: '.($success_rate >= 80 ? 'green' : 'orange').';">'.$success_rate.'%</span></td>';
     print '</tr>';
 
     print '</table>';
@@ -327,92 +645,91 @@ if ($action == 'run_tests' && !empty($all_results)) {
 
     print '<br>';
 
-    // Afficher chaque catégorie de tests
-    $categories = [
-        'frontend_pages' => '📱 Pages PWA Frontend',
-        'backend_api' => '🔌 Endpoints API Backend',
-        'backend_auth' => '🔐 Authentification',
-        'database_tables' => '🗄️ Tables Base de données',
-        'files_structure' => '📁 Structure fichiers'
-    ];
+    // Afficher les résultats par niveau
+    if (!empty($all_results['level1_frontend_pages'])) {
+        display_test_results('🌟 NIVEAU 1 - Smoke Tests : Pages PWA Frontend', $all_results['level1_frontend_pages'], false);
+    }
 
-    foreach ($categories as $cat_key => $cat_label) {
-        if (empty($all_results[$cat_key])) continue;
+    if (!empty($all_results['level1_api_list'])) {
+        display_test_results('🌟 NIVEAU 1 - Smoke Tests : Endpoints API (listes)', $all_results['level1_api_list'], true);
+    }
 
-        print '<div class="div-table-responsive-no-min">';
-        print '<table class="noborder centpercent">';
+    if (!empty($all_results['level1_database'])) {
+        display_test_results('🌟 NIVEAU 1 - Smoke Tests : Tables base de données', $all_results['level1_database'], false);
+    }
 
-        print '<tr class="liste_titre">';
-        print '<th colspan="5">'.$cat_label.'</th>';
-        print '</tr>';
+    if (!empty($all_results['level1_files'])) {
+        display_test_results('🌟 NIVEAU 1 - Smoke Tests : Structure fichiers', $all_results['level1_files'], false);
+    }
 
-        print '<tr style="background: #f0f0f0;">';
-        print '<th width="40%">Test</th>';
-        print '<th width="15%">Status</th>';
-        print '<th width="15%">HTTP Code</th>';
-        print '<th width="15%">Temps (ms)</th>';
-        print '<th width="15%">Détails</th>';
-        print '</tr>';
+    if (!empty($all_results['level2_api_view'])) {
+        display_test_results('⚡ NIVEAU 2 - Tests Fonctionnels : API View (IDs réels)', $all_results['level2_api_view'], true);
+    }
 
-        foreach ($all_results[$cat_key] as $result) {
-            $status_color = $result['status'] == 'OK' ? 'green' : ($result['status'] == 'WARNING' ? 'orange' : 'red');
-            $status_icon = $result['status'] == 'OK' ? '✅' : ($result['status'] == 'WARNING' ? '⚠️' : '❌');
+    if (!empty($all_results['level2_api_actions'])) {
+        display_test_results('⚡ NIVEAU 2 - Tests Fonctionnels : Actions (créer/modifier)', $all_results['level2_api_actions'], true);
+    }
 
-            print '<tr class="oddeven">';
-            print '<td>'.$result['name'].'</td>';
-            print '<td style="text-align: center;"><span style="color: '.$status_color.'; font-weight: bold; font-size: 16px;">'.$status_icon.'</span> '.$result['status'].'</td>';
-            print '<td style="text-align: center;">'.($result['http_code'] ?? '-').'</td>';
-            print '<td style="text-align: center;">'.($result['response_time'] ?? '-').'</td>';
-            print '<td>';
-            if ($result['error_message']) {
-                print '<span style="color: red;">'.$result['error_message'].'</span>';
-            } elseif (!empty($result['details'])) {
-                print implode(', ', $result['details']);
-            } else {
-                print '-';
-            }
-            print '</td>';
-            print '</tr>';
-        }
-
-        print '</table>';
-        print '</div>';
-
-        print '<br>';
+    if (!empty($all_results['level3_permissions'])) {
+        display_test_results('🔐 NIVEAU 3 - Tests Permissions : Mode DEV / Admin vs Employé / Fichiers', $all_results['level3_permissions'], true);
     }
 }
 
-// Instructions
+// Documentation
 print '<div class="info">';
-print '<h3>📚 À propos du diagnostic</h3>';
+print '<h3>📚 Guide du diagnostic QA</h3>';
+print '<h4>🌟 Niveau 1 - Smoke Tests (Lecture)</h4>';
 print '<ul>';
-print '<li><b>Lancer le diagnostic</b> : Teste automatiquement toutes les pages PWA, tous les endpoints API, les tables BDD, et la structure fichiers</li>';
-print '<li><b>✅ OK</b> : Le test a réussi</li>';
-print '<li><b>⚠️ WARNING</b> : Le test a partiellement réussi ou retourné un code inhabituel</li>';
-print '<li><b>❌ ERROR</b> : Le test a échoué (page non trouvée, erreur serveur, etc.)</li>';
-print '<li><b>Exporter JSON</b> : Télécharge un rapport complet en JSON pour analyse ou archivage</li>';
-print '<li><b>Évolutivité</b> : Pour ajouter un nouveau test, modifiez simplement le fichier diagnostic.php et ajoutez une ligne dans $tests_config</li>';
+print '<li>Vérifie que toutes les <b>pages PWA</b> chargent (GET)</li>';
+print '<li>Vérifie que tous les <b>endpoints API list</b> répondent</li>';
+print '<li>Vérifie que toutes les <b>tables BDD</b> existent</li>';
+print '<li>Vérifie que tous les <b>fichiers structure</b> sont présents</li>';
+print '<li><b>Pas de modifications</b> - Lecture uniquement</li>';
 print '</ul>';
-print '</div>';
 
-print '<br>';
+print '<h4>⚡ Niveau 2 - Tests Fonctionnels (Boutons/Formulaires)</h4>';
+print '<ul>';
+print '<li>Teste les <b>endpoints View</b> avec des <b>IDs réels</b> récupérés depuis les listes</li>';
+print '<li>Teste les <b>actions</b> : créer, modifier, supprimer (en mode DEV admin uniquement)</li>';
+print '<li>Exemple : Marquer une notification comme lue, créer un rapport test, etc.</li>';
+print '<li>⚠️ <b>Attention</b> : Ces tests modifient les données (mode DEV recommandé)</li>';
+print '</ul>';
 
-// Info évolutivité
-print '<div class="info" style="background: #e3f2fd;">';
-print '<h3>🔧 Comment ajouter un nouveau test ?</h3>';
-print '<p>Éditez le fichier <code>/custom/mv3pro_portail/admin/diagnostic.php</code> et ajoutez une ligne dans la section <code>$tests_config</code> :</p>';
+print '<h4>🔐 Niveau 3 - Tests Permissions</h4>';
+print '<ul>';
+print '<li><b>Mode DEV</b> : Vérifie que l\'API bloque bien les non-admins (expect 503)</li>';
+print '<li><b>Fichiers</b> : Vérifie l\'accès avec token valide (OK) et sans token (expect 401)</li>';
+print '<li><b>Admin vs Employé</b> : Vérifie que les permissions sont correctes</li>';
+print '<li>Vérifie que les employés ne voient que leurs données (planning, etc.)</li>';
+print '</ul>';
+
+print '<h4>ℹ️ Détails des colonnes</h4>';
+print '<ul>';
+print '<li><b>Status</b> : OK (✅) / WARNING (⚠️) / ERROR (❌)</li>';
+print '<li><b>HTTP</b> : Code HTTP de la réponse (200, 401, 500, etc.)</li>';
+print '<li><b>Temps</b> : Temps de réponse en millisecondes</li>';
+print '<li><b>Debug ID</b> : Identifiant unique si erreur (cliquer pour voir détails dans Journal d\'erreurs)</li>';
+print '<li><b>SQL Error</b> : Erreur SQL complète si erreur de base de données</li>';
+print '</ul>';
+
+print '<h4>🔧 Ajouter de nouveaux tests</h4>';
+print '<p>Éditez <code>/custom/mv3pro_portail/admin/diagnostic.php</code> et ajoutez dans <code>$tests_config</code> :</p>';
 print '<pre style="background: white; padding: 10px; border-radius: 4px;">';
-print '// Pour une page PWA:
-[\'name\' => \'📱 PWA - Ma nouvelle page\', \'url\' => $full_pwa_url.\'#/ma-page\', \'method\' => \'GET\'],
+print '// Niveau 1 - Page PWA
+$tests_config[\'level1_frontend_pages\'][] = [
+    \'name\' => \'📱 PWA - Ma page\',
+    \'url\' => $full_pwa_url.\'#/ma-page\',
+    \'method\' => \'GET\'
+];
 
-// Pour un endpoint API:
-[\'name\' => \'🔌 API - Mon endpoint\', \'url\' => $full_api_url.\'mon_endpoint.php\', \'method\' => \'GET\', \'requires_auth\' => true],
-
-// Pour une table BDD:
-[\'name\' => \'🗄️ Table - ma_table\', \'table\' => MAIN_DB_PREFIX.\'ma_table\'],
-
-// Pour un fichier:
-[\'name\' => \'📁 Fichier - mon fichier\', \'path\' => DOL_DOCUMENT_ROOT.\'/custom/mv3pro_portail/mon_fichier.php\'],';
+// Niveau 2 - Test avec ID réel
+$mon_id = get_real_id($db, \'ma_table\', \'condition\');
+$tests_config[\'level2_api_view\'][] = [
+    \'name\' => \'🔌 API - Mon view (ID: \'.$mon_id.\')\',
+    \'url\' => $full_api_url.\'mon_view.php?id=\'.$mon_id,
+    \'method\' => \'GET\',
+    \'requires_auth\' => true
+];';
 print '</pre>';
 print '</div>';
 
