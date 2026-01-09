@@ -528,16 +528,84 @@ class modMv3pro_portail extends DolibarrModules
         );
         $r++;
 
-        // Sous-menu: Configuration
+        // Sous-menu gauche: Administration (Admin uniquement)
         $this->menu[$r] = array(
             'fk_menu'   => 'fk_mainmenu=mv3pro',
             'type'      => 'left',
-            'titre'     => 'Configuration',
+            'titre'     => 'Administration',
+            'mainmenu'  => 'mv3pro',
+            'leftmenu'  => 'mv3pro_admin',
+            'url'       => '/custom/mv3pro_portail/admin/setup.php',
+            'langs'     => 'mv3pro_portail@mv3pro_portail',
+            'position'  => 900,
+            'enabled'   => '1',
+            'perms'     => '$user->admin',
+            'target'    => '',
+            'user'      => 2
+        );
+        $r++;
+
+        // Sous-menu: Configuration PWA
+        $this->menu[$r] = array(
+            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_admin',
+            'type'      => 'left',
+            'titre'     => '- Configuration PWA',
+            'mainmenu'  => 'mv3pro',
+            'leftmenu'  => '',
+            'url'       => '/custom/mv3pro_portail/admin/setup.php',
+            'langs'     => 'mv3pro_portail@mv3pro_portail',
+            'position'  => 901,
+            'enabled'   => '1',
+            'perms'     => '$user->admin',
+            'target'    => '',
+            'user'      => 2
+        );
+        $r++;
+
+        // Sous-menu: Gestion utilisateurs mobiles
+        $this->menu[$r] = array(
+            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_admin',
+            'type'      => 'left',
+            'titre'     => '- Gestion utilisateurs mobiles',
+            'mainmenu'  => 'mv3pro',
+            'leftmenu'  => '',
+            'url'       => '/custom/mv3pro_portail/mobile_app/admin/manage_users.php',
+            'langs'     => 'mv3pro_portail@mv3pro_portail',
+            'position'  => 902,
+            'enabled'   => '1',
+            'perms'     => '$user->admin',
+            'target'    => '',
+            'user'      => 2
+        );
+        $r++;
+
+        // Sous-menu: Créer utilisateur mobile
+        $this->menu[$r] = array(
+            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_admin',
+            'type'      => 'left',
+            'titre'     => '- Créer utilisateur mobile',
+            'mainmenu'  => 'mv3pro',
+            'leftmenu'  => '',
+            'url'       => '/custom/mv3pro_portail/mobile_app/admin/manage_users.php?action=create',
+            'langs'     => 'mv3pro_portail@mv3pro_portail',
+            'position'  => 903,
+            'enabled'   => '1',
+            'perms'     => '$user->admin',
+            'target'    => '',
+            'user'      => 2
+        );
+        $r++;
+
+        // Sous-menu: Configuration générale (ancien lien)
+        $this->menu[$r] = array(
+            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_admin',
+            'type'      => 'left',
+            'titre'     => '- Configuration module',
             'mainmenu'  => 'mv3pro',
             'leftmenu'  => '',
             'url'       => '/custom/mv3pro_portail/admin/config.php',
             'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 1000,
+            'position'  => 904,
             'enabled'   => '1',
             'perms'     => '$user->admin',
             'target'    => '',

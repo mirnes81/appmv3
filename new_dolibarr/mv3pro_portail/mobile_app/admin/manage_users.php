@@ -220,9 +220,9 @@ llxHeader('', 'Gestion des utilisateurs mobiles');
 
         <br>
 
-        <div class="tabBar">
+        <div class="tabBar" id="create-form-section">
             <h2>Créer un nouvel utilisateur mobile</h2>
-            <form method="POST" action="?action=create">
+            <form method="POST" action="?action=create" id="create-user-form">
                 <input type="hidden" name="token" value="<?php echo newToken(); ?>">
                 <table class="border centpercent">
                     <tr>
@@ -432,6 +432,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (roleSelectEdit) {
         roleSelectEdit.addEventListener('change', updateDolibarrRequirementEdit);
         updateDolibarrRequirementEdit(); // Init
+    }
+
+    // Auto-scroll vers le formulaire de création si action=create dans l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'create') {
+        const createForm = document.querySelector('form[action*="action=create"]');
+        if (createForm) {
+            createForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            createForm.style.border = '2px solid #4CAF50';
+            createForm.style.padding = '15px';
+            createForm.style.borderRadius = '8px';
+            setTimeout(() => {
+                createForm.style.border = '';
+                createForm.style.padding = '';
+            }, 3000);
+        }
     }
 });
 </script>
