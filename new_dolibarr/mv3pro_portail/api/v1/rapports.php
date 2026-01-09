@@ -38,7 +38,9 @@ $offset = ($page - 1) * $limit;
 
 // Construction de la requête
 $where = [];
-$where[] = "r.entity = ".(int)$conf->entity;
+// Filtrer par entité (défaut: 1 si non défini)
+$entity = isset($conf->entity) ? (int)$conf->entity : 1;
+$where[] = "r.entity = ".$entity;
 
 // Filtrer par utilisateur (sauf si admin)
 if ($filter_user_id && !empty($auth['dolibarr_user']->admin)) {
@@ -47,6 +49,13 @@ if ($filter_user_id && !empty($auth['dolibarr_user']->admin)) {
     // Voir seulement ses propres rapports
     if ($auth['user_id']) {
         $where[] = "r.fk_user = ".(int)$auth['user_id'];
+    } elseif (!empty($auth['mobile_user_id'])) {
+        // Si compte unlinked, filtrer par mobile_user_id via une table de correspondance
+        // Pour l'instant, retourner une liste vide pour les comptes unlinked
+        $where[] = "1 = 0"; // Pas de résultats pour comptes non liés
+    } else {
+        // Pas d'utilisateur identifié, retourner vide
+        $where[] = "1 = 0";
     }
 }
 
@@ -80,7 +89,7 @@ $sql = "SELECT r.rowid, r.ref, r.date_rapport, r.heure_debut, r.heure_fin,
         p.ref as projet_ref, p.title as projet_title,
         s.nom as client_nom,
         u.firstname, u.lastname,
-        (SELECT COUNT(*) FROM ".MAIN_DB_PREFIX."mv3_rapport_photo WHERE fk_rapport = r.rowid) as nb_photos
+        0 as nb_photos
         FROM ".MAIN_DB_PREFIX."mv3_rapport r
         LEFT JOIN ".MAIN_DB_PREFIX."projet p ON p.rowid = r.fk_projet
         LEFT JOIN ".MAIN_DB_PREFIX."societe s ON s.rowid = r.fk_soc
@@ -109,14 +118,19 @@ while ($obj = $db->fetch_object($resql)) {
     }
 
     $rapport = [
-        'id' => (int)$obj->rowid,
+        'rowid' => (int)$obj->rowid,
+        'id' => (int)$obj->rowid, // Alias pour compatibilité
         'ref' => $obj->ref,
-        'date' => $obj->date_rapport,
-        'heure_debut' => substr($obj->heure_debut, 0, 5),
-        'heure_fin' => substr($obj->heure_fin, 0, 5),
+        'date_rapport' => $obj->date_rapport,
+        'date' => $obj->date_rapport, // Alias pour compatibilité
+        'heure_debut' => $obj->heure_debut ? substr($obj->heure_debut, 0, 5) : null,
+        'heure_fin' => $obj->heure_fin ? substr($obj->heure_fin, 0, 5) : null,
         'heures' => $heures,
+        'fk_user' => $obj->fk_user ? (int)$obj->fk_user : null,
         'projet_id' => $obj->fk_projet ? (int)$obj->fk_projet : null,
+        'fk_projet' => $obj->fk_projet ? (int)$obj->fk_projet : null,
         'projet_ref' => $obj->projet_ref,
+        'projet_nom' => $obj->projet_title, // Frontend attend projet_nom
         'projet_title' => $obj->projet_title,
         'client' => $obj->client_nom,
         'zones' => $obj->zones,
@@ -124,6 +138,7 @@ while ($obj = $db->fetch_object($resql)) {
         'format' => $obj->format,
         'type_carrelage' => $obj->type_carrelage,
         'travaux' => $obj->travaux_realises,
+        'description' => $obj->travaux_realises, // Alias
         'observations' => $obj->observations,
         'statut' => $obj->statut,
         'user' => trim($obj->firstname . ' ' . $obj->lastname),
