@@ -399,6 +399,45 @@ export const api = {
   async notificationsList(): Promise<any[]> {
     throw new ApiError('Endpoint non disponible (à créer)', 501);
   },
+
+  /**
+   * Méthode générique GET
+   */
+  async get<T = any>(path: string, params?: Record<string, string>): Promise<T> {
+    let url = path;
+    if (params) {
+      const searchParams = new URLSearchParams(params);
+      url += '?' + searchParams.toString();
+    }
+    return apiFetch<T>(url, { method: 'GET' });
+  },
+
+  /**
+   * Méthode générique POST
+   */
+  async post<T = any>(path: string, data: any): Promise<T> {
+    return apiFetch<T>(path, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Méthode générique PUT
+   */
+  async put<T = any>(path: string, data: any): Promise<T> {
+    return apiFetch<T>(path, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Méthode générique DELETE
+   */
+  async delete<T = any>(path: string): Promise<T> {
+    return apiFetch<T>(path, { method: 'DELETE' });
+  },
 };
 
 /**

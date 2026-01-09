@@ -12,8 +12,27 @@ require_method('POST');
 $id = (int)get_param('id', 0);
 require_param($id, 'id');
 
-$sql = "UPDATE ".MAIN_DB_PREFIX."mv3_notifications SET is_read = 1, date_read = NOW()";
+// Vérifier que la notification appartient à l'utilisateur
+$sql_check = "SELECT rowid FROM ".MAIN_DB_PREFIX."mv3_notifications";
+$sql_check .= " WHERE rowid = ".$id." AND fk_user = ".$auth['user_id'];
+$resql_check = $db->query($sql_check);
+
+if (!$resql_check || $db->num_rows($resql_check) == 0) {
+    json_error('Notification non trouvée', 404);
+}
+
+// Marquer comme lu
+$sql = "UPDATE ".MAIN_DB_PREFIX."mv3_notifications SET statut = 'lu', date_lecture = NOW()";
 $sql .= " WHERE rowid = ".$id." AND fk_user = ".$auth['user_id'];
 
-$db->query($sql);
+$resql = $db->query($sql);
+
+if (!$resql) {
+    log_error('notifications_mark_read', 'SQL Error: '.$db->lasterror(), [
+        'sql' => $sql,
+        'notification_id' => $id
+    ], $db->lasterror());
+    json_error('Erreur lors du marquage de la notification', 500);
+}
+
 json_ok(['success' => true, 'marked_read' => $id]);
