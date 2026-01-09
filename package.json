@@ -4,8 +4,8 @@
   "private": true,
   "description": "Workspace pour développer la PWA MV3 PRO dans Bolt",
   "scripts": {
-    "dev": "cd new_dolibarr/mv3pro_portail/pwa && npm run dev",
-    "build": "cd new_dolibarr/mv3pro_portail/pwa && npm run build",
-    "preview": "cd new_dolibarr/mv3pro_portail/pwa && npm run preview"
+    "dev": "npm --prefix ./new_dolibarr/mv3pro_portail run dev",
+    "build": "npm --prefix ./new_dolibarr/mv3pro_portail run build",
+    "preview": "npm --prefix ./new_dolibarr/mv3pro_portail run preview"
   }
 }

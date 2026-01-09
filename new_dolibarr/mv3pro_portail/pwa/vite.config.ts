@@ -56,6 +56,11 @@ export default defineConfig(({ mode }) => {
         }
       })
     ],
+    server: {
+      host: true,
+      port: 3100,
+      strictPort: true
+    },
     build: {
       outDir: '../pwa_dist',
       emptyOutDir: true,
