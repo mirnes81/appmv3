@@ -77,11 +77,17 @@ export function Login() {
     ];
     setDebugSteps(steps);
 
-    const API_BASE = '/custom/mv3pro_portail';
+    const API_BASE = import.meta.env.VITE_API_BASE || '/custom/mv3pro_portail';
     const LOGIN_URL = `${API_BASE}/mobile_app/api/auth.php?action=login`;
     const ME_URL = `${API_BASE}/api/v1/me.php`;
 
-    updateStep(1, { status: 'running' });
+    console.log('🔧 [DEBUG MODE] Configuration:');
+    console.log('  VITE_API_BASE:', import.meta.env.VITE_API_BASE);
+    console.log('  API_BASE resolved:', API_BASE);
+    console.log('  LOGIN_URL:', LOGIN_URL);
+    console.log('  ME_URL:', ME_URL);
+
+    updateStep(1, { status: 'running', details: { url: LOGIN_URL } });
 
     try {
       console.log('[DEBUG STEP 1] Login request to:', LOGIN_URL);
