@@ -118,12 +118,24 @@ export interface LoginResponse {
 }
 
 export interface User {
-  id: number;
+  id: number | null;
+  login?: string | null;
+  name?: string;
   email: string;
-  firstname: string;
-  lastname: string;
+  firstname?: string;
+  lastname?: string;
   dolibarr_user_id?: number;
+  mobile_user_id?: number;
   role?: string;
+  auth_mode?: string;
+  is_unlinked?: boolean;
+  warning?: string;
+  rights?: {
+    read?: boolean;
+    write?: boolean;
+    validate?: boolean;
+    worker?: boolean;
+  };
 }
 
 export interface PlanningEvent {
@@ -205,7 +217,17 @@ export const api = {
   },
 
   async me(): Promise<User> {
-    return apiFetch<User>('/me.php');
+    const response = await apiFetch<{ success: boolean; user: any }>('/me.php');
+    const user = response.user;
+
+    // Extraire firstname/lastname depuis name si nécessaire
+    if (!user.firstname && !user.lastname && user.name) {
+      const nameParts = user.name.split(' ');
+      user.firstname = nameParts[0] || '';
+      user.lastname = nameParts.slice(1).join(' ') || '';
+    }
+
+    return user as User;
   },
 
   async planning(from?: string, to?: string): Promise<PlanningEvent[]> {

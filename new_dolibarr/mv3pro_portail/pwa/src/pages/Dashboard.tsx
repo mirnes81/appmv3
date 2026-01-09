@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,8 +7,16 @@ import { api } from '../lib/api';
 
 export function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.is_unlinked) {
+      navigate('/account-unlinked', { replace: true });
+      return;
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     Promise.all([

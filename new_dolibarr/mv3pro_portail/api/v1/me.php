@@ -30,6 +30,12 @@ $response = [
 // Si mode mobile, ajouter l'ID utilisateur mobile
 if ($auth['mode'] === 'mobile_token' && isset($auth['mobile_user_id'])) {
     $response['user']['mobile_user_id'] = $auth['mobile_user_id'];
+
+    // IMPORTANT: Indiquer si le compte n'est pas lié à Dolibarr
+    if (isset($auth['is_unlinked']) && $auth['is_unlinked']) {
+        $response['user']['is_unlinked'] = true;
+        $response['user']['warning'] = 'Compte non lié à Dolibarr. Fonctionnalités limitées.';
+    }
 }
 
 // Si utilisateur Dolibarr disponible, ajouter plus de détails

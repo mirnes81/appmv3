@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { AccountUnlinked } from './pages/AccountUnlinked';
 import { Planning } from './pages/Planning';
 import { PlanningDetail } from './pages/PlanningDetail';
 import { Rapports } from './pages/Rapports';
@@ -23,6 +24,15 @@ function App() {
       <HashRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+
+          <Route
+            path="/account-unlinked"
+            element={
+              <ProtectedRoute>
+                <AccountUnlinked />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/dashboard"

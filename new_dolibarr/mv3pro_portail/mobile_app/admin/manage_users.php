@@ -38,13 +38,18 @@ if ($action == 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $dolibarr_user = GETPOST('dolibarr_user', 'int');
 
     if ($email && $password && $firstname && $lastname) {
+        // VALIDATION: Lien Dolibarr obligatoire pour employee et manager
+        if (in_array($role, ['employee', 'manager']) && (!$dolibarr_user || $dolibarr_user <= 0)) {
+            $error = "⚠️ ERREUR: Le lien avec un utilisateur Dolibarr est OBLIGATOIRE pour les rôles 'Employé' et 'Manager'. Sans ce lien, l'utilisateur ne pourra pas utiliser l'application mobile correctement.";
+        }
         // Vérifier si l'email existe déjà
-        $sql_check = "SELECT rowid FROM ".MAIN_DB_PREFIX."mv3_mobile_users WHERE email = '".$db->escape($email)."'";
-        $resql_check = $db->query($sql_check);
+        elseif ($resql_check = $db->query("SELECT rowid FROM ".MAIN_DB_PREFIX."mv3_mobile_users WHERE email = '".$db->escape($email)."'")) {
+            if ($db->num_rows($resql_check) > 0) {
+                $error = "Un compte avec cet email existe déjà";
+            }
+        }
 
-        if ($resql_check && $db->num_rows($resql_check) > 0) {
-            $error = "Un compte avec cet email existe déjà";
-        } else {
+        if (!$error) {
             $password_hash = hashPassword($password);
 
             $sql = "INSERT INTO ".MAIN_DB_PREFIX."mv3_mobile_users
@@ -80,7 +85,11 @@ if ($action == 'update' && $_SERVER['REQUEST_METHOD'] === 'POST' && $user_id > 0
     $dolibarr_user = GETPOST('dolibarr_user', 'int');
     $is_active = GETPOST('is_active', 'int');
 
-    $sql = "UPDATE ".MAIN_DB_PREFIX."mv3_mobile_users SET
+    // VALIDATION: Lien Dolibarr obligatoire pour employee et manager
+    if (in_array($role, ['employee', 'manager']) && (!$dolibarr_user || $dolibarr_user <= 0)) {
+        $error = "⚠️ ERREUR: Le lien avec un utilisateur Dolibarr est OBLIGATOIRE pour les rôles 'Employé' et 'Manager'. Sans ce lien, l'utilisateur ne pourra pas utiliser l'application mobile correctement.";
+    } else {
+        $sql = "UPDATE ".MAIN_DB_PREFIX."mv3_mobile_users SET
             email = '".$db->escape($email)."',
             firstname = '".$db->escape($firstname)."',
             lastname = '".$db->escape($lastname)."',
@@ -90,10 +99,11 @@ if ($action == 'update' && $_SERVER['REQUEST_METHOD'] === 'POST' && $user_id > 0
             is_active = ".(int)$is_active."
             WHERE rowid = ".(int)$user_id;
 
-    if ($db->query($sql)) {
-        $success = "Utilisateur modifié avec succès";
-    } else {
-        $error = "Erreur lors de la modification : ".$db->lasterror();
+        if ($db->query($sql)) {
+            $success = "Utilisateur modifié avec succès";
+        } else {
+            $error = "Erreur lors de la modification : ".$db->lasterror();
+        }
     }
 }
 
@@ -246,9 +256,9 @@ llxHeader('', 'Gestion des utilisateurs mobiles');
                         </td>
                     </tr>
                     <tr>
-                        <td>Lier à un utilisateur Dolibarr</td>
+                        <td id="dolibarr_label">Lier à un utilisateur Dolibarr</td>
                         <td>
-                            <select name="dolibarr_user" class="minwidth300">
+                            <select name="dolibarr_user" id="dolibarr_user_create" class="minwidth300">
                                 <option value="0">-- Aucun --</option>
                                 <?php
                                 if ($resql_dol_users) {
@@ -259,6 +269,9 @@ llxHeader('', 'Gestion des utilisateurs mobiles');
                                 }
                                 ?>
                             </select>
+                            <div id="dolibarr_warning_create" style="display: none; color: #d97706; background: #fef3c7; padding: 8px; margin-top: 8px; border-radius: 4px; font-weight: bold;">
+                                ⚠️ OBLIGATOIRE pour les rôles Employé et Manager
+                            </div>
                         </td>
                     </tr>
                     <tr>
@@ -308,9 +321,9 @@ llxHeader('', 'Gestion des utilisateurs mobiles');
                             </td>
                         </tr>
                         <tr>
-                            <td>Lier à un utilisateur Dolibarr</td>
+                            <td id="dolibarr_label_edit">Lier à un utilisateur Dolibarr</td>
                             <td>
-                                <select name="dolibarr_user" class="minwidth300">
+                                <select name="dolibarr_user" id="dolibarr_user_edit" class="minwidth300">
                                     <option value="0">-- Aucun --</option>
                                     <?php
                                     $resql_dol_users2 = $db->query($sql_dol_users);
@@ -323,6 +336,9 @@ llxHeader('', 'Gestion des utilisateurs mobiles');
                                     }
                                     ?>
                                 </select>
+                                <div id="dolibarr_warning_edit" style="display: none; color: #d97706; background: #fef3c7; padding: 8px; margin-top: 8px; border-radius: 4px; font-weight: bold;">
+                                    ⚠️ OBLIGATOIRE pour les rôles Employé et Manager
+                                </div>
                             </td>
                         </tr>
                         <tr>
@@ -367,6 +383,58 @@ llxHeader('', 'Gestion des utilisateurs mobiles');
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+// Gestion du formulaire de création
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.querySelector('select[name="role"]');
+    const dolibarrUserSelect = document.getElementById('dolibarr_user_create');
+    const dolibarrWarning = document.getElementById('dolibarr_warning_create');
+    const dolibarrLabel = document.getElementById('dolibarr_label');
+
+    function updateDolibarrRequirement() {
+        const role = roleSelect.value;
+        const isRequired = role === 'employee' || role === 'manager';
+
+        if (isRequired) {
+            dolibarrWarning.style.display = 'block';
+            dolibarrLabel.classList.add('fieldrequired');
+        } else {
+            dolibarrWarning.style.display = 'none';
+            dolibarrLabel.classList.remove('fieldrequired');
+        }
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', updateDolibarrRequirement);
+        updateDolibarrRequirement(); // Init
+    }
+
+    // Gestion du formulaire d'édition
+    const roleSelectEdit = document.querySelector('form[action*="action=update"] select[name="role"]');
+    const dolibarrUserSelectEdit = document.getElementById('dolibarr_user_edit');
+    const dolibarrWarningEdit = document.getElementById('dolibarr_warning_edit');
+    const dolibarrLabelEdit = document.getElementById('dolibarr_label_edit');
+
+    function updateDolibarrRequirementEdit() {
+        const role = roleSelectEdit.value;
+        const isRequired = role === 'employee' || role === 'manager';
+
+        if (isRequired) {
+            dolibarrWarningEdit.style.display = 'block';
+            dolibarrLabelEdit.classList.add('fieldrequired');
+        } else {
+            dolibarrWarningEdit.style.display = 'none';
+            dolibarrLabelEdit.classList.remove('fieldrequired');
+        }
+    }
+
+    if (roleSelectEdit) {
+        roleSelectEdit.addEventListener('change', updateDolibarrRequirementEdit);
+        updateDolibarrRequirementEdit(); // Init
+    }
+});
+</script>
 
 <?php
 llxFooter();

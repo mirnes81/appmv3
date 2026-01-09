@@ -213,8 +213,11 @@ function require_auth($required = true) {
             if ($resql && $db->num_rows($resql) > 0) {
                 $session = $db->fetch_object($resql);
 
-                // Charger l'utilisateur Dolibarr lié
-                if ($session->dolibarr_user_id) {
+                // Détecter si le compte mobile n'est pas lié à Dolibarr
+                $is_unlinked = empty($session->dolibarr_user_id) || $session->dolibarr_user_id == 0;
+
+                // Charger l'utilisateur Dolibarr lié (si existe)
+                if (!$is_unlinked) {
                     $dol_user = new User($db);
                     if ($dol_user->fetch($session->dolibarr_user_id) > 0) {
                         $dol_user->getrights();
@@ -226,15 +229,16 @@ function require_auth($required = true) {
                 $auth_result = [
                     'mode' => $auth_mode,
                     'mobile_user_id' => $session->mobile_user_id,
-                    'user_id' => $session->dolibarr_user_id,
+                    'user_id' => $is_unlinked ? null : $session->dolibarr_user_id,
                     'email' => $session->email,
                     'name' => trim($session->firstname . ' ' . $session->lastname),
                     'role' => $session->role,
                     'dolibarr_user' => $user ?? null,
+                    'is_unlinked' => $is_unlinked, // FLAG: compte non lié
                     'rights' => [
                         'read' => true,
-                        'write' => true,
-                        'worker' => true,
+                        'write' => !$is_unlinked, // Pas d'écriture si non lié
+                        'worker' => !$is_unlinked,
                     ]
                 ];
 
