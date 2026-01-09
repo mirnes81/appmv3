@@ -49,11 +49,13 @@ if ($provided_key && $configured_key && $provided_key === $configured_key) {
     $debug_key_provided = true;
 }
 
-// Méthode 3: Mode développement (fichier flag)
-$dev_mode = file_exists('/tmp/mv3pro_debug.flag');
+// Méthode 3: Mode développement (fichier flag dans le dossier web)
+// Chemin: /custom/mv3pro_portail/debug.flag
+$debug_flag_path = __DIR__ . '/../../debug.flag';
+$dev_mode = file_exists($debug_flag_path);
 
 if (!$is_admin && !$debug_key_provided && !$dev_mode) {
-    json_error('Accès refusé. Admin Dolibarr ou DEBUG_KEY requis', 'FORBIDDEN', 403);
+    json_error('Accès refusé. Admin Dolibarr ou DEBUG_KEY requis. Pour activer le mode debug, créez le fichier: /custom/mv3pro_portail/debug.flag', 'FORBIDDEN', 403);
 }
 
 // ============================================================================
