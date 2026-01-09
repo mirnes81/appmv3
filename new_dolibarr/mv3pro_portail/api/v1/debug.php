@@ -421,11 +421,19 @@ $system_info = [
 // VÉRIFICATIONS DE CONFIGURATION
 // ============================================================================
 
+// Vérifier l'activation du module via la constante principale
+$module_enabled = false;
+if (!empty($conf->global->MAIN_MODULE_MV3PRO_PORTAIL)) {
+    $module_enabled = true;
+} elseif (!empty($conf->mv3pro_portail->enabled)) {
+    $module_enabled = true;
+}
+
 $config_checks = [
     [
-        'name' => 'Module MV3PRO activé',
-        'status' => !empty($conf->mv3pro_portail->enabled) ? 'OK' : 'ERROR',
-        'value' => !empty($conf->mv3pro_portail->enabled) ? 'Oui' : 'Non',
+        'name' => 'Module MV-3 PRO PORTAIL',
+        'status' => $module_enabled ? 'OK' : 'ERROR',
+        'value' => $module_enabled ? 'Activé' : 'Non activé',
     ],
     [
         'name' => 'Table llx_mv3_mobile_users',
