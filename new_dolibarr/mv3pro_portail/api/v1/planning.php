@@ -31,8 +31,12 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) || !preg_match('/^\d{4}-\d{2}-\d
 // Récupérer l'ID utilisateur Dolibarr
 $user_id = $auth['user_id'];
 
+// Si compte unlinked, retourner planning vide pour l'instant
 if (!$user_id) {
-    json_error('Impossible de déterminer l\'ID utilisateur Dolibarr', 'NO_USER_ID', 400);
+    http_response_code(200);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
 $events = [];
@@ -51,7 +55,7 @@ $sql = "SELECT DISTINCT a.id, a.label, a.datep, a.datep2, a.fulldayevent, a.loca
                OR a.fk_user_action = ".(int)$user_id."
                OR a.fk_user_done = ".(int)$user_id."
                OR (ar.element_type = 'user' AND ar.fk_element = ".(int)$user_id."))
-        AND a.entity IN (".getEntity('actioncomm').")
+        AND a.entity = ".(isset($conf->entity) ? (int)$conf->entity : 1)
         AND (ac.code IN ('AC_POS', 'AC_plan') OR ac.code IS NULL)
         AND (
             (a.datep2 IS NOT NULL AND DATE(a.datep) <= '".$db->escape($to)."' AND DATE(a.datep2) >= '".$db->escape($from)."')
@@ -69,14 +73,19 @@ while ($obj = $db->fetch_object($resql)) {
     $event = [
         'id' => (int)$obj->id,
         'label' => $obj->label,
-        'client' => $obj->client_nom,
+        'datep' => $obj->datep, // Frontend attend 'datep'
+        'datef' => $obj->datep2 ?: null,
+        'date_start' => $obj->datep, // Alias
+        'date_end' => $obj->datep2 ?: $obj->datep, // Alias
+        'client_nom' => $obj->client_nom, // Frontend attend 'client_nom'
+        'client' => $obj->client_nom, // Alias
         'client_id' => $obj->client_id ? (int)$obj->client_id : null,
         'projet' => $obj->projet_title ? ($obj->projet_ref ? $obj->projet_ref.' - ' : '').$obj->projet_title : null,
         'projet_id' => $obj->projet_id ? (int)$obj->projet_id : null,
         'projet_ref' => $obj->projet_ref,
         'location' => $obj->location,
-        'date_start' => $obj->datep,
-        'date_end' => $obj->datep2 ?: $obj->datep,
+        'type' => 'actioncomm',
+        'status' => $obj->percent == 100 ? 'done' : 'pending',
         'fullday' => (bool)$obj->fulldayevent,
         'percent' => (int)$obj->percent,
         'notes' => $obj->note_private
@@ -85,9 +94,9 @@ while ($obj = $db->fetch_object($resql)) {
     $events[] = $event;
 }
 
-json_ok([
-    'events' => $events,
-    'count' => count($events),
-    'from' => $from,
-    'to' => $to
-]);
+// Retourner directement le tableau d'événements (sans wrapper)
+// Le frontend attend PlanningEvent[] directement
+http_response_code(200);
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode($events, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+exit;

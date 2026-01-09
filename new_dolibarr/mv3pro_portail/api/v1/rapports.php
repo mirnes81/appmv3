@@ -150,10 +150,9 @@ while ($obj = $db->fetch_object($resql)) {
     $rapports[] = $rapport;
 }
 
-json_ok([
-    'rapports' => $rapports,
-    'total' => $total,
-    'page' => $page,
-    'limit' => $limit,
-    'pages' => ceil($total / $limit)
-]);
+// Retourner directement le tableau de rapports (sans wrapper)
+// Le frontend attend Rapport[] directement
+http_response_code(200);
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode($rapports, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+exit;
