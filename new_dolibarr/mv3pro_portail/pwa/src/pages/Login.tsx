@@ -94,7 +94,33 @@ export function Login() {
         body: JSON.stringify({ email, password }),
       });
 
-      const loginData = await loginResponse.json();
+      console.log('[DEBUG STEP 1] Response status:', loginResponse.status);
+      console.log('[DEBUG STEP 1] Response headers:', Object.fromEntries(loginResponse.headers.entries()));
+
+      const responseText = await loginResponse.text();
+      console.log('[DEBUG STEP 1] Raw response:', responseText);
+
+      let loginData;
+      try {
+        loginData = JSON.parse(responseText);
+      } catch (jsonError: any) {
+        updateStep(1, {
+          status: 'error',
+          error: 'Réponse serveur invalide (pas JSON)',
+          details: {
+            status: loginResponse.status,
+            statusText: loginResponse.statusText,
+            contentType: loginResponse.headers.get('content-type'),
+            responsePreview: responseText.substring(0, 500),
+            parseError: jsonError?.message || String(jsonError),
+          },
+        });
+        setError('Le serveur a retourné une réponse invalide');
+        setHint('Vérifiez que le serveur PHP est accessible et retourne du JSON');
+        setLoading(false);
+        return;
+      }
+
       console.log('[DEBUG STEP 1] Login response:', {
         status: loginResponse.status,
         success: loginData.success,
