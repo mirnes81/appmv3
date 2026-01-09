@@ -14,6 +14,7 @@ import { RapportNewPro } from './pages/RapportNewPro';
 import { RapportDetail } from './pages/RapportDetail';
 import { Regie } from './pages/Regie';
 import { RegieNew } from './pages/RegieNew';
+import { RegieDetail } from './pages/RegieDetail';
 import { SensPose } from './pages/SensPose';
 import { SensPoseNew } from './pages/SensPoseNew';
 import { Materiel } from './pages/Materiel';
@@ -109,6 +110,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <RegieNew />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/regie/:id"
+            element={
+              <ProtectedRoute>
+                <RegieDetail />
               </ProtectedRoute>
             }
           />
