@@ -11,7 +11,14 @@
 
 require_once __DIR__ . '/_bootstrap.php';
 
-global $db;
+global $db, $conf;
+
+// Vérifier que Dolibarr est bien chargé
+if (!isset($db) || !isset($conf)) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Environnement Dolibarr non chargé'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 // Méthode GET uniquement
 require_method('GET');
@@ -34,7 +41,6 @@ $user_id = $auth['user_id'];
 // Si compte unlinked, retourner planning vide pour l'instant
 if (!$user_id) {
     http_response_code(200);
-    header('Content-Type: application/json; charset=utf-8');
     echo json_encode([], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
@@ -55,7 +61,7 @@ $sql = "SELECT DISTINCT a.id, a.label, a.datep, a.datep2, a.fulldayevent, a.loca
                OR a.fk_user_action = ".(int)$user_id."
                OR a.fk_user_done = ".(int)$user_id."
                OR (ar.element_type = 'user' AND ar.fk_element = ".(int)$user_id."))
-        AND a.entity = ".(isset($conf->entity) ? (int)$conf->entity : 1)
+        AND a.entity = ".((isset($conf->entity) && $conf->entity > 0) ? (int)$conf->entity : 1)."
         AND (ac.code IN ('AC_POS', 'AC_plan') OR ac.code IS NULL)
         AND (
             (a.datep2 IS NOT NULL AND DATE(a.datep) <= '".$db->escape($to)."' AND DATE(a.datep2) >= '".$db->escape($from)."')
@@ -66,7 +72,14 @@ $sql = "SELECT DISTINCT a.id, a.label, a.datep, a.datep2, a.fulldayevent, a.loca
 $resql = $db->query($sql);
 
 if (!$resql) {
-    json_error('Erreur lors de la récupération du planning', 'DATABASE_ERROR', 500);
+    // Log l'erreur SQL pour debug
+    $error_msg = 'Erreur lors de la récupération du planning';
+    if ($db->lasterror()) {
+        $error_msg .= ': ' . $db->lasterror();
+    }
+    error_log('[MV3 Planning] SQL Error: ' . $error_msg);
+    error_log('[MV3 Planning] SQL Query: ' . $sql);
+    json_error($error_msg, 'DATABASE_ERROR', 500);
 }
 
 while ($obj = $db->fetch_object($resql)) {
@@ -96,7 +109,7 @@ while ($obj = $db->fetch_object($resql)) {
 
 // Retourner directement le tableau d'événements (sans wrapper)
 // Le frontend attend PlanningEvent[] directement
+// Note: headers déjà envoyés par _bootstrap.php
 http_response_code(200);
-header('Content-Type: application/json; charset=utf-8');
 echo json_encode($events, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 exit;
