@@ -110,7 +110,6 @@ export function Login() {
         console.log('[DEBUG] Login SUCCESS', debug.responseBody);
         if (debug.responseBody.token) {
           localStorage.setItem('mv3pro_token', debug.responseBody.token);
-          setTimeout(() => navigate('/dashboard', { replace: true }), 1000);
         }
       } else {
         console.log('[DEBUG] Login FAILED', debug.responseBody);
@@ -337,6 +336,27 @@ export function Login() {
             <div style={{ marginTop: '16px', padding: '12px', background: '#fef3c7', borderRadius: '6px' }}>
               <strong>Ouvrez la console pour plus de détails (F12)</strong>
             </div>
+
+            {debugInfo.responseStatus === 200 && debugInfo.responseBody?.success && (
+              <div style={{ marginTop: '16px' }}>
+                <button
+                  onClick={() => navigate('/dashboard', { replace: true })}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: '#059669',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✓ LOGIN REUSSI - Continuer vers le Dashboard
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
