@@ -20,6 +20,14 @@ require_method('GET');
 $id = (int)get_param('id', 0);
 require_param($id, 'id');
 
+// Détecter quelle colonne de note existe (compatibilité multi-versions Dolibarr)
+// Essayer note_private d'abord (version récente), sinon note (version ancienne)
+if (mv3_column_exists($db, 'actioncomm', 'note_private')) {
+    $note_field = 'a.note_private';
+} else {
+    $note_field = 'a.note';
+}
+
 // Requête principale avec toutes les jointures
 $sql = "SELECT
     a.id,
@@ -29,7 +37,7 @@ $sql = "SELECT
     a.datep2 as date_fin,
     a.fulldayevent as all_day,
     a.location as lieu,
-    a.note_private as description,
+    ".$note_field." as description,
     a.fk_user_action as fk_user,
     a.fk_soc as fk_soc,
     a.fk_project as fk_project,
