@@ -5,6 +5,34 @@
  * Diagnostic pour comprendre pourquoi les rapports ne s'affichent pas
  */
 
+// 🔥 GESTIONNAIRE ANTI-500 - CAPTURE TOUTES LES ERREURS ET RETOURNE JSON
+header('Content-Type: application/json; charset=utf-8');
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+error_reporting(E_ALL);
+
+function json_fail($code, $msg, $extra = []) {
+    if (!headers_sent()) {
+        http_response_code($code);
+    }
+    echo json_encode(array_merge(['success'=>false,'error'=>$msg], $extra), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+set_exception_handler(function($e){
+    error_log('[MV3 EXCEPTION rapports_debug.php] ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+    json_fail(500, 'exception', ['message'=>$e->getMessage(), 'file'=>basename($e->getFile()), 'line'=>$e->getLine()]);
+});
+
+register_shutdown_function(function(){
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        error_log('[MV3 FATAL rapports_debug.php] ' . $err['message'] . ' at ' . $err['file'] . ':' . $err['line']);
+        json_fail(500, 'fatal_error', ['message'=>$err['message'], 'file'=>basename($err['file']), 'line'=>$err['line']]);
+    }
+});
+// FIN GESTIONNAIRE ANTI-500
+
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../../core/init.php';
 
