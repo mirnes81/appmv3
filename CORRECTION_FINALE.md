@@ -1,155 +1,75 @@
-# CORRECTION FINALE - Erreur 404 résolue
+# 🎯 CORRECTION FINALE - Photos Planning
 
-## Problème identifié
+## ❌ Problème identifié
 
-L'erreur n'était **PAS** un problème de cache, mais une **erreur SQL** dans l'API:
+**Dans Dolibarr:** L'événement #74049 a **1 image** visible dans l'onglet "Images (1)"
+**Dans la PWA:** `Nombre de fichiers: 0` - Aucune photo affichée
 
+### Cause racine
+L'API cherchait les fichiers directement dans le dossier filesystem:
 ```
-sql_error: "Unknown column 'a.note_private' in 'field list'"
+/documents/actioncomm/74049/
 ```
 
-Le fichier `planning_view.php` utilisait la colonne `note_private` qui n'existe pas dans votre version de Dolibarr.
+Mais **Dolibarr stocke les fichiers dans la table ECM** (`llx_ecm_files`), pas directement dans le dossier!
 
 ---
 
-## Solution appliquée
+## ✅ Solution appliquée
 
-### 1. Correction de l'API planning_view.php ✅
+### 1. API `planning_view.php` - Récupération des fichiers
 
-**Fichier modifié:** `/api/v1/planning_view.php`
+**Ancienne méthode:** `scandir()` sur le dossier filesystem ❌
 
-**Changement:**
-- Ajout d'une détection automatique de la colonne de notes
-- Utilise `note_private` si elle existe (Dolibarr récent)
-- Sinon utilise `note` (Dolibarr ancien)
-- Compatible avec toutes les versions de Dolibarr
+**Nouvelle méthode:** Requête SQL sur `llx_ecm_files` ✅
 
-**Code ajouté:**
-```php
-// Détecter quelle colonne de note existe
-if (mv3_column_exists($db, 'actioncomm', 'note_private')) {
-    $note_field = 'a.note_private';
-} else {
-    $note_field = 'a.note';
+```sql
+SELECT
+    ecm.rowid,
+    ecm.label as filename,
+    ecm.filename as stored_filename,
+    ecm.filepath,
+    ecm.date_c as date_creation,
+    ecm.filesize
+FROM llx_ecm_files as ecm
+WHERE ecm.src_object_type = 'actioncomm'
+AND ecm.src_object_id = 74049
+ORDER BY ecm.position ASC, ecm.date_c DESC
+```
+
+**Fallback:** Si aucun fichier via ECM, on scanne quand même le filesystem (compatibilité)
+
+### 2. API `planning_file.php` - Stream des fichiers
+
+**Ancienne méthode:** Chemin direct `DOL_DATA_ROOT/actioncomm/{id}/{file}` ❌
+
+**Nouvelle méthode:**
+1. Cherche d'abord dans ECM pour obtenir le vrai chemin (`filepath` + `stored_filename`)
+2. Si non trouvé, fallback sur filesystem direct
+3. Stream le fichier depuis le bon emplacement
+
+---
+
+## 🧪 TESTEZ L'API DIRECTEMENT
+
+**URL:**
+```
+https://crm.mv-3pro.ch/custom/mv3pro_portail/api/v1/planning_view.php?id=74049
+```
+
+**Cherchez dans la réponse JSON:**
+```json
+{
+  "fichiers": [ ... ]
 }
 ```
 
----
-
-## Test de la correction
-
-### Étape 1: Recharger l'application
-
-Sur votre mobile, ouvrez:
-```
-https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/
-```
-
-### Étape 2: Vider le cache (si nécessaire)
-
-Si vous voyez encore l'ancienne erreur:
-1. Ouvrir: `https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/FORCE_RELOAD.html`
-2. Cliquer sur les 3 boutons
-3. Rouvrir l'application
-
-### Étape 3: Tester
-
-1. Connectez-vous
-2. Allez sur **Planning**
-3. Cliquez sur un événement (ex: ID 74049)
-4. **Résultat attendu:** Les détails de l'événement s'affichent correctement avec les 3 onglets:
-   - Détails
-   - Photos
-   - Fichiers
+**Si c'est vide `[]`**, vérifiez les logs backend:
+https://crm.mv-3pro.ch/custom/mv3pro_portail/api/v1/debug.php
 
 ---
 
-## Diagnostic de l'erreur
+## 📦 Fichiers modifiés
 
-### Avant la correction:
-
-```
-GET https://crm.mv-3pro.ch/.../planning_view.php?id=74049
-→ 404 Not Found
-→ sql_error: "Unknown column 'a.note_private' in 'field list'"
-```
-
-### Après la correction:
-
-```
-GET https://crm.mv-3pro.ch/.../planning_view.php?id=74049
-→ 200 OK
-→ { id: 74049, titre: "...", description: "...", ... }
-```
-
----
-
-## Fichiers modifiés
-
-```
-/custom/mv3pro_portail/api/v1/planning_view.php
-```
-
-**Lignes modifiées:** 23-29
-
-**Changement:**
-- AVANT: `a.note_private as description` (colonne inexistante)
-- APRÈS: Détection automatique + fallback sur `a.note`
-
----
-
-## Compatibilité
-
-Cette correction rend l'API compatible avec:
-- ✅ Dolibarr < 6.0 (utilise `note`)
-- ✅ Dolibarr >= 6.0 (utilise `note_private`)
-- ✅ Toutes les versions futures
-
----
-
-## Prochaines étapes
-
-1. **Tester** l'application sur votre mobile
-2. **Vérifier** que les événements s'affichent correctement
-3. **Signaler** si d'autres erreurs apparaissent
-
----
-
-## Autres fichiers vérifiés
-
-Les autres fichiers API utilisent déjà la fonction `mv3_select_column()` qui détecte automatiquement la colonne:
-- ✅ `planning.php` - OK
-- ✅ `planning_debug.php` - OK
-- ✅ `regie.php` - À vérifier si erreur similaire
-- ✅ `regie_view.php` - À vérifier si erreur similaire
-
----
-
-## URLs utiles
-
-| Page | URL |
-|------|-----|
-| **Application** | https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/ |
-| **Forcer rechargement** | https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/FORCE_RELOAD.html |
-| **Debug** | https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/DEBUG_MODE.html |
-
----
-
-## Note technique
-
-Cette erreur ne pouvait **PAS** être détectée avec un simple test de l'API sans authentification, car l'erreur SQL se produisait **après** la vérification d'authentification et **pendant** l'exécution de la requête SQL.
-
-C'est pourquoi le diagnostic initial (cache du Service Worker) n'était pas le vrai problème, même si c'était une amélioration utile pour l'application.
-
----
-
-## Conclusion
-
-✅ **Erreur SQL corrigée**
-✅ **API compatible multi-versions**
-✅ **Outils de diagnostic créés**
-✅ **Documentation complète**
-
-**L'application devrait maintenant fonctionner correctement!**
-
-Testez et confirmez que tout fonctionne.
+- `api/v1/planning_view.php` - Utilise ECM au lieu de scandir
+- `api/v1/planning_file.php` - Cherche dans ECM puis fallback filesystem

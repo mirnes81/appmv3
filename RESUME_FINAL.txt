@@ -1,114 +1,88 @@
 ═══════════════════════════════════════════════════════════════
-  RÉSUMÉ FINAL - CORRECTIONS APPLIQUÉES
+  CORRECTION PHOTOS PLANNING - RÉSUMÉ FINAL
 ═══════════════════════════════════════════════════════════════
 
-✅ PROBLÈME 1: Erreur 404 SQL
-   → RÉSOLU: Colonne note_private n'existait pas
-   → FIX: Détection automatique (note_private ou note)
-   → Fichier: api/v1/planning_view.php
+❌ PROBLÈME:
+- Dolibarr: 1 image visible
+- PWA: 0 fichier retourné
 
-✅ PROBLÈME 2: Photos ne s'affichent pas
-   → RÉSOLU: Le navigateur ne peut pas envoyer le token avec <img src="">
-   → FIX: Nouveau composant AuthImage qui charge via fetch()
-   → Fichiers:
-      - pwa/src/components/AuthImage.tsx (nouveau)
-      - pwa/src/pages/PlanningDetail.tsx (modifié)
+✅ CAUSE:
+L'API cherchait dans le dossier filesystem, mais Dolibarr stocke
+les fichiers dans la table "llx_ecm_files"
 
-✅ PROBLÈME 3: Documents ne s'ouvrent pas
-   → RÉSOLU: Même problème d'authentification
-   → FIX: Fonction openFile() avec fetch() + token
-   → Déjà implémenté correctement dans PlanningDetail.tsx
+✅ SOLUTION:
+Modification des API backend pour utiliser la table ECM
 
-───────────────────────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════
 
-📱 COMMENT TESTER
+🧪 TEST #1: API DIRECTEMENT (PAS BESOIN DE LA PWA)
+═══════════════════════════════════════════════════════════════
 
-1. Ouvrir sur mobile:
+Ouvrez cette URL dans votre navigateur:
+
+https://crm.mv-3pro.ch/custom/mv3pro_portail/api/v1/planning_view.php?id=74049
+
+Cherchez "fichiers" dans la réponse JSON.
+
+ATTENDU:
+{
+  "success": true,
+  "fichiers": [
+    {
+      "name": "ak0ac3a-2d26-44bd-937c-ceea9f926114.png",
+      "is_image": true,
+      ...
+    }
+  ]
+}
+
+Si vous voyez "fichiers": [], c'est que:
+- La table ECM ne contient pas l'image
+- Le fichier n'existe pas sur le disque
+- Il y a une erreur SQL
+
+═══════════════════════════════════════════════════════════════
+
+🔍 TEST #2: LOGS BACKEND
+═══════════════════════════════════════════════════════════════
+
+URL: https://crm.mv-3pro.ch/custom/mv3pro_portail/api/v1/debug.php
+
+Cherchez la section:
+"===== SCAN FICHIERS PLANNING #74049 (VIA ECM) ====="
+
+Vous devriez voir:
+- Fichiers trouvés dans ECM: 1
+- Chemin du fichier
+- "=> AJOUTÉ: ..."
+
+═══════════════════════════════════════════════════════════════
+
+📱 TEST #3: PWA (APRÈS AVOIR VALIDÉ L'API)
+═══════════════════════════════════════════════════════════════
+
+1. Vider le cache:
    https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/FORCE_RELOAD.html
 
-2. Cliquer sur les 3 boutons:
-   - Désactiver le Service Worker
-   - Vider le cache complet
-   - Effacer le token
+2. Se reconnecter
 
-3. Ouvrir l'application et se connecter
+3. Planning → Événement #74049 → Onglet Photos
 
-4. Aller sur Planning → Cliquer sur un événement
+4. L'image devrait s'afficher!
 
-5. Vérifier les 3 onglets:
-   📋 Détails  → Infos événement
-   📸 Photos   → Grille de photos (avec spinner puis affichage)
-   📎 Fichiers → Liste des documents
+═══════════════════════════════════════════════════════════════
 
-───────────────────────────────────────────────────────────────
+📋 FICHIERS MODIFIÉS
+═══════════════════════════════════════════════════════════════
 
-🎯 RÉSULTATS ATTENDUS
+- api/v1/planning_view.php   → Récupération via ECM
+- api/v1/planning_file.php    → Stream via ECM
 
-✓ Les photos s'affichent avec un spinner pendant le chargement
-✓ Cliquer sur une photo l'ouvre en plein écran
-✓ Les documents s'ouvrent dans un nouvel onglet
-✓ Les PDF s'affichent directement dans le navigateur
-✓ Aucune erreur 404 dans la console
+PAS DE REBUILD PWA NÉCESSAIRE (seul le backend a changé)
 
-───────────────────────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════
 
-📄 DOCUMENTATION COMPLÈTE
-
-Voir les fichiers:
-- FIX_PHOTOS_ET_DOCUMENTS.md  → Détails techniques complets
-- CORRECTION_FINALE.md         → Fix erreur SQL
-- SOLUTION_ERREUR_404.md       → Solutions cache/rechargement
-
-───────────────────────────────────────────────────────────────
-
-🔧 EN CAS DE PROBLÈME
-
-Si les photos ne s'affichent toujours pas:
-
-1. Vérifier la console JavaScript (F12)
-2. Activer le mode debug: DEBUG_MODE.html
-3. Vérifier que les fichiers existent côté serveur:
-   /path/to/dolibarr/documents/actioncomm/{event_id}/
-
-4. Vérifier les logs PHP dans:
-   /custom/mv3pro_portail/admin/errors.php
-
-───────────────────────────────────────────────────────────────
-
-🚀 VERSION
-
-Build:    1768035160
-Date:     2026-01-10
-Hash JS:  index-DkF6o-Cc.js
-Taille:   274.60 KB
-
-───────────────────────────────────────────────────────────────
-
-💡 COMMENT ÇA MARCHE
-
-AVANT (ne fonctionnait pas):
-<img src="/api/v1/planning_file.php?id=123&file=photo.jpg">
-     ↓
-Navigateur fait la requête SANS le token
-     ↓
-API retourne 401 Unauthorized
-     ↓
-Image ne s'affiche pas ❌
-
-APRÈS (fonctionne):
-<AuthImage src="/api/v1/planning_file.php?id=123&file=photo.jpg">
-     ↓
-1. fetch() avec headers Authorization + X-Auth-Token
-2. Convertit la réponse en Blob
-3. Crée une Blob URL (blob://...)
-4. Affiche l'image avec <img src="blob://...">
-     ↓
-Image s'affiche correctement ✅
-
-───────────────────────────────────────────────────────────────
-
-✨ TESTEZ MAINTENANT!
-
-Ouvrez FORCE_RELOAD.html, videz le cache, et testez l'application.
+🚨 COMMENCEZ PAR LE TEST #1 (API directement)
+   Avant de tester la PWA!
 
 ═══════════════════════════════════════════════════════════════

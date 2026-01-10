@@ -70,20 +70,60 @@ if (!$has_access) {
     exit;
 }
 
-// Construire le chemin du fichier
-$upload_dir = DOL_DATA_ROOT.'/actioncomm/'.dol_sanitizeFileName($id);
-$filepath = $upload_dir.'/'.dol_sanitizeFileName($file);
+// Chercher le fichier d'abord dans ECM
+$filepath = null;
+$display_filename = $file;
 
-log_debug("Planning file path: ".$filepath);
+log_debug("Recherche fichier: ".$file." pour event #".$id);
+
+// Méthode 1: Via ECM
+$sql_file = "SELECT
+    ecm.filename as stored_filename,
+    ecm.label as filename,
+    ecm.filepath
+FROM ".MAIN_DB_PREFIX."ecm_files as ecm
+WHERE ecm.src_object_type = 'actioncomm'
+AND ecm.src_object_id = ".$id."
+AND ecm.filename = '".$db->escape($file)."'";
+
+log_debug("SQL ECM file:", ['sql' => $sql_file]);
+
+$resql_file = $db->query($sql_file);
+if ($resql_file && $db->num_rows($resql_file) > 0) {
+    $file_obj = $db->fetch_object($resql_file);
+    $relative_path = $file_obj->filepath.'/'.$file_obj->stored_filename;
+    $filepath = DOL_DATA_ROOT.'/'.$relative_path;
+    $display_filename = $file_obj->filename;
+
+    log_debug("Fichier trouvé via ECM:");
+    log_debug("  - Chemin relatif: ".$relative_path);
+    log_debug("  - Chemin complet: ".$filepath);
+    log_debug("  - Display name: ".$display_filename);
+
+    $db->free($resql_file);
+}
+
+// Méthode 2 (fallback): Filesystem direct
+if (!$filepath || !file_exists($filepath)) {
+    log_debug("Fichier non trouvé via ECM, tentative filesystem...");
+
+    $upload_dir = DOL_DATA_ROOT.'/actioncomm/'.dol_sanitizeFileName($id);
+    $filepath = $upload_dir.'/'.dol_sanitizeFileName($file);
+
+    log_debug("Chemin filesystem: ".$filepath);
+}
 
 // Vérifier que le fichier existe
 if (!file_exists($filepath)) {
+    log_debug("⚠️ FICHIER NON TROUVÉ: ".$filepath);
+
     http_response_code(404);
     header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
         'error' => 'Fichier non trouvé',
-        'file' => $file
+        'file' => $file,
+        'debug' => 'Fichier introuvable sur le disque'
     ]);
     exit;
 }
@@ -123,7 +163,7 @@ if (!$mime) {
 // Headers pour ouvrir dans le navigateur (inline) plutôt que télécharger
 header('Content-Type: '.$mime);
 header('Content-Length: '.filesize($filepath));
-header('Content-Disposition: inline; filename="'.basename($filepath).'"');
+header('Content-Disposition: inline; filename="'.$display_filename.'"');
 header('Cache-Control: private, max-age=3600');
 header('X-Content-Type-Options: nosniff');
 

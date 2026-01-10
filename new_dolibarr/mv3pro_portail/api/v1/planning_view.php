@@ -189,69 +189,122 @@ if ($event->elementtype && $event->fk_element) {
     ];
 }
 
-// Récupérer les fichiers joints
-// Les fichiers d'un actioncomm sont dans documents/actioncomm/{id}/
-$upload_dir = DOL_DATA_ROOT.'/actioncomm/'.dol_sanitizeFileName($id);
-
-log_debug("===== SCAN FICHIERS PLANNING #".$id." =====");
+// Récupérer les fichiers joints via la table ECM de Dolibarr
+log_debug("===== SCAN FICHIERS PLANNING #".$id." (VIA ECM) =====");
 log_debug("DOL_DATA_ROOT: ".DOL_DATA_ROOT);
-log_debug("Upload dir: ".$upload_dir);
-log_debug("Dossier existe: ".(is_dir($upload_dir) ? 'OUI' : 'NON'));
 
-if (is_dir($upload_dir)) {
-    $files = scandir($upload_dir);
-    log_debug("Fichiers bruts trouvés par scandir: ".count($files)." fichiers", $files);
+// Méthode 1: Via la table llx_ecm_files (méthode standard Dolibarr)
+$sql_files = "SELECT
+    ecm.rowid,
+    ecm.label as filename,
+    ecm.filename as stored_filename,
+    ecm.filepath,
+    ecm.fullpath_orig,
+    ecm.date_c as date_creation,
+    ecm.filesize,
+    ecm.position
+FROM ".MAIN_DB_PREFIX."ecm_files as ecm
+WHERE ecm.src_object_type = 'actioncomm'
+AND ecm.src_object_id = ".$id."
+ORDER BY ecm.position ASC, ecm.date_c DESC";
 
-    $files_count = 0;
-    foreach ($files as $file) {
-        log_debug("  - Analyse fichier: ".$file);
+log_debug("SQL ECM:", ['sql' => $sql_files]);
 
-        if ($file === '.' || $file === '..') {
-            log_debug("    => Ignoré (., ..)");
-            continue;
-        }
+$resql_files = $db->query($sql_files);
+$files_count_ecm = 0;
 
-        if (is_dir($upload_dir.'/'.$file)) {
-            log_debug("    => Ignoré (répertoire)");
-            continue;
-        }
+if ($resql_files) {
+    $num_files = $db->num_rows($resql_files);
+    log_debug("Fichiers trouvés dans ECM: ".$num_files);
 
-        $filepath = $upload_dir.'/'.$file;
+    while ($file_obj = $db->fetch_object($resql_files)) {
+        log_debug("  - Fichier ECM: ".$file_obj->filename);
+
+        // Construire le chemin complet du fichier
+        $relative_path = $file_obj->filepath.'/'.$file_obj->stored_filename;
+        $filepath = DOL_DATA_ROOT.'/'.$relative_path;
+
+        log_debug("    Chemin relatif: ".$relative_path);
+        log_debug("    Chemin complet: ".$filepath);
+        log_debug("    Fichier existe: ".(file_exists($filepath) ? 'OUI' : 'NON'));
 
         if (!file_exists($filepath)) {
-            log_debug("    => Ignoré (n'existe pas!)");
+            log_debug("    => IGNORÉ (fichier n'existe pas sur disque)");
             continue;
         }
 
-        $filesize = filesize($filepath);
+        $filesize = $file_obj->filesize ?: filesize($filepath);
         $mime = mime_content_type($filepath);
-
-        // Déterminer si c'est une image
         $is_image = strpos($mime, 'image/') === 0;
 
-        // Déterminer le base path de l'API (relatif au contexte d'exécution)
         $base_api_path = dirname($_SERVER['SCRIPT_NAME']);
 
         $file_info = [
-            'name' => $file,
-            'size' => $filesize,
+            'name' => $file_obj->filename,
+            'size' => (int)$filesize,
             'size_human' => format_file_size($filesize),
             'mime' => $mime,
             'is_image' => $is_image,
-            'url' => $base_api_path.'/planning_file.php?id='.$id.'&file='.urlencode($file)
+            'url' => $base_api_path.'/planning_file.php?id='.$id.'&file='.urlencode($file_obj->stored_filename)
         ];
 
-        log_debug("    => AJOUTÉ: ".$file." (".$mime.", ".format_file_size($filesize).", is_image=".($is_image?'yes':'no').")");
+        log_debug("    => AJOUTÉ: ".$file_obj->filename." (".$mime.", ".format_file_size($filesize).", is_image=".($is_image?'yes':'no').")");
         $response['fichiers'][] = $file_info;
-        $files_count++;
+        $files_count_ecm++;
     }
 
-    log_debug("Total fichiers valides ajoutés: ".$files_count);
+    $db->free($resql_files);
 } else {
-    log_debug("⚠️ DOSSIER INEXISTANT: ".$upload_dir);
+    log_debug("Erreur requête ECM: ".$db->lasterror());
 }
 
-log_debug("Planning view #".$id." - ".count($response['fichiers'])." fichiers retournés dans la réponse");
+log_debug("Total fichiers ECM ajoutés: ".$files_count_ecm);
+
+// Méthode 2 (fallback): Scanner le dossier filesystem si aucun fichier trouvé via ECM
+if ($files_count_ecm === 0) {
+    log_debug("Aucun fichier via ECM, tentative scan filesystem...");
+
+    $upload_dir = DOL_DATA_ROOT.'/actioncomm/'.dol_sanitizeFileName($id);
+    log_debug("Upload dir: ".$upload_dir);
+    log_debug("Dossier existe: ".(is_dir($upload_dir) ? 'OUI' : 'NON'));
+
+    if (is_dir($upload_dir)) {
+        $files = scandir($upload_dir);
+        log_debug("Fichiers bruts trouvés par scandir: ".count($files)." fichiers");
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..' || is_dir($upload_dir.'/'.$file)) {
+                continue;
+            }
+
+            $filepath = $upload_dir.'/'.$file;
+            if (!file_exists($filepath)) {
+                continue;
+            }
+
+            $filesize = filesize($filepath);
+            $mime = mime_content_type($filepath);
+            $is_image = strpos($mime, 'image/') === 0;
+            $base_api_path = dirname($_SERVER['SCRIPT_NAME']);
+
+            $file_info = [
+                'name' => $file,
+                'size' => $filesize,
+                'size_human' => format_file_size($filesize),
+                'mime' => $mime,
+                'is_image' => $is_image,
+                'url' => $base_api_path.'/planning_file.php?id='.$id.'&file='.urlencode($file)
+            ];
+
+            log_debug("  Filesystem: AJOUTÉ ".$file);
+            $response['fichiers'][] = $file_info;
+        }
+    } else {
+        log_debug("⚠️ DOSSIER FILESYSTEM INEXISTANT: ".$upload_dir);
+    }
+}
+
+log_debug("TOTAL fichiers retournés: ".count($response['fichiers']));
 log_debug("===== FIN SCAN FICHIERS =====");
 
 json_ok($response);
