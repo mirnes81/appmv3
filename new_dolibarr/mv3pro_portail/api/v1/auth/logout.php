@@ -23,7 +23,9 @@ if ($auth['auth_mode'] === 'mobile') {
     $sql = "DELETE FROM ".MAIN_DB_PREFIX."mv3_mobile_sessions
             WHERE session_token = '".$db->escape($auth['raw_token'])."'";
 
-    $db->query($sql);
+    if (!$db->query($sql)) {
+        error_log("Failed to delete mobile session: " . $db->lasterror());
+    }
 
     log_debug("Mobile session deleted");
 

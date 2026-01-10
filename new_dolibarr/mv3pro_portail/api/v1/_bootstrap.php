@@ -432,6 +432,7 @@ function require_auth($required = true) {
 
             if ($resql && $db->num_rows($resql) > 0) {
                 $session = $db->fetch_object($resql);
+                $db->free($resql);
 
                 if ($is_debug) {
                     error_log('[MV3 API] session_found=1');
@@ -506,10 +507,15 @@ function require_auth($required = true) {
                 ]);
 
                 // Mettre à jour last_activity
-                $db->query("UPDATE ".MAIN_DB_PREFIX."mv3_mobile_sessions
+                if (!$db->query("UPDATE ".MAIN_DB_PREFIX."mv3_mobile_sessions
                            SET last_activity = NOW()
-                           WHERE session_token = '".$db->escape($bearer)."'");
+                           WHERE session_token = '".$db->escape($bearer)."'")) {
+                    error_log("Failed to update last_activity: " . $db->lasterror());
+                }
             } else {
+                if ($resql) {
+                    $db->free($resql);
+                }
                 if ($is_debug) {
                     error_log('[MV3 API] session_found=0');
                     error_log('[MV3 API] session_expired_or_not_found=1');
@@ -557,6 +563,7 @@ function require_auth($required = true) {
 
                 if ($resql && $db->num_rows($resql) > 0) {
                     $user_obj = $db->fetch_object($resql);
+                    $db->free($resql);
 
                     // Charger droits
                     $dol_user = new User($db);
@@ -765,6 +772,10 @@ function mv3_table_exists($db, $table_name) {
 
     $exists = ($resql && $db->num_rows($resql) > 0);
 
+    if ($resql) {
+        $db->free($resql);
+    }
+
     // Mettre en cache
     $MV3_DB_SCHEMA_CACHE[$cache_key] = $exists;
 
@@ -799,6 +810,10 @@ function mv3_column_exists($db, $table_name, $column_name) {
     $resql = $db->query($sql);
 
     $exists = ($resql && $db->num_rows($resql) > 0);
+
+    if ($resql) {
+        $db->free($resql);
+    }
 
     // Mettre en cache
     $MV3_DB_SCHEMA_CACHE[$cache_key] = $exists;

@@ -56,6 +56,7 @@ if ($table_exists) {
 
     if ($resql && $db->num_rows($resql) > 0) {
         $mobile_user = $db->fetch_object($resql);
+        $db->free($resql);
 
         if (!$mobile_user->is_active) {
             log_debug("Mobile user account inactive");
@@ -83,9 +84,11 @@ if ($table_exists) {
         if (password_verify($password, $mobile_user->password_hash)) {
             log_debug("Mobile user password verified");
 
-            $db->query("UPDATE ".MAIN_DB_PREFIX."mv3_mobile_users
+            if (!$db->query("UPDATE ".MAIN_DB_PREFIX."mv3_mobile_users
                         SET login_attempts = 0, locked_until = NULL, last_login = NOW()
-                        WHERE rowid = ".(int)$mobile_user->rowid);
+                        WHERE rowid = ".(int)$mobile_user->rowid)) {
+                error_log("Failed to reset login attempts: " . $db->lasterror());
+            }
 
             $token = bin2hex(random_bytes(32));
             $expires_at = date('Y-m-d H:i:s', time() + (30 * 24 * 3600));
@@ -138,7 +141,9 @@ if ($table_exists) {
             }
 
             $sql_update .= " WHERE rowid = ".(int)$mobile_user->rowid;
-            $db->query($sql_update);
+            if (!$db->query($sql_update)) {
+                error_log("Failed to update login attempts: " . $db->lasterror());
+            }
 
             if ($attempts >= 5) {
                 json_error('Compte verrouillé pour 15 minutes après 5 tentatives échouées.', 'TOO_MANY_ATTEMPTS', 403, [
@@ -174,6 +179,9 @@ if (!$token) {
     $resql = $db->query($sql);
 
     if (!$resql || $db->num_rows($resql) === 0) {
+        if ($resql) {
+            $db->free($resql);
+        }
         log_debug("User not found in any table");
         json_error('Identifiants invalides', 'USER_NOT_FOUND', 401, [
             'reason' => 'user_not_found',
@@ -183,6 +191,7 @@ if (!$token) {
     }
 
     $user_obj = $db->fetch_object($resql);
+    $db->free($resql);
 
     if ($user_obj->statut != 1) {
         log_debug("Dolibarr user account inactive");
@@ -224,7 +233,10 @@ if (!$token) {
                         SET api_key = '".$db->escape($api_key)."'
                         WHERE rowid = ".(int)$user_obj->rowid;
 
-        $db->query($sql_update);
+        if (!$db->query($sql_update)) {
+            error_log("CRITICAL: Failed to set API key for user " . $user_obj->rowid . ": " . $db->lasterror());
+            json_error('Erreur lors de la génération du token', 'API_KEY_ERROR', 500);
+        }
     }
 
     $token = base64_encode(json_encode([
@@ -269,5 +281,12 @@ function table_exists($table_name) {
     $sql = "SHOW TABLES LIKE '".MAIN_DB_PREFIX.$table_name."'";
     $resql = $db->query($sql);
 
-    return $resql && $db->num_rows($resql) > 0;
+    if (!$resql) {
+        return false;
+    }
+
+    $exists = $db->num_rows($resql) > 0;
+    $db->free($resql);
+
+    return $exists;
 }

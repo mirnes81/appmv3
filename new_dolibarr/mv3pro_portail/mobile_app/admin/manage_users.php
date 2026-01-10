@@ -215,6 +215,9 @@ llxHeader('', 'Gestion des utilisateurs mobiles');
                     </tr>
                     <?php
                 }
+                if ($resql) {
+                    $db->free($resql);
+                }
                 ?>
             </table>
         </div>
@@ -267,6 +270,7 @@ llxHeader('', 'Gestion des utilisateurs mobiles');
                                         $fullname = $dol_user->firstname.' '.$dol_user->lastname.' ('.$dol_user->login.')';
                                         echo '<option value="'.$dol_user->rowid.'">'.dol_escape_htmltag($fullname).'</option>';
                                     }
+                                    $db->free($resql_dol_users);
                                 }
                                 ?>
                             </select>
@@ -330,10 +334,11 @@ llxHeader('', 'Gestion des utilisateurs mobiles');
                                     $resql_dol_users2 = $db->query($sql_dol_users);
                                     if ($resql_dol_users2) {
                                         while ($dol_user = $db->fetch_object($resql_dol_users2)) {
-                                            $selected = ($dol_user->rowid == $user_edit->dolibarr_user_id) ? 'selected' : '';
+                                            $selected = (isset($user_edit) && $dol_user->rowid == $user_edit->dolibarr_user_id) ? 'selected' : '';
                                             $fullname = $dol_user->firstname.' '.$dol_user->lastname.' ('.$dol_user->login.')';
                                             echo '<option value="'.$dol_user->rowid.'" '.$selected.'>'.dol_escape_htmltag($fullname).'</option>';
                                         }
+                                        $db->free($resql_dol_users2);
                                     }
                                     ?>
                                 </select>

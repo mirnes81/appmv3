@@ -70,11 +70,19 @@ FICHIERS SÉCURITÉ (Security Fixes)
 ✅ rapports/edit_simple.php (fix XSS $_SERVER["PHP_SELF"])
 ✅ mobile_app/includes/dolibarr_bootstrap.php (fix include_once)
 
+FICHIERS FIABILITÉ (Reliability Fixes - Quick Wins)
+----------------------------------------------------
+✅ api/v1/auth/login.php (4x $db->free + 3x vérif query)
+✅ api/v1/auth/logout.php (1x vérif query)
+✅ api/v1/_bootstrap.php (4x $db->free + 1x vérif query)
+✅ mobile_app/admin/manage_users.php (3x $db->free + 1x isset)
+✅ mobile_app/admin/create_mobile_user.php (2x $db->free)
+
 TOTAL
 -----
-📝 Fichiers créés: 9 (8 helpers + 1 doc sécurité)
-✏️  Fichiers modifiés: 36
-📊 Total: 45 fichiers
+📝 Fichiers créés: 10 (8 helpers + 2 docs: sécurité + fiabilité)
+✏️  Fichiers modifiés: 41 (36 refactoring + 5 quick wins reliability)
+📊 Total: 51 fichiers
 
 STATISTIQUES FINALES
 ---------------------
@@ -95,3 +103,12 @@ STATISTIQUES FINALES
 - Total issues security résolues: ~4-6 sur 42
 - Documentation: SECURITY_FIXES.md créé avec analyse complète
 - Issues restantes identifiées: MD5 legacy, validation uploads, etc.
+
+**Fiabilité (Quick Wins appliqués):**
+- Ressources DB libérées ($db->free): 14 occurrences ajoutées
+- Requêtes UPDATE/DELETE vérifiées: 5 ajouts de vérifications
+- Variables undefined corrigées: 1 (isset $user_edit)
+- Fichiers corrigés: 5 (fichiers critiques prioritaires)
+- Impact estimé: -20 à -30 bugs sur 89
+- Documentation: RELIABILITY_ISSUES.md créé avec plan complet
+- Prochaine étape: Appliquer le pattern aux 32+ fichiers API restants

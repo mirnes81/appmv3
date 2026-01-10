@@ -170,8 +170,12 @@
             $resql = $db->query($sql);
 
             if ($resql && $db->num_rows($resql) > 0) {
+                $db->free($resql);
                 $error = "Cet email est déjà utilisé.";
             } else {
+                if ($resql) {
+                    $db->free($resql);
+                }
                 // Créer le hash du mot de passe
                 $hash = password_hash($password, PASSWORD_BCRYPT);
 

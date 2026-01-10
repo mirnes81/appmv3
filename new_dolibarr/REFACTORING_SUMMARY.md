@@ -205,6 +205,24 @@ if (!isset($_SESSION['dol_login']) || empty($user->id)) {
 - 🔧 Vulnérabilités XSS corrigées: **2 fichiers**
 - 📄 Rapport détaillé: Voir `SECURITY_FIXES.md`
 
+### Corrections Fiabilité (Reliability Issues - Quick Wins)
+- ✅ **Ressources DB libérées**: 14 ajouts de `$db->free($resql)`
+  - `api/v1/auth/login.php` (4x)
+  - `api/v1/_bootstrap.php` (4x)
+  - `mobile_app/admin/manage_users.php` (3x)
+  - `mobile_app/admin/create_mobile_user.php` (2x)
+  - `api/v1/auth/logout.php` (N/A, pas de fetch)
+- ✅ **Requêtes vérifiées**: 5 ajouts de vérifications `if (!$db->query())`
+  - `api/v1/auth/login.php`: 3 UPDATE critiques (login attempts, api_key, last_activity)
+  - `api/v1/auth/logout.php`: 1 DELETE session
+  - `api/v1/_bootstrap.php`: 1 UPDATE last_activity
+- ✅ **Variables undefined**: 1 correction avec `isset($user_edit)`
+  - `mobile_app/admin/manage_users.php` (ligne 337)
+- 🔧 **Fichiers corrigés**: 5 fichiers critiques prioritaires
+- 📊 **Impact estimé**: -20 à -30 bugs sur 89 (Rating C → B attendu)
+- 📄 **Rapport détaillé**: Voir `RELIABILITY_ISSUES.md`
+- 🚀 **Prochaine étape**: Appliquer le même pattern aux 32+ fichiers API restants
+
 ---
 
 ## Bénéfices
