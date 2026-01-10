@@ -31,6 +31,12 @@ export function Rapports() {
   const isAdmin = user?.admin === true;
 
   const loadRapports = async (resetPage = false) => {
+    if (!user?.id) {
+      setError('Veuillez vous connecter pour voir vos rapports');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -54,6 +60,7 @@ export function Rapports() {
         params,
         user: {
           id: user?.id,
+          dolibarr_user_id: user?.dolibarr_user_id,
           name: user?.name,
           admin: user?.admin,
         },
@@ -104,8 +111,10 @@ export function Rapports() {
   };
 
   useEffect(() => {
-    loadRapports(true);
-  }, [searchQuery, filterStatut, filterDateDebut, filterDateFin, filterUserId]);
+    if (user?.id) {
+      loadRapports(true);
+    }
+  }, [user?.id, searchQuery, filterStatut, filterDateDebut, filterDateFin, filterUserId]);
 
   // Charger la liste des utilisateurs si admin
   useEffect(() => {
@@ -197,19 +206,19 @@ export function Rapports() {
                 <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
                   <div style={{ fontWeight: '600', marginBottom: '8px', color: '#60a5fa' }}>👤 Informations Utilisateur</div>
                   <div style={{ display: 'grid', gap: '4px' }}>
-                    <div>• Nom: {debugData.debug_info?.user_info?.name || 'N/A'}</div>
-                    <div>• Email: {debugData.debug_info?.user_info?.email || 'N/A'}</div>
-                    <div>• Dolibarr User ID: <span style={{ color: '#10b981', fontWeight: '600' }}>
-                      {debugData.debug_info?.user_info?.dolibarr_user_id || 'NON DÉFINI ❌'}
+                    <div>• Nom: {user?.name || debugData.debug_info?.user_info?.name || 'N/A'}</div>
+                    <div>• Email: {user?.email || debugData.debug_info?.user_info?.email || 'N/A'}</div>
+                    <div>• Dolibarr User ID: <span style={{ color: user?.id || debugData.debug_info?.user_info?.dolibarr_user_id ? '#10b981' : '#ef4444', fontWeight: '600' }}>
+                      {user?.id || user?.dolibarr_user_id || debugData.debug_info?.user_info?.dolibarr_user_id || 'NON DÉFINI ❌'}
                     </span></div>
                     <div>• Mobile User ID (OLD): <span style={{ color: '#f59e0b' }}>
-                      {debugData.debug_info?.user_info?.OLD_user_id || 'N/A'}
+                      {user?.mobile_user_id || debugData.debug_info?.user_info?.OLD_user_id || 'N/A'}
                     </span></div>
-                    <div>• Mode: {debugData.debug_info?.user_info?.mode || 'N/A'}</div>
-                    <div>• Admin: <span style={{ color: debugData.debug_info?.user_info?.is_admin ? '#10b981' : '#ef4444' }}>
-                      {debugData.debug_info?.user_info?.is_admin ? '✅ OUI' : '❌ NON'}
+                    <div>• Mode: {user?.auth_mode || debugData.debug_info?.user_info?.mode || 'N/A'}</div>
+                    <div>• Admin: <span style={{ color: user?.admin || debugData.debug_info?.user_info?.is_admin ? '#10b981' : '#ef4444' }}>
+                      {user?.admin || debugData.debug_info?.user_info?.is_admin ? '✅ OUI' : '❌ NON'}
                     </span></div>
-                    <div>• Compte non lié: {debugData.debug_info?.user_info?.is_unlinked ? '⚠️ OUI' : '✅ NON'}</div>
+                    <div>• Compte non lié: {user?.is_unlinked || debugData.debug_info?.user_info?.is_unlinked ? '⚠️ OUI' : '✅ NON'}</div>
                   </div>
                 </div>
 
@@ -286,23 +295,23 @@ export function Rapports() {
                 )}
 
                 {/* Section 7: Dernier appel API */}
-                {lastApiCall && (
-                  <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
-                    <div style={{ fontWeight: '600', marginBottom: '8px', color: '#fb923c' }}>🌐 Dernier Appel API</div>
-                    <div style={{ display: 'grid', gap: '4px' }}>
-                      <div>• Endpoint: {lastApiCall.endpoint}</div>
-                      <div>• Timestamp: {new Date(lastApiCall.timestamp).toLocaleString('fr-FR')}</div>
+                <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
+                  <div style={{ fontWeight: '600', marginBottom: '8px', color: '#fb923c' }}>🌐 Dernier Appel API</div>
+                  <div style={{ display: 'grid', gap: '4px' }}>
+                    <div>• Endpoint: {lastApiCall?.endpoint || 'Aucun appel effectué'}</div>
+                    <div>• Timestamp: {lastApiCall?.timestamp ? new Date(lastApiCall.timestamp).toLocaleString('fr-FR') : 'N/A'}</div>
+                    {lastApiCall?.params && (
                       <div>• Params: <pre style={{ margin: '4px 0', padding: '8px', background: '#1f2937', borderRadius: '4px', overflow: 'auto' }}>
                         {JSON.stringify(lastApiCall.params, null, 2)}
                       </pre></div>
-                      {lastApiCall.response && (
-                        <div>• Réponse: <pre style={{ margin: '4px 0', padding: '8px', background: '#1f2937', borderRadius: '4px', overflow: 'auto' }}>
-                          {JSON.stringify(lastApiCall.response, null, 2)}
-                        </pre></div>
-                      )}
-                    </div>
+                    )}
+                    {lastApiCall?.response && (
+                      <div>• Réponse: <pre style={{ margin: '4px 0', padding: '8px', background: '#1f2937', borderRadius: '4px', overflow: 'auto' }}>
+                        {JSON.stringify(lastApiCall.response, null, 2)}
+                      </pre></div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* Section 8: Rapports actuels affichés dans la PWA */}
                 <div style={{ padding: '12px', background: '#374151', borderRadius: '8px' }}>

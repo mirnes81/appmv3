@@ -28,6 +28,7 @@ $response = [
     'success' => true,
     'user' => [
         'id' => $auth['user_id'] ?? null,
+        'dolibarr_user_id' => $auth['user_id'] ?? null,
         'login' => $auth['login'] ?? null,
         'name' => $auth['name'] ?? '',
         'email' => $auth['email'] ?? '',

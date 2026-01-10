@@ -81,6 +81,7 @@ async function apiFetch<T = any>(
     const response = await fetch(url, {
       ...options,
       headers,
+      credentials: 'include',
     });
 
     debugLog('API Response', {
@@ -288,6 +289,7 @@ export const api = {
       const response = await fetch(`${AUTH_API_URL}?action=login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -326,6 +328,7 @@ export const api = {
         headers: {
           'Authorization': `Bearer ${storage.getToken()}`,
         },
+        credentials: 'include',
       });
     } finally {
       storage.clearToken();
@@ -528,6 +531,7 @@ export const api = {
       });
 
       xhr.open('POST', url);
+      xhr.withCredentials = true;
       Object.entries(headers).forEach(([key, value]) => {
         xhr.setRequestHeader(key, value);
       });

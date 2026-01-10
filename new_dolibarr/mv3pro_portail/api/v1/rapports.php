@@ -25,6 +25,17 @@ require_method('GET');
 // Authentification obligatoire
 $auth = require_auth(true);
 
+// Vérifier que l'utilisateur est valide
+if (empty($auth['user_id'])) {
+    http_response_code(401);
+    echo json_encode([
+        'success' => false,
+        'error' => 'not_authenticated',
+        'message' => 'Utilisateur non authentifié ou non lié à Dolibarr'
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 // Récupérer les paramètres
 $limit = (int)get_param('limit', 20);
 $page = (int)get_param('page', 1);
@@ -138,11 +149,15 @@ if (!$resql) {
     error_log('[MV3 Rapports] SQL Query: ' . $sql);
 
     // Retourner format standard même en erreur avec items vide
-    http_response_code(200);
+    http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error_code' => 'DATABASE_ERROR',
+        'error' => 'db_error',
         'message' => $error_msg,
+        'debug' => [
+            'sql_error' => $db_error,
+            'query' => $sql
+        ],
         'data' => [
             'items' => [],
             'page' => $page,
