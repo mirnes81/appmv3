@@ -7,7 +7,7 @@ import { AccountUnlinked } from './pages/AccountUnlinked';
 import { Maintenance } from './pages/Maintenance';
 import { Debug } from './pages/Debug';
 import { Planning } from './pages/Planning';
-import { PlanningDetail } from './pages/PlanningDetail';
+import PlanningDetail from './pages/PlanningDetail';
 import { Rapports } from './pages/Rapports';
 import { RapportNew } from './pages/RapportNew';
 import { RapportNewPro } from './pages/RapportNewPro';

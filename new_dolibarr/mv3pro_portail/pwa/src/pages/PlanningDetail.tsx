@@ -1,147 +1,72 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { AuthImage } from '../components/AuthImage';
 import { apiClient } from '../lib/api';
 
-interface EventFile {
+interface FileInfo {
   name: string;
+  path: string;
   size: number;
-  size_human: string;
-  mime: string;
+  date: string;
+  type: 'image' | 'document' | 'other';
   is_image: boolean;
   url: string;
 }
 
-interface EventDetail {
+interface ObjectDetail {
   id: number;
-  titre: string;
-  type_code: string;
-  date_debut: string;
-  date_fin: string;
-  all_day: number;
-  lieu: string;
-  description: string;
-  progression: number;
-  user?: {
-    id: number;
-    nom_complet: string;
-    login: string;
-  };
-  societe?: {
-    id: number;
-    nom: string;
-    type: number;
-  };
-  projet?: {
-    id: number;
-    ref: string;
-    titre: string;
-  };
-  objet_lie?: {
+  ref: string;
+  label: string;
+  type: string;
+  extrafields: Record<string, {
+    label: string;
+    value: any;
     type: string;
-    type_label: string;
-    id: number;
-    ref: string;
-  };
-  fichiers: EventFile[];
+  }>;
+  files: FileInfo[];
+  files_count: number;
+  photos_count: number;
+  datep?: string;
+  datef?: string;
+  location?: string;
+  note?: string;
 }
 
-type TabType = 'details' | 'photos' | 'files';
+type TabType = 'details' | 'photos' | 'fichiers';
 
-export function PlanningDetail() {
-  const { id } = useParams();
-  const [event, setEvent] = useState<EventDetail | null>(null);
+export default function PlanningDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [object, setObject] = useState<ObjectDetail | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('details');
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadEventDetail();
+    loadObject();
   }, [id]);
 
-  const loadEventDetail = async () => {
+  const loadObject = async () => {
+    if (!id) return;
+
     try {
       setLoading(true);
-      setError('');
-      console.log('[PlanningDetail] Loading event ID:', id);
-      console.log('[PlanningDetail] API URL:', `/planning_view.php?id=${id}`);
-      const data = await apiClient(`/planning_view.php?id=${id}`);
-      console.log('[PlanningDetail] Event data received:', data);
-      console.log('[PlanningDetail] ===== FICHIERS DEBUG =====');
-      console.log('[PlanningDetail] Fichiers array:', data.fichiers);
-      console.log('[PlanningDetail] Nombre de fichiers:', data.fichiers ? data.fichiers.length : 0);
-      if (data.fichiers && data.fichiers.length > 0) {
-        console.log('[PlanningDetail] Premier fichier:', data.fichiers[0]);
-        const photos = data.fichiers.filter((f: EventFile) => f.is_image);
-        const docs = data.fichiers.filter((f: EventFile) => !f.is_image);
-        console.log('[PlanningDetail] Photos:', photos.length, photos);
-        console.log('[PlanningDetail] Documents:', docs.length, docs);
-      } else {
-        console.warn('[PlanningDetail] ⚠️ AUCUN FICHIER RETOURNÉ PAR L\'API!');
-      }
-      console.log('[PlanningDetail] ===========================');
-      setEvent(data);
+      setError(null);
+
+      const response = await apiClient.get(`/object/get.php?type=actioncomm&id=${id}`);
+      setObject(response);
     } catch (err: any) {
-      console.error('[PlanningDetail] Erreur chargement événement:', err);
-      console.error('[PlanningDetail] Error status:', err.status);
-      console.error('[PlanningDetail] Error data:', err.data);
-      setError(err.message || 'Erreur de chargement');
+      console.error('[PlanningDetail] Erreur chargement:', err);
+      setError(err.message || 'Erreur lors du chargement');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const openFile = async (fileUrl: string, fileName: string) => {
-    try {
-      const token = localStorage.getItem('mv3pro_token');
-      if (!token) {
-        alert('Token manquant. Veuillez vous reconnecter.');
-        return;
-      }
-
-      const response = await fetch(fileUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Auth-Token': token
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-
-      const newWindow = window.open(url, '_blank');
-
-      if (newWindow) {
-        newWindow.document.title = fileName;
-      }
-    } catch (err: any) {
-      console.error('Erreur ouverture fichier:', err);
-      alert('Erreur lors de l\'ouverture du fichier: ' + (err.message || 'Erreur inconnue'));
-    }
-  };
-
-  // Fonction de compression d'image AGRESSIVE pour téléphones
   const compressImage = async (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.85): Promise<File> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -153,7 +78,6 @@ export function PlanningDetail() {
           let width = img.width;
           let height = img.height;
 
-          // Redimensionner si nécessaire
           if (width > maxWidth || height > maxHeight) {
             if (width > height) {
               height = Math.round((height * maxWidth) / width);
@@ -170,7 +94,6 @@ export function PlanningDetail() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
 
-          // Convertir en Blob avec compression
           canvas.toBlob(
             (blob) => {
               if (blob) {
@@ -178,512 +101,325 @@ export function PlanningDetail() {
                   type: 'image/jpeg',
                   lastModified: Date.now(),
                 });
-                console.log(`[Compression] ${(file.size / 1024).toFixed(0)} KB → ${(compressedFile.size / 1024).toFixed(0)} KB (${Math.round(100 - (compressedFile.size / file.size) * 100)}% de réduction)`);
+                console.log(`[Compression] ${(file.size / 1024).toFixed(0)} KB → ${(compressedFile.size / 1024).toFixed(0)} KB (${Math.round(100 - (compressedFile.size / file.size) * 100)}% réduction)`);
                 resolve(compressedFile);
               } else {
-                reject(new Error('Erreur lors de la compression'));
+                reject(new Error('Erreur compression'));
               }
             },
             'image/jpeg',
             quality
           );
         };
-        img.onerror = () => reject(new Error('Erreur lors du chargement de l\'image'));
+        img.onerror = () => reject(new Error('Erreur chargement image'));
       };
-      reader.onerror = () => reject(new Error('Erreur lors de la lecture du fichier'));
+      reader.onerror = () => reject(new Error('Erreur lecture fichier'));
     });
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Vérifier que c'est une image
-    if (!file.type.startsWith('image/')) {
-      alert('Veuillez sélectionner une image');
-      return;
-    }
+    if (!file || !object) return;
 
     setUploading(true);
     setUploadProgress(0);
 
     try {
-      console.log('[Upload] Taille originale:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+      console.log('[Upload] Fichier:', file.name, '- Taille:', (file.size / 1024 / 1024).toFixed(2), 'MB');
 
-      // Détecter si mobile
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-      // TOUJOURS compresser sur mobile, ou si > 300KB
       let fileToUpload = file;
-      const shouldCompress = isMobile || file.size > 300 * 1024;
 
-      if (shouldCompress) {
-        console.log('[Upload] Compression en cours... (Mobile:', isMobile, ')');
-        setUploadProgress(10);
+      if (file.type.startsWith('image/')) {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const shouldCompress = isMobile || file.size > 300 * 1024;
 
-        // Paramètres de compression adaptés à la taille
-        let maxSize = 1920;
-        let quality = 0.85;
+        if (shouldCompress) {
+          console.log('[Upload] Compression... (Mobile:', isMobile, ')');
+          setUploadProgress(10);
 
-        if (file.size > 10 * 1024 * 1024) {
-          // Très grosse photo (> 10 MB) - compression MAXIMALE
-          maxSize = 1600;
-          quality = 0.70;
-          console.log('[Upload] Mode compression MAXIMALE (photo > 10MB)');
-        } else if (file.size > 5 * 1024 * 1024) {
-          // Grosse photo (> 5 MB) - compression FORTE
-          maxSize = 1600;
-          quality = 0.75;
-          console.log('[Upload] Mode compression FORTE (photo > 5MB)');
-        } else if (isMobile) {
-          // Photo de téléphone
-          maxSize = 1600;
-          quality = 0.80;
-          console.log('[Upload] Mode compression MOBILE');
+          let maxSize = 1920;
+          let quality = 0.85;
+
+          if (file.size > 10 * 1024 * 1024) {
+            maxSize = 1600;
+            quality = 0.70;
+            console.log('[Upload] Mode MAXIMALE (>10MB)');
+          } else if (file.size > 5 * 1024 * 1024) {
+            maxSize = 1600;
+            quality = 0.75;
+            console.log('[Upload] Mode FORTE (>5MB)');
+          } else if (isMobile) {
+            maxSize = 1600;
+            quality = 0.80;
+            console.log('[Upload] Mode MOBILE');
+          }
+
+          fileToUpload = await compressImage(file, maxSize, maxSize, quality);
+          console.log('[Upload] Taille finale:', (fileToUpload.size / 1024 / 1024).toFixed(2), 'MB');
         }
-
-        fileToUpload = await compressImage(file, maxSize, maxSize, quality);
-        console.log('[Upload] Taille finale:', (fileToUpload.size / 1024 / 1024).toFixed(2), 'MB');
-      } else {
-        console.log('[Upload] Pas de compression nécessaire (< 300KB)');
       }
 
       const formData = new FormData();
       formData.append('file', fileToUpload);
-      formData.append('event_id', id || '');
+      formData.append('type', 'actioncomm');
+      formData.append('id', object.id.toString());
 
-      // Simuler une progression pendant l'upload
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) return prev;
-          return prev + 10;
-        });
-      }, 200);
+      setUploadProgress(30);
 
-      console.log('[PlanningDetail] Upload photo pour event ID:', id);
-
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || '/custom/mv3pro_portail/api/v1'}/planning_upload_photo.php`, {
-        method: 'POST',
-        credentials: 'include', // ✅ Envoyer les cookies de session Dolibarr
-        body: formData
+      await apiClient.upload('/object/upload.php', formData, (progress) => {
+        setUploadProgress(30 + (progress * 0.7));
       });
 
-      clearInterval(progressInterval);
       setUploadProgress(100);
+      console.log('[Upload] ✅ Succès!');
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erreur serveur', code: 'UNKNOWN' }));
+      await loadObject();
 
-        // Gestion des erreurs selon le code HTTP
-        let errorMessage = errorData.error || 'Erreur inconnue';
-
-        if (response.status === 401) {
-          errorMessage = 'Session expirée. Veuillez vous reconnecter.';
-          // Rediriger vers la page de connexion après 2s
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 2000);
-        } else if (response.status === 413) {
-          errorMessage = 'Fichier trop volumineux. Taille maximum autorisée dépassée.';
-        } else if (response.status === 415) {
-          errorMessage = 'Type de fichier non autorisé. Utilisez uniquement des images (JPEG, PNG, GIF, WebP).';
-        } else if (response.status === 404) {
-          errorMessage = 'Événement non trouvé.';
-        } else if (response.status === 500) {
-          errorMessage = errorData.error || 'Erreur serveur. Veuillez réessayer.';
-        }
-
-        throw new Error(errorMessage);
+      if (fileToUpload.type.startsWith('image/')) {
+        setActiveTab('photos');
+      } else {
+        setActiveTab('fichiers');
       }
 
-      const result = await response.json();
-      console.log('[PlanningDetail] Upload réussi:', result);
-
-      // Attendre un peu pour montrer 100%
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // ✅ Recharger automatiquement les détails de l'événement pour afficher la nouvelle photo
-      await loadEventDetail();
-
-      alert('✅ Photo uploadée avec succès!');
     } catch (err: any) {
-      console.error('[PlanningDetail] Erreur upload photo:', err);
-      alert('❌ ' + (err.message || 'Erreur inconnue'));
+      console.error('[Upload] Erreur:', err);
+      alert('Erreur lors de l\'upload: ' + (err.message || 'Erreur inconnue'));
     } finally {
       setUploading(false);
       setUploadProgress(0);
-      // Réinitialiser l'input pour permettre de ré-uploader le même fichier
-      e.target.value = '';
+      if (e.target) {
+        e.target.value = '';
+      }
     }
+  };
+
+  const handleFileDelete = async (filename: string) => {
+    if (!object) return;
+    if (!confirm(`Supprimer "${filename}" ?`)) return;
+
+    try {
+      await apiClient.delete(`/object/file.php?type=actioncomm&id=${object.id}&filename=${encodeURIComponent(filename)}`);
+      await loadObject();
+    } catch (err: any) {
+      console.error('[Delete] Erreur:', err);
+      alert('Erreur lors de la suppression: ' + (err.message || 'Erreur inconnue'));
+    }
+  };
+
+  const formatDate = (date: string | undefined) => {
+    if (!date) return '';
+    try {
+      return new Date(date).toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return date;
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   if (loading) {
     return (
-      <Layout title="Chargement..." showBack>
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          <div className="spinner" />
+      <Layout title="Chargement...">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </Layout>
     );
   }
 
-  if (error || !event) {
+  if (error || !object) {
     return (
-      <Layout title="Erreur" showBack>
-        <div style={{ padding: '20px' }}>
-          <div className="card" style={{ padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
-            <p style={{ color: '#ef4444' }}>{error || 'Événement non trouvé'}</p>
+      <Layout title="Erreur">
+        <div className="p-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p className="text-red-800">{error || 'Objet non trouvé'}</p>
           </div>
+          <button
+            onClick={() => navigate('/planning')}
+            className="text-blue-600 hover:underline"
+          >
+            ← Retour au planning
+          </button>
         </div>
       </Layout>
     );
   }
 
-  const photos = event.fichiers.filter(f => f.is_image);
-  const files = event.fichiers.filter(f => !f.is_image);
+  const photos = object.files.filter(f => f.is_image);
+  const documents = object.files.filter(f => !f.is_image);
 
   return (
-    <Layout title={event.titre} showBack>
-      <div style={{ paddingBottom: '80px' }}>
-
-        {/* Tabs Navigation */}
-        <div style={{
-          display: 'flex',
-          backgroundColor: '#fff',
-          borderBottom: '2px solid #e5e7eb',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
-        }}>
+    <Layout title={object.label}>
+      <div className="flex flex-col h-full">
+        {/* Header avec bouton retour */}
+        <div className="bg-white border-b px-4 py-3">
           <button
-            onClick={() => setActiveTab('details')}
-            style={{
-              flex: 1,
-              padding: '16px',
-              backgroundColor: activeTab === 'details' ? '#3b82f6' : 'transparent',
-              color: activeTab === 'details' ? '#fff' : '#6b7280',
-              border: 'none',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
+            onClick={() => navigate('/planning')}
+            className="text-blue-600 hover:underline text-sm mb-2"
           >
-            📋 Détails
+            ← Retour
           </button>
-          <button
-            onClick={() => setActiveTab('photos')}
-            style={{
-              flex: 1,
-              padding: '16px',
-              backgroundColor: activeTab === 'photos' ? '#3b82f6' : 'transparent',
-              color: activeTab === 'photos' ? '#fff' : '#6b7280',
-              border: 'none',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              position: 'relative'
-            }}
-          >
-            📸 Photos
-            {photos.length > 0 && (
-              <span style={{
-                marginLeft: '8px',
-                padding: '2px 8px',
-                backgroundColor: activeTab === 'photos' ? '#1e40af' : '#3b82f6',
-                color: '#fff',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: '700'
-              }}>
-                {photos.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('files')}
-            style={{
-              flex: 1,
-              padding: '16px',
-              backgroundColor: activeTab === 'files' ? '#3b82f6' : 'transparent',
-              color: activeTab === 'files' ? '#fff' : '#6b7280',
-              border: 'none',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              position: 'relative'
-            }}
-          >
-            📎 Fichiers
-            {files.length > 0 && (
-              <span style={{
-                marginLeft: '8px',
-                padding: '2px 8px',
-                backgroundColor: activeTab === 'files' ? '#1e40af' : '#3b82f6',
-                color: '#fff',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: '700'
-              }}>
-                {files.length}
-              </span>
-            )}
-          </button>
+          <h1 className="text-xl font-bold text-gray-900">{object.label}</h1>
+          {object.ref && (
+            <p className="text-sm text-gray-600">Réf: {object.ref}</p>
+          )}
         </div>
 
-        {/* Tab Content */}
-        <div style={{ padding: '20px' }}>
+        {/* Onglets */}
+        <div className="bg-white border-b">
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`flex-1 py-3 text-center font-medium transition-colors ${
+                activeTab === 'details'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Détails
+            </button>
+            <button
+              onClick={() => setActiveTab('photos')}
+              className={`flex-1 py-3 text-center font-medium transition-colors ${
+                activeTab === 'photos'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Photos ({photos.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('fichiers')}
+              className={`flex-1 py-3 text-center font-medium transition-colors ${
+                activeTab === 'fichiers'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Fichiers ({documents.length})
+            </button>
+          </div>
+        </div>
 
+        {/* Contenu des onglets */}
+        <div className="flex-1 overflow-y-auto bg-gray-50">
           {/* Onglet Détails */}
           {activeTab === 'details' && (
-            <div>
-              {/* Informations principales */}
-              <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>
-                  {event.titre}
-                </h2>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/* Dates */}
-                  <div>
-                    <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                      📅 Date
-                    </div>
-                    <div style={{ fontSize: '16px' }}>
-                      {formatDate(event.date_debut)}
-                      {event.date_fin && event.date_fin !== event.date_debut && (
-                        <> → {formatDate(event.date_fin)}</>
-                      )}
-                      {event.all_day === 1 && <span style={{ marginLeft: '8px', fontSize: '14px', color: '#6b7280' }}>(Journée entière)</span>}
-                    </div>
-                  </div>
-
-                  {/* Lieu */}
-                  {event.lieu && (
-                    <div>
-                      <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                        📍 Lieu
-                      </div>
-                      <div style={{ fontSize: '16px' }}>{event.lieu}</div>
-                    </div>
-                  )}
-
-                  {/* Progression */}
-                  {event.progression > 0 && (
-                    <div>
-                      <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                        ⏳ Progression
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ flex: 1, height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${event.progression}%`, backgroundColor: '#3b82f6', transition: 'width 0.3s' }} />
-                        </div>
-                        <span style={{ fontSize: '14px', fontWeight: '500' }}>{event.progression}%</span>
-                      </div>
-                    </div>
+            <div className="p-4 space-y-4">
+              {object.datep && (
+                <div className="bg-white rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-700 mb-2">Date et heure</h3>
+                  <p className="text-sm">
+                    <span className="text-gray-600">Début:</span> {formatDate(object.datep)}
+                  </p>
+                  {object.datef && (
+                    <p className="text-sm mt-1">
+                      <span className="text-gray-600">Fin:</span> {formatDate(object.datef)}
+                    </p>
                   )}
                 </div>
+              )}
+
+              {object.location && (
+                <div className="bg-white rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-700 mb-2">Lieu</h3>
+                  <p className="text-sm text-gray-900">{object.location}</p>
+                </div>
+              )}
+
+              {object.note && (
+                <div className="bg-white rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-700 mb-2">Note</h3>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{object.note}</p>
+                </div>
+              )}
+
+              {Object.keys(object.extrafields).length > 0 && (
+                <div className="bg-white rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-700 mb-3">Informations complémentaires</h3>
+                  <div className="space-y-2">
+                    {Object.entries(object.extrafields).map(([key, field]) => (
+                      <div key={key} className="border-b border-gray-100 pb-2">
+                        <p className="text-xs text-gray-600">{field.label}</p>
+                        <p className="text-sm text-gray-900">{field.value || '-'}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>{object.files_count}</strong> fichiers dont <strong>{object.photos_count}</strong> photos
+                </p>
               </div>
-
-              {/* Utilisateur assigné */}
-              {event.user && (
-                <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
-                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
-                    👤 Assigné à
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '500' }}>
-                    {event.user.nom_complet}
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                    {event.user.login}
-                  </div>
-                </div>
-              )}
-
-              {/* Société */}
-              {event.societe && (
-                <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
-                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
-                    🏢 Société
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '500' }}>
-                    {event.societe.nom}
-                  </div>
-                </div>
-              )}
-
-              {/* Projet */}
-              {event.projet && (
-                <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
-                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
-                    📁 Projet
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '500' }}>
-                    {event.projet.ref}
-                  </div>
-                  {event.projet.titre && (
-                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                      {event.projet.titre}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Objet lié */}
-              {event.objet_lie && (
-                <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
-                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
-                    🔗 Lié à
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '500' }}>
-                    {event.objet_lie.type_label} {event.objet_lie.ref}
-                  </div>
-                </div>
-              )}
-
-              {/* Description */}
-              {event.description && (
-                <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
-                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
-                    📝 Description
-                  </div>
-                  <div style={{ fontSize: '14px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
-                    {event.description}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
           {/* Onglet Photos */}
           {activeTab === 'photos' && (
-            <div>
-              {/* Bouton d'upload */}
-              <div style={{ marginBottom: '20px' }}>
-                <label
-                  htmlFor="photo-upload"
-                  style={{
-                    display: 'block',
-                    padding: '16px',
-                    backgroundColor: uploading ? '#9ca3af' : '#3b82f6',
-                    color: '#fff',
-                    borderRadius: '12px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    textAlign: 'center',
-                    cursor: uploading ? 'not-allowed' : 'pointer',
-                    transition: 'background-color 0.2s',
-                    opacity: uploading ? 0.7 : 1
-                  }}
-                  onMouseOver={(e) => {
-                    if (!uploading) e.currentTarget.style.backgroundColor = '#2563eb';
-                  }}
-                  onMouseOut={(e) => {
-                    if (!uploading) e.currentTarget.style.backgroundColor = '#3b82f6';
-                  }}
-                >
-                  {uploading ? '📤 Upload en cours...' : '📷 Ajouter une photo'}
-                </label>
+            <div className="p-4">
+              <label className="block w-full mb-4">
                 <input
-                  id="photo-upload"
                   type="file"
                   accept="image/*"
-                  capture="environment"
-                  onChange={handlePhotoUpload}
+                  onChange={handleFileUpload}
                   disabled={uploading}
-                  style={{ display: 'none' }}
+                  className="hidden"
                 />
+                <div className="bg-blue-600 text-white rounded-lg p-4 text-center cursor-pointer hover:bg-blue-700 transition-colors">
+                  {uploading ? (
+                    <span>📤 Upload en cours... {Math.round(uploadProgress)}%</span>
+                  ) : (
+                    <span>📷 Ajouter une photo</span>
+                  )}
+                </div>
+              </label>
 
-                {/* Barre de progression */}
-                {uploading && (
-                  <div style={{ marginTop: '12px' }}>
-                    <div style={{
-                      height: '8px',
-                      backgroundColor: '#e5e7eb',
-                      borderRadius: '4px',
-                      overflow: 'hidden'
-                    }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${uploadProgress}%`,
-                        backgroundColor: '#3b82f6',
-                        transition: 'width 0.3s ease'
-                      }} />
-                    </div>
-                    <div style={{
-                      marginTop: '8px',
-                      textAlign: 'center',
-                      fontSize: '14px',
-                      color: '#6b7280',
-                      fontWeight: '500'
-                    }}>
-                      {uploadProgress}%
-                    </div>
+              {uploading && (
+                <div className="mb-4 bg-white rounded-lg p-4">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {photos.length === 0 ? (
-                <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📸</div>
-                  <p style={{ color: '#6b7280' }}>Aucune photo jointe à cet événement</p>
+                <div className="bg-white rounded-lg p-8 text-center text-gray-500">
+                  Aucune photo
                 </div>
               ) : (
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                  gap: '12px'
-                }}>
+                <div className="grid grid-cols-2 gap-2">
                   {photos.map((photo, index) => (
-                    <div
-                      key={index}
-                      onClick={() => setSelectedPhoto(photo.url)}
-                      style={{
-                        position: 'relative',
-                        aspectRatio: '1',
-                        backgroundColor: '#f3f4f6',
-                        borderRadius: '12px',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        transition: 'transform 0.2s, box-shadow 0.2s',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-                      }}
-                    >
+                    <div key={index} className="relative bg-white rounded-lg overflow-hidden shadow">
                       <AuthImage
                         src={photo.url}
                         alt={photo.name}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover'
-                        }}
-                        loading="lazy"
+                        className="w-full h-40 object-cover cursor-pointer"
+                        onClick={() => setSelectedImage(photo.url)}
                       />
-                      <div style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        padding: '8px',
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
-                        color: '#fff',
-                        fontSize: '12px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {photo.name}
+                      <button
+                        onClick={() => handleFileDelete(photo.name)}
+                        className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700 transition-colors"
+                      >
+                        ×
+                      </button>
+                      <div className="p-2">
+                        <p className="text-xs text-gray-600 truncate">{photo.name}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(photo.size)}</p>
                       </div>
                     </div>
                   ))}
@@ -693,144 +429,90 @@ export function PlanningDetail() {
           )}
 
           {/* Onglet Fichiers */}
-          {activeTab === 'files' && (
-            <div>
-              {files.length === 0 ? (
-                <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📎</div>
-                  <p style={{ color: '#6b7280' }}>Aucun fichier joint à cet événement</p>
+          {activeTab === 'fichiers' && (
+            <div className="p-4">
+              <label className="block w-full mb-4">
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+                <div className="bg-blue-600 text-white rounded-lg p-4 text-center cursor-pointer hover:bg-blue-700 transition-colors">
+                  {uploading ? (
+                    <span>📤 Upload en cours... {Math.round(uploadProgress)}%</span>
+                  ) : (
+                    <span>📎 Ajouter un fichier</span>
+                  )}
+                </div>
+              </label>
+
+              {uploading && (
+                <div className="mb-4 bg-white rounded-lg p-4">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {documents.length === 0 ? (
+                <div className="bg-white rounded-lg p-8 text-center text-gray-500">
+                  Aucun fichier
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {files.map((file, index) => (
-                    <div
-                      key={index}
-                      className="card"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '16px',
-                        transition: 'transform 0.2s, box-shadow 0.2s'
-                      }}
-                    >
-                      {/* Icône */}
-                      <div style={{
-                        width: '56px',
-                        height: '56px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: file.mime === 'application/pdf' ? '#fee2e2' : '#f3f4f6',
-                        borderRadius: '12px',
-                        fontSize: '32px',
-                        flexShrink: 0
-                      }}>
-                        {file.mime === 'application/pdf' ? '📕' :
-                         file.mime.includes('word') ? '📘' :
-                         file.mime.includes('excel') || file.mime.includes('spreadsheet') ? '📗' :
-                         file.mime.includes('zip') ? '🗜️' : '📄'}
+                <div className="space-y-2">
+                  {documents.map((doc, index) => (
+                    <div key={index} className="bg-white rounded-lg p-4 flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(doc.size)}</p>
                       </div>
-
-                      {/* Info fichier */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '16px', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '4px' }}>
-                          {file.name}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                          {file.size_human}
-                        </div>
+                      <div className="flex gap-2">
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 text-sm px-3 py-1 border border-blue-600 rounded"
+                        >
+                          Ouvrir
+                        </a>
+                        <button
+                          onClick={() => handleFileDelete(doc.name)}
+                          className="text-red-600 hover:text-red-700 text-sm px-3 py-1 border border-red-600 rounded"
+                        >
+                          Supprimer
+                        </button>
                       </div>
-
-                      {/* Bouton ouvrir */}
-                      <button
-                        onClick={() => openFile(file.url, file.name)}
-                        style={{
-                          padding: '10px 20px',
-                          backgroundColor: '#3b82f6',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          transition: 'background-color 0.2s',
-                          flexShrink: 0
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
-                      >
-                        Ouvrir
-                      </button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
           )}
-
         </div>
 
-        {/* Modal Plein écran pour les photos */}
-        {selectedPhoto && (
+        {/* Modal preview image plein écran */}
+        {selectedImage && (
           <div
-            onClick={() => setSelectedPhoto(null)}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.95)',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px'
-            }}
+            className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedImage(null)}
           >
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedPhoto(null);
-              }}
-              style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                width: '48px',
-                height: '48px',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                border: 'none',
-                borderRadius: '50%',
-                color: '#fff',
-                fontSize: '24px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+              className="absolute top-4 right-4 text-white text-4xl font-bold hover:text-gray-300"
+              onClick={() => setSelectedImage(null)}
             >
-              ✕
+              ×
             </button>
             <AuthImage
-              src={selectedPhoto}
-              alt="Photo en plein écran"
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
-                borderRadius: '8px'
-              }}
-              onClick={(e) => e.stopPropagation()}
+              src={selectedImage}
+              alt="Preview"
+              className="max-w-full max-h-full object-contain"
             />
           </div>
         )}
-
       </div>
     </Layout>
   );

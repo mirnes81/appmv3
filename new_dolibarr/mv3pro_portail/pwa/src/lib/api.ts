@@ -446,10 +446,69 @@ export const api = {
   async delete<T = any>(path: string): Promise<T> {
     return apiFetch<T>(path, { method: 'DELETE' });
   },
+
+  /**
+   * Upload de fichier avec progression
+   */
+  async upload<T = any>(path: string, formData: FormData, onProgress?: (progress: number) => void): Promise<T> {
+    const token = storage.getToken();
+    const headers: Record<string, string> = {};
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      headers['X-Auth-Token'] = token;
+    }
+
+    const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable && onProgress) {
+          onProgress(e.loaded / e.total);
+        }
+      });
+
+      xhr.addEventListener('load', async () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data);
+          } catch {
+            resolve(xhr.responseText as any);
+          }
+        } else if (xhr.status === 401) {
+          storage.clearToken();
+          window.location.href = PWA_URLS.login;
+          reject(new ApiError('Non autorisé', 401));
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            reject(new ApiError(errorData.message || `Erreur ${xhr.status}`, xhr.status, errorData));
+          } catch {
+            reject(new ApiError(`Erreur ${xhr.status}`, xhr.status));
+          }
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new ApiError('Erreur de connexion', 0));
+      });
+
+      xhr.open('POST', url);
+      Object.entries(headers).forEach(([key, value]) => {
+        xhr.setRequestHeader(key, value);
+      });
+      xhr.send(formData);
+    });
+  },
 };
 
 /**
  * Client API générique pour les appels non couverts par l'objet `api`
  * Usage: apiClient('/planning_view.php?id=123')
+ *
+ * Extension de apiFetch avec les méthodes de l'objet api
  */
-export const apiClient = apiFetch;
+export const apiClient = Object.assign(apiFetch, api);
