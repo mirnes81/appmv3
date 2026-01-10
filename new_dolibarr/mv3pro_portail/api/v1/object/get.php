@@ -36,14 +36,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Vérifier que l'utilisateur est connecté
-if (!$user || !$user->id) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Non authentifié']);
-    exit;
-}
+// Charger le helper d'authentification
+require_once __DIR__ . '/../mv3_auth.php';
 
-// Charger le helper
+// Authentification
+$debug = mv3_isDebugMode();
+$auth = mv3_authenticateOrFail($db, $debug);
+$user = $auth['user'];
+
+// Charger le helper d'objets
 require_once DOL_DOCUMENT_ROOT . '/custom/mv3pro_portail/class/object_helper.class.php';
 
 // Récupérer les paramètres

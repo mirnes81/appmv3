@@ -385,27 +385,34 @@ export const api = {
   },
 
   async regieList(): Promise<any[]> {
-    throw new ApiError('Endpoint non disponible (à créer)', 501);
+    const response = await apiFetch<{ regies: any[] }>('/regie.php');
+    return response.regies || [];
   },
 
-  async regieCreate(_payload: any): Promise<any> {
-    throw new ApiError('Endpoint non disponible (à créer)', 501);
+  async regieCreate(payload: any): Promise<any> {
+    return apiFetch('/regie.php', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
   async sensPoseList(): Promise<any[]> {
-    throw new ApiError('Endpoint non disponible (à créer)', 501);
+    return apiFetch<any[]>('/sens_pose.php');
   },
 
-  async sensPoseCreate(_payload: any): Promise<any> {
-    throw new ApiError('Endpoint non disponible (à créer)', 501);
+  async sensPoseCreate(payload: any): Promise<any> {
+    return apiFetch('/sens_pose.php', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
   async materielList(): Promise<any[]> {
-    throw new ApiError('Endpoint non disponible (à créer)', 501);
+    return apiFetch<any[]>('/materiel.php');
   },
 
   async notificationsList(): Promise<any[]> {
-    throw new ApiError('Endpoint non disponible (à créer)', 501);
+    return apiFetch<any[]>('/notifications.php');
   },
 
   /**
