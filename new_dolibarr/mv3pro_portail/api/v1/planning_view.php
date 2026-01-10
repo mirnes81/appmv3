@@ -193,6 +193,12 @@ if ($event->elementtype && $event->fk_element) {
 log_debug("===== SCAN FICHIERS PLANNING #".$id." (VIA ECM) =====");
 log_debug("DOL_DATA_ROOT: ".DOL_DATA_ROOT);
 
+// Détecter quelles colonnes existent dans llx_ecm_files
+$has_filesize = mv3_column_exists($db, 'ecm_files', 'filesize');
+$filesize_field = $has_filesize ? 'ecm.filesize,' : '';
+
+log_debug("Colonne filesize disponible: ".($has_filesize ? 'OUI' : 'NON'));
+
 // Méthode 1: Via la table llx_ecm_files (méthode standard Dolibarr)
 $sql_files = "SELECT
     ecm.rowid,
@@ -201,7 +207,7 @@ $sql_files = "SELECT
     ecm.filepath,
     ecm.fullpath_orig,
     ecm.date_c as date_creation,
-    ecm.filesize,
+    ".$filesize_field."
     ecm.position
 FROM ".MAIN_DB_PREFIX."ecm_files as ecm
 WHERE ecm.src_object_type = 'actioncomm'
@@ -233,7 +239,11 @@ if ($resql_files) {
             continue;
         }
 
-        $filesize = $file_obj->filesize ?: filesize($filepath);
+        // Taille: utiliser la colonne ECM si disponible, sinon lire depuis le disque
+        $filesize = ($has_filesize && isset($file_obj->filesize) && $file_obj->filesize > 0)
+            ? $file_obj->filesize
+            : filesize($filepath);
+
         $mime = mime_content_type($filepath);
         $is_image = strpos($mime, 'image/') === 0;
 
