@@ -113,6 +113,51 @@ while ($obj = $db->fetch_object($resql)) {
         'notes' => $obj->note_private
     ];
 
+    // Récupérer les statistiques des fichiers
+    $sql_files = "SELECT
+        COUNT(*) as total_files,
+        SUM(CASE WHEN ecm.filename LIKE '%.jpg' OR ecm.filename LIKE '%.jpeg' OR ecm.filename LIKE '%.png' OR ecm.filename LIKE '%.gif' THEN 1 ELSE 0 END) as photo_count,
+        SUM(CASE WHEN ecm.filename NOT LIKE '%.jpg' AND ecm.filename NOT LIKE '%.jpeg' AND ecm.filename NOT LIKE '%.png' AND ecm.filename NOT LIKE '%.gif' THEN 1 ELSE 0 END) as doc_count
+    FROM ".MAIN_DB_PREFIX."ecm_files ecm
+    WHERE ecm.src_object_type = 'actioncomm'
+    AND ecm.src_object_id = ".(int)$obj->id;
+
+    $resql_files = $db->query($sql_files);
+    $file_stats = null;
+    $last_photo = null;
+
+    if ($resql_files) {
+        $file_stats = $db->fetch_object($resql_files);
+        $db->free($resql_files);
+
+        $event['files_count'] = (int)$file_stats->total_files;
+        $event['photos_count'] = (int)$file_stats->photo_count;
+        $event['documents_count'] = (int)$file_stats->doc_count;
+
+        // Si des photos existent, récupérer la dernière
+        if ($file_stats->photo_count > 0) {
+            $sql_last_photo = "SELECT ecm.filename, ecm.filepath
+            FROM ".MAIN_DB_PREFIX."ecm_files ecm
+            WHERE ecm.src_object_type = 'actioncomm'
+            AND ecm.src_object_id = ".(int)$obj->id."
+            AND (ecm.filename LIKE '%.jpg' OR ecm.filename LIKE '%.jpeg' OR ecm.filename LIKE '%.png' OR ecm.filename LIKE '%.gif')
+            ORDER BY ecm.date_c DESC
+            LIMIT 1";
+
+            $resql_photo = $db->query($sql_last_photo);
+            if ($resql_photo && $db->num_rows($resql_photo) > 0) {
+                $photo_obj = $db->fetch_object($resql_photo);
+                $base_api_path = dirname($_SERVER['SCRIPT_NAME']);
+                $event['last_photo_url'] = $base_api_path.'/planning_file.php?id='.(int)$obj->id.'&file='.urlencode($photo_obj->filename);
+                $db->free($resql_photo);
+            }
+        }
+    } else {
+        $event['files_count'] = 0;
+        $event['photos_count'] = 0;
+        $event['documents_count'] = 0;
+    }
+
     $events[] = $event;
 }
 

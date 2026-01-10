@@ -172,6 +172,10 @@ export interface PlanningEvent {
   client_nom?: string;
   type?: string;
   status?: string;
+  files_count?: number;
+  photos_count?: number;
+  documents_count?: number;
+  last_photo_url?: string;
 }
 
 export interface Rapport {

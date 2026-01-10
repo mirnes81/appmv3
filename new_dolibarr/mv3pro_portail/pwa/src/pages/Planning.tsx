@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { AuthImage } from '../components/AuthImage';
 import { api, PlanningEvent } from '../lib/api';
 
 export function Planning() {
@@ -96,24 +97,85 @@ export function Planning() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-                  <div
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '12px',
-                      background: '#dbeafe',
+                  {event.last_photo_url ? (
+                    <div
+                      style={{
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '12px',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        background: '#f3f4f6',
+                      }}
+                    >
+                      <AuthImage
+                        src={event.last_photo_url}
+                        alt="Dernière photo"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '12px',
+                        background: '#dbeafe',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '24px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      📅
+                    </div>
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '24px',
-                      flexShrink: 0,
-                    }}
-                  >
-                    📅
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', marginBottom: '4px', fontSize: '15px' }}>
-                      {event.label}
+                      gap: '8px',
+                      marginBottom: '4px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <div style={{ fontWeight: '600', fontSize: '15px' }}>
+                        {event.label}
+                      </div>
+                      {(event.photos_count || 0) > 0 && (
+                        <span style={{
+                          background: '#dbeafe',
+                          color: '#1e40af',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          📷 {event.photos_count}
+                        </span>
+                      )}
+                      {(event.documents_count || 0) > 0 && (
+                        <span style={{
+                          background: '#fef3c7',
+                          color: '#92400e',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          📄 {event.documents_count}
+                        </span>
+                      )}
                     </div>
                     {event.client_nom && (
                       <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
