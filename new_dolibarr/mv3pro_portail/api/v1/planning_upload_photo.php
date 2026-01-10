@@ -76,8 +76,10 @@ if (!$resql || $db->num_rows($resql) === 0) {
     json_error('Événement non trouvé ou accès refusé', 'EVENT_NOT_FOUND', 404);
 }
 
-// Charger la classe ActionComm pour gérer les fichiers
-dol_include_once('/comm/action/class/actioncomm.class.php');
+// Charger les librairies nécessaires
+require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/comm/action/class/actioncomm.class.php';
+
 $object = new ActionComm($db);
 $result = $object->fetch($event_id);
 
@@ -91,7 +93,7 @@ $base_name = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($file['name'], PATHI
 $filename = $base_name . '_' . time() . '.' . $extension;
 
 // Créer le répertoire si nécessaire
-$upload_dir = $conf->actioncomm->dir_output . '/' . $event_id;
+$upload_dir = $conf->mv3pro_portail->dir_output . '/planning/' . $event_id;
 if (!is_dir($upload_dir)) {
     dol_mkdir($upload_dir);
 }
@@ -103,10 +105,6 @@ if (!move_uploaded_file($file['tmp_name'], $dest_path)) {
 }
 
 // Ajouter l'entrée dans ecm_files
-require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
-
-$rel_path = dol_sanitizeFileName($event_id . '/' . $filename);
-
 $sql = "INSERT INTO ".MAIN_DB_PREFIX."ecm_files (
     label,
     entity,
@@ -121,7 +119,7 @@ $sql = "INSERT INTO ".MAIN_DB_PREFIX."ecm_files (
 ) VALUES (
     '".$db->escape($file['name'])."',
     ".(int)$conf->entity.",
-    '".$db->escape(dol_sanitizeFileName($event_id))."',
+    '".$db->escape('mv3pro_portail/planning/' . $event_id)."',
     '".$db->escape($filename)."',
     'actioncomm',
     ".(int)$event_id.",
