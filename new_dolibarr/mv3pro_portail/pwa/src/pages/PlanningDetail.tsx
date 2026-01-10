@@ -64,10 +64,15 @@ export function PlanningDetail() {
     try {
       setLoading(true);
       setError('');
+      console.log('[PlanningDetail] Loading event ID:', id);
+      console.log('[PlanningDetail] API URL:', `/planning_view.php?id=${id}`);
       const data = await apiClient(`/planning_view.php?id=${id}`);
+      console.log('[PlanningDetail] Event data received:', data);
       setEvent(data);
     } catch (err: any) {
-      console.error('Erreur chargement événement:', err);
+      console.error('[PlanningDetail] Erreur chargement événement:', err);
+      console.error('[PlanningDetail] Error status:', err.status);
+      console.error('[PlanningDetail] Error data:', err.data);
       setError(err.message || 'Erreur de chargement');
     } finally {
       setLoading(false);

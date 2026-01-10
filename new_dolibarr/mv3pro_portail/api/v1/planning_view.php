@@ -202,13 +202,16 @@ if (is_dir($upload_dir)) {
         // Déterminer si c'est une image
         $is_image = strpos($mime, 'image/') === 0;
 
+        // Déterminer le base path de l'API (relatif au contexte d'exécution)
+        $base_api_path = dirname($_SERVER['SCRIPT_NAME']);
+
         $response['fichiers'][] = [
             'name' => $file,
             'size' => $filesize,
             'size_human' => format_file_size($filesize),
             'mime' => $mime,
             'is_image' => $is_image,
-            'url' => '/custom/mv3pro_portail/api/v1/planning_file.php?id='.$id.'&file='.urlencode($file)
+            'url' => $base_api_path.'/planning_file.php?id='.$id.'&file='.urlencode($file)
         ];
     }
 }
