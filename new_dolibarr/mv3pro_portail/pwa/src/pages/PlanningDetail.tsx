@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { AuthImage } from '../components/AuthImage';
 import { apiClient } from '../lib/api';
 
 interface EventFile {
@@ -403,7 +404,7 @@ export function PlanningDetail() {
                         e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
                       }}
                     >
-                      <img
+                      <AuthImage
                         src={photo.url}
                         alt={photo.name}
                         style={{
@@ -560,7 +561,7 @@ export function PlanningDetail() {
             >
               ✕
             </button>
-            <img
+            <AuthImage
               src={selectedPhoto}
               alt="Photo en plein écran"
               style={{
