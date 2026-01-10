@@ -4,11 +4,12 @@
  * Formulaire optimisé avec boutons rapides
  */
 
-$res = 0;
-if (!$res && file_exists("../../main.inc.php")) $res = @include "../../main.inc.php";
-if (!$res && file_exists("../../../main.inc.php")) $res = @include "../../../main.inc.php";
+require_once __DIR__ . '/../mobile_app/includes/dolibarr_bootstrap.php';
 
+loadDolibarr();
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
+
+global $db, $user, $langs;
 
 $langs->loadLangs(array("projects", "mv3pro_portail@mv3pro_portail"));
 

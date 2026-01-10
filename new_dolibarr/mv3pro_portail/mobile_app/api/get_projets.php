@@ -3,20 +3,19 @@
  * API: Récupérer les projets d'un client
  */
 
-// Session via Dolibarr
-// Check via Dolibarr session
+require_once __DIR__ . '/../includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/../includes/api_helpers.php';
+require_once __DIR__ . '/../includes/db_helpers.php';
 
-$res = 0;
-if (!$res && file_exists("../../../../../main.inc.php")) $res = @include "../../../../../main.inc.php";
-if (!$res && file_exists("../../../../../../main.inc.php")) $res = @include "../../../../../../main.inc.php";
+loadDolibarr();
+setupApiHeaders();
 
-header('Content-Type: application/json');
+global $db, $conf;
 
 $client_id = GETPOST('client_id', 'int');
 
 if (!$client_id) {
-    echo json_encode([]);
-    exit;
+    jsonResponse([]);
 }
 
 $sql = "SELECT rowid, ref, title
@@ -26,19 +25,20 @@ $sql = "SELECT rowid, ref, title
         ORDER BY ref DESC
         LIMIT 50";
 
-$resql = $db->query($sql);
-$projets = [];
+$projets = executeQuery($db, $sql);
 
-if ($resql) {
-    while ($obj = $db->fetch_object($resql)) {
-        $projets[] = [
-            'rowid' => $obj->rowid,
-            'ref' => $obj->ref,
-            'title' => $obj->title
-        ];
-    }
+if ($projets === false) {
+    jsonError('Erreur lors de la récupération des projets', 500);
 }
 
-echo json_encode($projets);
-$db->close();
+$result = [];
+foreach ($projets as $obj) {
+    $result[] = [
+        'rowid' => $obj->rowid,
+        'ref' => $obj->ref,
+        'title' => $obj->title
+    ];
+}
+
+jsonResponse($result);
 ?>

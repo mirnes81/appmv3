@@ -6,26 +6,17 @@
  * DELETE: Supprimer notification
  */
 
-define('NOCSRFCHECK', 1);
+require_once __DIR__ . '/../includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/../includes/api_helpers.php';
+require_once __DIR__ . '/../includes/auth_helpers.php';
+require_once __DIR__ . '/../includes/db_helpers.php';
 
-$res = 0;
-if (!$res && file_exists("../../../main.inc.php")) $res = @include "../../../main.inc.php";
-if (!$res && file_exists("../../../../main.inc.php")) $res = @include "../../../../main.inc.php";
+loadDolibarr(['NOCSRFCHECK' => 1]);
+setupApiHeaders();
 
-if (!$res) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Cannot load Dolibarr']);
-    exit;
-}
+global $db, $user;
 
-header('Content-Type: application/json');
-
-// Vérifier authentification
-if (!$user->rights->mv3pro_portail->read) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Accès refusé']);
-    exit;
-}
+requireUserRights('mv3pro_portail', 'read');
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = GETPOST('action', 'alpha');
@@ -201,26 +192,3 @@ function deleteNotification($db, $user, $id)
     return array('success' => true, 'message' => 'Notification supprimée');
 }
 
-/**
- * Calculer le temps écoulé (il y a X minutes/heures)
- */
-function getTimeAgo($datetime)
-{
-    $timestamp = strtotime($datetime);
-    $diff = time() - $timestamp;
-
-    if ($diff < 60) {
-        return "À l'instant";
-    } elseif ($diff < 3600) {
-        $mins = floor($diff / 60);
-        return "Il y a ".$mins." min";
-    } elseif ($diff < 86400) {
-        $hours = floor($diff / 3600);
-        return "Il y a ".$hours." h";
-    } elseif ($diff < 604800) {
-        $days = floor($diff / 86400);
-        return "Il y a ".$days." jour".($days > 1 ? 's' : '');
-    } else {
-        return date('d.m.Y', $timestamp);
-    }
-}

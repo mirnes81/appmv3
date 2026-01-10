@@ -3,14 +3,15 @@
  * Sert les photos depuis le système de fichiers
  */
 
-$res = 0;
-if (!$res && file_exists("../../../../main.inc.php")) $res = @include "../../../../main.inc.php";
-if (!$res && file_exists("../../../../../main.inc.php")) $res = @include "../../../../../main.inc.php";
+require_once __DIR__ . '/../includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/../includes/auth_helpers.php';
+require_once __DIR__ . '/../includes/db_helpers.php';
 
-if (!isset($_SESSION["dol_login"]) || empty($user->id)) {
-    http_response_code(403);
-    exit;
-}
+loadDolibarr();
+
+global $db, $user;
+
+requireMobileSession('../login_mobile.php');
 
 $id = GETPOST('id', 'int');
 if (empty($id)) {

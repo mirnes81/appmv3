@@ -10,14 +10,15 @@ if (isset($_POST['action']) && in_array($_POST['action'], ['search_projets', 'ge
     define('NOCSRFCHECK', 1);
 }
 
-$res = 0;
-if (!$res && file_exists("../../../../main.inc.php")) $res = @include "../../../../main.inc.php";
-if (!$res && file_exists("../../../../../main.inc.php")) $res = @include "../../../../../main.inc.php";
+require_once __DIR__ . '/../includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/../includes/auth_helpers.php';
+require_once __DIR__ . '/../includes/html_helpers.php';
+require_once __DIR__ . '/../includes/db_helpers.php';
 
-if (!isset($_SESSION["dol_login"]) || empty($user->id)) {
-    header("Location: ../index.php");
-    exit;
-}
+loadDolibarr();
+requireMobileSession('../login_mobile.php');
+
+global $db, $user;
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';

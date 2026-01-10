@@ -3,20 +3,22 @@
  * Dashboard mobile avec authentification indépendante
  */
 
-// Désactiver CSRF pour simplifier
-define('NOCSRFCHECK', 1);
-define('NOREQUIREMENU', 1);
-define('NOIPCHECK', 1);
-define('NOREQUIREUSER', 1);
+require_once __DIR__ . '/includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/includes/auth_helpers.php';
+require_once __DIR__ . '/includes/html_helpers.php';
+require_once __DIR__ . '/includes/db_helpers.php';
 
-$res = 0;
-if (!$res && file_exists("../../../main.inc.php")) $res = @include "../../../main.inc.php";
-if (!$res && file_exists("../../../../main.inc.php")) $res = @include "../../../../main.inc.php";
-
-if (!$res) die("Include of main fails");
+loadDolibarr([
+    'NOCSRFCHECK' => 1,
+    'NOREQUIREMENU' => 1,
+    'NOIPCHECK' => 1,
+    'NOREQUIREUSER' => 1
+]);
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once __DIR__.'/includes/session_mobile.php';
+
+global $db;
 
 // Vérifier l'authentification
 $mobile_user = requireMobileAuth();

@@ -3,16 +3,17 @@
  * API - Planning du jour pour l'ouvrier connecté
  */
 
-header('Content-Type: application/json');
+require_once __DIR__ . '/../includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/../includes/api_helpers.php';
+require_once __DIR__ . '/../includes/auth_helpers.php';
+require_once __DIR__ . '/../includes/db_helpers.php';
 
-$res = 0;
-if (!$res && file_exists("../../../../../main.inc.php")) $res = @include "../../../../../main.inc.php";
-if (!$res && file_exists("../../../../../../main.inc.php")) $res = @include "../../../../../../main.inc.php";
+loadDolibarr();
+setupApiHeaders();
 
-if (!isset($_SESSION['dol_login']) || empty($user->id)) {
-    echo json_encode(['success' => false, 'error' => 'Non authentifié']);
-    exit;
-}
+global $db, $user;
+
+checkApiAuth($db);
 
 $user_id = $user->id;
 $today = date('Y-m-d');
@@ -64,11 +65,8 @@ if ($resql) {
     }
 }
 
-echo json_encode([
-    'success' => true,
+jsonSuccess([
     'events' => $events,
     'date' => $today
 ]);
-
-$db->close();
 ?>

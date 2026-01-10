@@ -9,14 +9,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     define('NOCSRFCHECK', 1);
 }
 
-$res = 0;
-if (!$res && file_exists("../../../../main.inc.php")) $res = @include "../../../../main.inc.php";
-if (!$res && file_exists("../../../../../main.inc.php")) $res = @include "../../../../../main.inc.php";
+require_once __DIR__ . '/../includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/../includes/auth_helpers.php';
+require_once __DIR__ . '/../includes/html_helpers.php';
+require_once __DIR__ . '/../includes/db_helpers.php';
 
-if (!isset($_SESSION["dol_login"]) || empty($user->id)) {
-    header("Location: ../index.php");
-    exit;
-}
+loadDolibarr();
+requireMobileSession('../login_mobile.php');
+
+global $db, $user;
 
 $action = GETPOST('action', 'alpha');
 $id = GETPOST('id', 'int');

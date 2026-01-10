@@ -4,17 +4,16 @@
  * Permet de créer, modifier et supprimer des comptes employés
  */
 
-$res = 0;
-if (!$res && file_exists("../../../../main.inc.php")) $res = @include "../../../../main.inc.php";
-if (!$res && file_exists("../../../../../main.inc.php")) $res = @include "../../../../../main.inc.php";
+require_once __DIR__ . '/../includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/../includes/auth_helpers.php';
+require_once __DIR__ . '/../includes/html_helpers.php';
+require_once __DIR__ . '/../includes/db_helpers.php';
 
-if (!$res) {
-    die("Include of main fails");
-}
-
+loadDolibarr();
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 
-// Vérifier les permissions (admin seulement)
+global $db, $user;
+
 if (!$user->admin) {
     accessforbidden();
 }

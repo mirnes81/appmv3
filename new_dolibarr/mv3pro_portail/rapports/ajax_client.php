@@ -4,16 +4,17 @@
  * Inclut le client principal + tous les contacts/acheteurs liés
  */
 
-$res = 0;
-if (!$res && file_exists("../../main.inc.php")) $res = @include "../../main.inc.php";
-if (!$res && file_exists("../../../main.inc.php")) $res = @include "../../../main.inc.php";
+require_once __DIR__ . '/../mobile_app/includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/../mobile_app/includes/api_helpers.php';
+require_once __DIR__ . '/../mobile_app/includes/auth_helpers.php';
+require_once __DIR__ . '/../mobile_app/includes/db_helpers.php';
 
-header('Content-Type: application/json');
+loadDolibarr();
+setupApiHeaders();
 
-if (!$user->rights->mv3pro_portail->read) {
-    echo json_encode(array('success' => false, 'error' => 'Access denied'));
-    exit;
-}
+global $db, $user;
+
+requireUserRights('mv3pro_portail', 'read');
 
 $projet_id = GETPOST('projet_id', 'int');
 $client_id = GETPOST('client_id', 'int');
@@ -34,33 +35,10 @@ if ($client_id) {
     $resql = $db->query($sql);
 
     if ($resql && $obj = $db->fetch_object($resql)) {
-        $address_parts = array();
-        if ($obj->address) {
-            $address_parts[] = $obj->address;
-        }
-        if ($obj->zip || $obj->town) {
-            $location = trim($obj->zip.' '.$obj->town);
-            if ($location) {
-                $address_parts[] = $location;
-            }
-        }
-
-        $full_address = !empty($address_parts) ? implode(', ', $address_parts) : '';
-
-        echo json_encode(array(
-            'success' => true,
-            'client' => array(
-                'rowid' => $obj->rowid,
-                'nom' => $obj->nom,
-                'address' => $full_address,
-                'phone' => $obj->phone,
-                'email' => $obj->email
-            )
-        ));
+        jsonSuccess(['client' => formatClientData($obj)]);
     } else {
-        echo json_encode(array('success' => false, 'error' => 'Client non trouvé'));
+        jsonError('Client non trouvé', 404);
     }
-    exit;
 }
 
 // Récupérer les clients qui ont des DEVIS ACCEPTÉS OU FACTURES dans le projet
@@ -91,24 +69,7 @@ if ($debug) {
 }
 if ($resql) {
     while ($obj = $db->fetch_object($resql)) {
-        $address_parts = array();
-        if ($obj->address) {
-            $address_parts[] = $obj->address;
-        }
-        if ($obj->zip || $obj->town) {
-            $location = trim($obj->zip.' '.$obj->town);
-            if ($location) {
-                $address_parts[] = $location;
-            }
-        }
-
-        $clients[] = array(
-            'rowid' => $obj->rowid,
-            'nom' => $obj->nom,
-            'address' => !empty($address_parts) ? implode(', ', $address_parts) : '',
-            'phone' => $obj->phone,
-            'email' => $obj->email
-        );
+        $clients[] = formatClientData($obj);
     }
 }
 
@@ -143,24 +104,7 @@ if ($resql2) {
         }
 
         if (!$already_added) {
-            $address_parts = array();
-            if ($obj->address) {
-                $address_parts[] = $obj->address;
-            }
-            if ($obj->zip || $obj->town) {
-                $location = trim($obj->zip.' '.$obj->town);
-                if ($location) {
-                    $address_parts[] = $location;
-                }
-            }
-
-            $clients[] = array(
-                'rowid' => $obj->rowid,
-                'nom' => $obj->nom,
-                'address' => !empty($address_parts) ? implode(', ', $address_parts) : '',
-                'phone' => $obj->phone,
-                'email' => $obj->email
-            );
+            $clients[] = formatClientData($obj);
         }
     }
 }
@@ -187,48 +131,23 @@ if (count($clients) == 0) {
 
     if ($resql3) {
         while ($obj = $db->fetch_object($resql3)) {
-            $address_parts = array();
-            if ($obj->address) {
-                $address_parts[] = $obj->address;
-            }
-            if ($obj->zip || $obj->town) {
-                $location = trim($obj->zip.' '.$obj->town);
-                if ($location) {
-                    $address_parts[] = $location;
-                }
-            }
-
-            $clients[] = array(
-                'rowid' => $obj->rowid,
-                'nom' => $obj->nom,
-                'address' => !empty($address_parts) ? implode(', ', $address_parts) : '',
-                'phone' => $obj->phone,
-                'email' => $obj->email
-            );
+            $clients[] = formatClientData($obj);
         }
     }
 }
 
-if (count($clients) > 0) {
-    $response = array(
-        'success' => true,
-        'clients' => $clients,
-        'count' => count($clients)
-    );
-    if ($debug) {
-        $response['debug'] = $debug_info;
-    }
-    echo json_encode($response);
-} else {
-    // Si toujours rien, retourner message explicite
-    $response = array(
-        'success' => false,
-        'error' => 'Aucun client trouvé pour ce projet (aucun devis accepté/facturé)',
-        'clients' => array(),
-        'count' => 0
-    );
-    if ($debug) {
-        $response['debug'] = $debug_info;
-    }
-    echo json_encode($response);
+$response = [
+    'success' => count($clients) > 0,
+    'clients' => $clients,
+    'count' => count($clients)
+];
+
+if (!$response['success']) {
+    $response['error'] = 'Aucun client trouvé pour ce projet (aucun devis accepté/facturé)';
 }
+
+if ($debug) {
+    $response['debug'] = $debug_info;
+}
+
+jsonResponse($response);

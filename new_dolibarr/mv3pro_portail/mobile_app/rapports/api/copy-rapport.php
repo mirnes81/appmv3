@@ -1,15 +1,15 @@
 <?php
-$res = 0;
-if (!$res && file_exists("../../../../../main.inc.php")) $res = @include "../../../../../main.inc.php";
-if (!$res && file_exists("../../../../../../main.inc.php")) $res = @include "../../../../../../main.inc.php";
+require_once __DIR__ . '/../../includes/dolibarr_bootstrap.php';
+require_once __DIR__ . '/../../includes/api_helpers.php';
+require_once __DIR__ . '/../../includes/auth_helpers.php';
+require_once __DIR__ . '/../../includes/db_helpers.php';
 
-if (!isset($_SESSION['dol_login']) || empty($user->id)) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Non autorisé']);
-    exit;
-}
+loadDolibarr();
+setupApiHeaders();
 
-header('Content-Type: application/json');
+global $db, $user;
+
+checkApiAuth($db);
 
 $user_id = $user->id;
 $action = GETPOST('action', 'alpha');
