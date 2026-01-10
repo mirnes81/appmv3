@@ -141,20 +141,66 @@ export function PlanningDetail() {
     }
   };
 
+  // Fonction de compression d'image
+  const compressImage = async (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.85): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          // Redimensionner si nécessaire
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Convertir en Blob avec compression
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                console.log(`[Compression] ${(file.size / 1024).toFixed(0)} KB → ${(compressedFile.size / 1024).toFixed(0)} KB (${Math.round(100 - (compressedFile.size / file.size) * 100)}% de réduction)`);
+                resolve(compressedFile);
+              } else {
+                reject(new Error('Erreur lors de la compression'));
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => reject(new Error('Erreur lors du chargement de l\'image'));
+      };
+      reader.onerror = () => reject(new Error('Erreur lors de la lecture du fichier'));
+    });
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Vérifier que c'est une image
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      alert('Veuillez sélectionner une image (JPEG, PNG, GIF ou WebP)');
-      return;
-    }
-
-    // Vérifier la taille (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Le fichier est trop volumineux (max 10MB)');
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image');
       return;
     }
 
@@ -162,8 +208,19 @@ export function PlanningDetail() {
     setUploadProgress(0);
 
     try {
+      console.log('[Upload] Taille originale:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+
+      // Compresser automatiquement si > 500KB
+      let fileToUpload = file;
+      if (file.size > 500 * 1024) {
+        console.log('[Upload] Compression en cours...');
+        setUploadProgress(10);
+        fileToUpload = await compressImage(file);
+        console.log('[Upload] Taille finale:', (fileToUpload.size / 1024 / 1024).toFixed(2), 'MB');
+      }
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       formData.append('event_id', id || '');
 
       // Simuler une progression pendant l'upload

@@ -144,8 +144,8 @@ if ($result <= 0) {
     json_error('Événement non trouvé ou accès refusé', 'EVENT_NOT_FOUND', 404);
 }
 
-// 8️⃣ DÉFINIR LE RÉPERTOIRE DE STOCKAGE (chemin standard Dolibarr pour ActionComm)
-$upload_dir = DOL_DATA_ROOT . '/documents/action/' . $event_id;
+// 8️⃣ DÉFINIR LE RÉPERTOIRE DE STOCKAGE (mv3pro_portail/planning/)
+$upload_dir = DOL_DATA_ROOT . '/documents/mv3pro_portail/planning/' . $event_id;
 
 // Créer le répertoire si nécessaire
 if (!is_dir($upload_dir)) {
@@ -185,7 +185,7 @@ $sql = "INSERT INTO ".MAIN_DB_PREFIX."ecm_files (
 ) VALUES (
     '".$db->escape($file['name'])."',
     ".(int)$conf->entity.",
-    '".$db->escape('action/' . $event_id)."',
+    '".$db->escape('documents/mv3pro_portail/planning/' . $event_id)."',
     '".$db->escape($filename)."',
     'actioncomm',
     ".(int)$event_id.",
