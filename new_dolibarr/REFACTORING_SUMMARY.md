@@ -191,6 +191,12 @@ if (!isset($_SESSION['dol_login']) || empty($user->id)) {
 - ✅ Maintenabilité: **A**
 - ✅ Code smell: Réduction significative
 
+### Corrections Code Quality (SonarQube)
+- ✅ **include → include_once**: Fixed in `mobile_app/admin/create_mobile_user.php`
+- ✅ **include → include_once**: Fixed in `mobile_app/includes/dolibarr_bootstrap.php`
+- 🔧 Issues résolus: 2 bugs (Reliability/Low) + 2 code smells (Maintainability/Medium)
+- 📝 Note: Les suggestions de namespace import ne s'appliquent pas aux fichiers bootstrap Dolibarr (main.inc.php) qui ne sont pas des classes
+
 ---
 
 ## Bénéfices

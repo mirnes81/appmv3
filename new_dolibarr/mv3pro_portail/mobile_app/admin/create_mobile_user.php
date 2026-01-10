@@ -122,13 +122,13 @@
     <p class="subtitle">MV3 PRO - Gestion des accès mobiles</p>
 
     <?php
-    // Chargement Dolibarr
+    // Chargement Dolibarr (bootstrap file, not a namespaced class)
     $res = 0;
     if (!$res && file_exists(__DIR__ . "/../../../../main.inc.php")) {
-        $res = @include __DIR__ . "/../../../../main.inc.php";
+        $res = @include_once __DIR__ . "/../../../../main.inc.php";
     }
     if (!$res && file_exists(__DIR__ . "/../../../../../main.inc.php")) {
-        $res = @include __DIR__ . "/../../../../../main.inc.php";
+        $res = @include_once __DIR__ . "/../../../../../main.inc.php";
     }
 
     if (!$res) {

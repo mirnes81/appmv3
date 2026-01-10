@@ -22,7 +22,7 @@ function loadDolibarr($defines = [])
 
     foreach ($paths as $path) {
         if (!$res && file_exists($path)) {
-            $res = @include $path;
+            $res = @include_once $path;
             if ($res) break;
         }
     }

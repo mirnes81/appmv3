@@ -49,6 +49,7 @@ FICHIERS REFACTORISÉS - AUTRES (mobile_app/)
 ✅ mobile_app/profil/index.php
 ✅ mobile_app/dashboard_mobile.php
 ✅ mobile_app/admin/manage_users.php
+✅ mobile_app/admin/create_mobile_user.php (fix include_once)
 
 FICHIERS REFACTORISÉS - NOTIFICATIONS (mobile_app/notifications/)
 ------------------------------------------------------------------
@@ -64,8 +65,8 @@ FICHIERS REFACTORISÉS - RAPPORTS RACINE (rapports/)
 TOTAL
 -----
 📝 Fichiers créés: 8
-✏️  Fichiers modifiés: 35
-📊 Total: 43 fichiers
+✏️  Fichiers modifiés: 36
+📊 Total: 44 fichiers
 
 STATISTIQUES FINALES
 ---------------------
