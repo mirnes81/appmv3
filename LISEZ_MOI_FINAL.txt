@@ -1,63 +1,167 @@
 ═══════════════════════════════════════════════════════════════════════════
-  🚨 ACTION IMMÉDIATE REQUISE - FIX ERREUR 500
+  🚨 MODE DEBUG AVANCÉ - DIAGNOSTIC AUTOMATIQUE
 ═══════════════════════════════════════════════════════════════════════════
 
-❌ PROBLÈME ACTUEL
-  Cannot redeclare mv3_check_table_or_empty()
-  → Aucun rapport ne s'affiche dans la PWA
+✅ CORRECTIONS APPORTÉES
 
-✅ SOLUTION
-  Uploader 2 fichiers corrigés (au lieu de 1 seul)
+  1️⃣  Fix double déclaration fonction (erreur 500)
+  2️⃣  Mode debug ultra détaillé avec 7 nouvelles sections
+  3️⃣  Détection automatique colonnes manquantes
+  4️⃣  Test API en temps réel
+  5️⃣  Génération SQL automatique
 
 ═══════════════════════════════════════════════════════════════════════════
 
-📦 FICHIERS À UPLOADER (5 MINUTES)
+📦 FICHIERS À DÉPLOYER (3 FICHIERS)
 
-  1️⃣  new_dolibarr/mv3pro_portail/api/v1/_bootstrap.php  (31 Ko)
-      → custom/mv3pro_portail/api/v1/_bootstrap.php
+  1️⃣  new_dolibarr/mv3pro_portail/api/v1/rapports_debug.php  (~10 Ko)
+      → custom/mv3pro_portail/api/v1/rapports_debug.php
 
-  2️⃣  new_dolibarr/mv3pro_portail/core/functions.php     (5 Ko)
+  2️⃣  new_dolibarr/mv3pro_portail/core/functions.php         (~5 Ko)
       → custom/mv3pro_portail/core/functions.php
 
+  3️⃣  new_dolibarr/mv3pro_portail/pwa_dist/*                 (11 fichiers)
+      → custom/mv3pro_portail/pwa_dist/
+
 ═══════════════════════════════════════════════════════════════════════════
 
-🔧 ÉTAPES RAPIDES
+🔧 DÉPLOIEMENT RAPIDE (5 MINUTES)
 
   1. Connexion FTP : ftp.mv-3pro.ch
-  2. Naviguer : /public_html/custom/mv3pro_portail/
-  3. Backup : Renommer les 2 fichiers en .OLD
-  4. Upload : Les 2 nouveaux fichiers
-  5. Test : https://crm.mv-3pro.ch/.../rapports_debug.php
+  2. Backup : Renommer les 3 fichiers/dossiers en .OLD
+  3. Upload : Les 3 nouveaux fichiers/dossiers
+  4. Test : https://crm.mv-3pro.ch/.../rapports_debug.php
 
 ═══════════════════════════════════════════════════════════════════════════
 
-✅ TEST DE VALIDATION
+🎯 NOUVEAU MODE DEBUG
 
-  Ouvrir dans le navigateur :
-  https://crm.mv-3pro.ch/custom/mv3pro_portail/api/v1/rapports_debug.php
+  Le panneau debug affiche maintenant :
 
-  AVANT : Fatal error: Cannot redeclare...
-  APRÈS : {"success": true, "debug_info": {...}}
+  ✅ 🎯 Résumé Diagnostic (4 indicateurs visuels)
+     • Table Existe
+     • Colonnes OK
+     • Requête API OK
+     • Prêt Production
+
+  ✅ 🗄️ Structure de la Table
+     • Liste colonnes existantes
+     • Détails de chaque colonne
+
+  ✅ ❌ Colonnes Manquantes
+     • Détection automatique
+     • Badges rouges visuels
+
+  ✅ 🧪 Test Requête API
+     • Simulation en temps réel
+     • Erreur SQL précise
+
+  ✅ 🔧 Corrections SQL Suggérées
+     • Génération automatique
+     • Prêt à copier/coller
 
 ═══════════════════════════════════════════════════════════════════════════
 
-📄 CHECKSUMS (pour vérification)
+✅ UTILISATION
 
-  _bootstrap.php : 4205ac8f47db685a06f5a40bc12a59d2
-  functions.php  : 094901ba0e0c75ea91aa3c401dd2092e
+  1. Ouvrir : https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/
+  2. Connexion
+  3. Aller sur : Rapports
+  4. Cliquer : Icône 🐛 (en haut à droite)
+  5. Vider cache : Ctrl+Shift+R
+
+  Le panneau affiche automatiquement :
+  • ✓ Ce qui fonctionne (vert)
+  • ✗ Ce qui ne fonctionne pas (rouge)
+  • 🔧 Comment corriger (avec SQL)
+
+═══════════════════════════════════════════════════════════════════════════
+
+🔧 EXEMPLE DE CORRECTION AUTOMATIQUE
+
+  Si colonne "heure_debut" manque :
+
+  Panneau debug affiche :
+  ┌─────────────────────────────────────────────────┐
+  │ ❌ Colonnes Manquantes (1)                      │
+  │    • heure_debut                                │
+  │                                                 │
+  │ 🧪 Test API                                     │
+  │    ✗ Unknown column 'heure_debut' in field list│
+  │                                                 │
+  │ 🔧 Correction SQL :                             │
+  │    ALTER TABLE llx_mv3_rapport                  │
+  │    ADD COLUMN heure_debut TIME DEFAULT NULL;    │
+  └─────────────────────────────────────────────────┘
+
+  → Copier le SQL
+  → Coller dans phpMyAdmin
+  → Exécuter
+  → Recharger page (F5)
+  → Tout passe au ✓ vert !
+
+═══════════════════════════════════════════════════════════════════════════
+
+📄 CHECKSUMS (vérification)
+
+  rapports_debug.php : (nouveau fichier, pas de checksum ancien)
+  functions.php      : 094901ba0e0c75ea91aa3c401dd2092e
+  pwa_dist/          : version 0.17.5
 
 ═══════════════════════════════════════════════════════════════════════════
 
 📚 GUIDES DISPONIBLES
 
-  • FIX_FINAL_DOUBLE_DECLARATION.md  → Guide rapide (1 page)
-  • GUIDE_DEPLOIEMENT_URGENT.md      → Guide détaillé complet
-  • VERIFICATION_DEPLOIEMENT.txt     → Checklist de tests
+  • MODE_DEBUG_ULTRA_DETAILLE.md      → Détails techniques complets
+  • DEPLOIEMENT_MODE_DEBUG_AVANCE.md  → Guide déploiement pas à pas
+  • FIX_FINAL_DOUBLE_DECLARATION.md   → Fix erreur "Cannot redeclare"
+
+═══════════════════════════════════════════════════════════════════════════
+
+✅ CHECKLIST
+
+  Backend
+  - [ ] rapports_debug.php uploadé (~10 Ko)
+  - [ ] functions.php uploadé (~5 Ko)
+  - [ ] Test cURL → 200 OK
+
+  Frontend
+  - [ ] pwa_dist/ uploadé (11 fichiers)
+  - [ ] Cache vidé (Ctrl+Shift+R)
+  - [ ] Panneau debug accessible
+
+  Diagnostic
+  - [ ] 4 cartes "Résumé Diagnostic" visibles
+  - [ ] Section "Structure Table" visible
+  - [ ] Section "Colonnes Manquantes" visible
+  - [ ] Section "Test API" visible
+  - [ ] Section "SQL Corrections" visible
+
+  Validation
+  - [ ] SQL copié et exécuté
+  - [ ] Page rechargée (F5)
+  - [ ] Tout passe au ✓ vert
+  - [ ] Rapports s'affichent
+
+═══════════════════════════════════════════════════════════════════════════
+
+📊 AVANT / APRÈS
+
+  AVANT
+  ❌ Erreur basique : "Aucun rapport"
+  ❌ Pas de détails sur le problème
+  ❌ 2 heures de debug manuel
+
+  APRÈS
+  ✅ Diagnostic automatique en 1 clic
+  ✅ Détection colonnes manquantes
+  ✅ SQL de correction généré
+  ✅ 5 minutes pour corriger
 
 ═══════════════════════════════════════════════════════════════════════════
 
 ⏱️  TEMPS ESTIMÉ : 5 minutes
-🎯  IMPACT       : CRITIQUE (bloque les rapports)
+🎯  IMPACT       : MAJEUR (diagnostic automatique)
 ✅  STATUS       : PRÊT À DÉPLOYER
 
 ═══════════════════════════════════════════════════════════════════════════

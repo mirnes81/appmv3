@@ -60,7 +60,31 @@ interface RapportsDebugReport {
     recent_rapports: any[];
   };
   recommendation: string;
-  solution: string;
+  solution?: string;
+  table_structure?: {
+    table_name: string;
+    total_columns: number;
+    existing_columns: string[];
+    column_details: Record<string, any>;
+    expected_columns: string[];
+    missing_columns: string[];
+    extra_columns: string[];
+    has_issues: boolean;
+  };
+  api_test?: {
+    success: boolean;
+    error: string | null;
+    sql_error: string | null;
+    sql_query: string | null;
+    rows_returned?: number;
+  };
+  fix_sql?: string[];
+  diagnostic_summary?: {
+    table_exists: boolean;
+    all_columns_present: boolean;
+    api_query_works: boolean;
+    ready_for_production: boolean;
+  };
 }
 
 export function Debug() {
@@ -1174,6 +1198,178 @@ export function Debug() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Diagnostic Summary */}
+            {rapportsDebug.diagnostic_summary && (
+              <div style={{ marginTop: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>🎯 Résumé Diagnostic</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div
+                    style={{
+                      background: rapportsDebug.diagnostic_summary.table_exists ? '#f0fdf4' : '#fef2f2',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `2px solid ${rapportsDebug.diagnostic_summary.table_exists ? '#059669' : '#ef4444'}`,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '20px', marginBottom: '4px' }}>
+                      {rapportsDebug.diagnostic_summary.table_exists ? '✓' : '✗'}
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: '600' }}>Table Existe</div>
+                  </div>
+                  <div
+                    style={{
+                      background: rapportsDebug.diagnostic_summary.all_columns_present ? '#f0fdf4' : '#fef2f2',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `2px solid ${rapportsDebug.diagnostic_summary.all_columns_present ? '#059669' : '#ef4444'}`,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '20px', marginBottom: '4px' }}>
+                      {rapportsDebug.diagnostic_summary.all_columns_present ? '✓' : '✗'}
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: '600' }}>Colonnes OK</div>
+                  </div>
+                  <div
+                    style={{
+                      background: rapportsDebug.diagnostic_summary.api_query_works ? '#f0fdf4' : '#fef2f2',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `2px solid ${rapportsDebug.diagnostic_summary.api_query_works ? '#059669' : '#ef4444'}`,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '20px', marginBottom: '4px' }}>
+                      {rapportsDebug.diagnostic_summary.api_query_works ? '✓' : '✗'}
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: '600' }}>Requête API OK</div>
+                  </div>
+                  <div
+                    style={{
+                      background: rapportsDebug.diagnostic_summary.ready_for_production ? '#f0fdf4' : '#fef2f2',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `2px solid ${rapportsDebug.diagnostic_summary.ready_for_production ? '#059669' : '#ef4444'}`,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '20px', marginBottom: '4px' }}>
+                      {rapportsDebug.diagnostic_summary.ready_for_production ? '✓' : '✗'}
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: '600' }}>Prêt Production</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Table Structure */}
+            {rapportsDebug.table_structure && (
+              <div style={{ marginTop: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>🗄️ Structure de la Table</h4>
+                <div style={{ background: '#f9fafb', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ marginBottom: '12px' }}>
+                    <strong>Table:</strong> <code style={{ background: '#e5e7eb', padding: '2px 6px', borderRadius: '4px' }}>{rapportsDebug.table_structure.table_name}</code>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <strong>Nombre de colonnes:</strong> {rapportsDebug.table_structure.total_columns}
+                  </div>
+
+                  {rapportsDebug.table_structure.missing_columns.length > 0 && (
+                    <div style={{ background: '#fef2f2', padding: '12px', borderRadius: '8px', border: '2px solid #ef4444', marginTop: '12px' }}>
+                      <div style={{ fontWeight: '700', color: '#991b1b', marginBottom: '8px' }}>
+                        ❌ Colonnes Manquantes ({rapportsDebug.table_structure.missing_columns.length})
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {rapportsDebug.table_structure.missing_columns.map((col, idx) => (
+                          <code key={idx} style={{ background: '#fee2e2', color: '#991b1b', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                            {col}
+                          </code>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <details style={{ marginTop: '12px' }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: '600', color: '#0891b2' }}>
+                      Voir toutes les colonnes existantes ({rapportsDebug.table_structure.existing_columns.length})
+                    </summary>
+                    <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {rapportsDebug.table_structure.existing_columns.map((col, idx) => {
+                        const isMissing = rapportsDebug.table_structure!.expected_columns.includes(col);
+                        return (
+                          <code key={idx} style={{ background: isMissing ? '#d1fae5' : '#e5e7eb', color: isMissing ? '#047857' : '#374151', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                            {col}
+                          </code>
+                        );
+                      })}
+                    </div>
+                  </details>
+                </div>
+              </div>
+            )}
+
+            {/* API Test Result */}
+            {rapportsDebug.api_test && (
+              <div style={{ marginTop: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>🧪 Test Requête API</h4>
+                <div
+                  style={{
+                    background: rapportsDebug.api_test.success ? '#f0fdf4' : '#fef2f2',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    border: `2px solid ${rapportsDebug.api_test.success ? '#059669' : '#ef4444'}`,
+                  }}
+                >
+                  <div style={{ marginBottom: '12px' }}>
+                    <strong style={{ color: rapportsDebug.api_test.success ? '#047857' : '#991b1b' }}>
+                      {rapportsDebug.api_test.success ? '✓ Requête réussie' : '✗ Requête échouée'}
+                    </strong>
+                  </div>
+
+                  {rapportsDebug.api_test.error && (
+                    <div style={{ background: '#fee2e2', padding: '12px', borderRadius: '6px', marginBottom: '12px' }}>
+                      <div style={{ fontWeight: '700', color: '#991b1b', marginBottom: '4px' }}>Erreur SQL:</div>
+                      <code style={{ fontSize: '12px', color: '#7f1d1d', wordBreak: 'break-word' }}>{rapportsDebug.api_test.error}</code>
+                    </div>
+                  )}
+
+                  {rapportsDebug.api_test.success && rapportsDebug.api_test.rows_returned !== undefined && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <strong>Lignes retournées:</strong> {rapportsDebug.api_test.rows_returned}
+                    </div>
+                  )}
+
+                  {rapportsDebug.api_test.sql_query && (
+                    <details>
+                      <summary style={{ cursor: 'pointer', fontWeight: '600', color: '#0891b2' }}>Voir la requête SQL</summary>
+                      <pre style={{ background: '#1f2937', color: '#f9fafb', padding: '12px', borderRadius: '6px', fontSize: '11px', overflow: 'auto', marginTop: '8px' }}>
+                        {rapportsDebug.api_test.sql_query}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Fix SQL */}
+            {rapportsDebug.fix_sql && rapportsDebug.fix_sql.length > 0 && (
+              <div style={{ marginTop: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>🔧 Corrections SQL Suggérées</h4>
+                <div style={{ background: '#fef3c7', padding: '16px', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                  <div style={{ marginBottom: '12px', color: '#78350f' }}>
+                    <strong>⚠️ Exécuter ces commandes SQL pour corriger la structure de la table :</strong>
+                  </div>
+                  <pre style={{ background: '#1f2937', color: '#10b981', padding: '12px', borderRadius: '6px', fontSize: '11px', overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {rapportsDebug.fix_sql.join('\n\n')}
+                  </pre>
+                  <div style={{ marginTop: '12px', fontSize: '12px', color: '#92400e' }}>
+                    💡 <strong>Astuce:</strong> Copiez ces commandes et exécutez-les dans phpMyAdmin ou via SSH.
+                  </div>
                 </div>
               </div>
             )}

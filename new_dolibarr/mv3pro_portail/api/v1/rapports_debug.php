@@ -150,6 +150,113 @@ if ($total_rapports > 0 && $rapports_with_filter === 0 && !$is_admin) {
     $recommendation = "✅ {$rapports_with_filter} rapport(s) visible(s) pour cet utilisateur.";
 }
 
+// 7. DIAGNOSTIC STRUCTURE TABLE - Vérifier colonnes existantes
+$table_name = MAIN_DB_PREFIX . 'mv3_rapport';
+$sql_columns = "SHOW COLUMNS FROM " . $table_name;
+$resql_columns = $db->query($sql_columns);
+
+$existing_columns = [];
+$column_details = [];
+if ($resql_columns) {
+    while ($col = $db->fetch_object($resql_columns)) {
+        $existing_columns[] = $col->Field;
+        $column_details[$col->Field] = [
+            'type' => $col->Type,
+            'null' => $col->Null,
+            'key' => $col->Key,
+            'default' => $col->Default,
+            'extra' => $col->Extra,
+        ];
+    }
+}
+
+// Colonnes attendues par l'API rapports.php
+$expected_columns = [
+    'rowid',
+    'ref',
+    'entity',
+    'date_rapport',
+    'heure_debut',      // ← Problème détecté !
+    'heure_fin',        // ← Peut-être aussi manquante
+    'duree_heures',
+    'fk_user',
+    'fk_projet',
+    'fk_task',
+    'description',
+    'type_travail',
+    'statut',
+    'date_creation',
+    'date_modification',
+];
+
+// Comparer colonnes attendues vs existantes
+$missing_columns = array_diff($expected_columns, $existing_columns);
+$extra_columns = array_diff($existing_columns, $expected_columns);
+
+// 8. TEST RÉEL DE LA REQUÊTE API - Capturer l'erreur exacte
+$api_test_result = [
+    'success' => false,
+    'error' => null,
+    'sql_error' => null,
+    'sql_query' => null,
+];
+
+try {
+    // Simuler la requête exacte de rapports.php
+    $test_sql = "SELECT rowid, ref, date_rapport, heure_debut, heure_fin, duree_heures,
+                 fk_user, fk_projet, fk_task, description, type_travail, statut,
+                 date_creation, date_modification
+                 FROM " . $table_name . "
+                 WHERE entity = " . $entity;
+
+    if (!$is_admin && $dolibarr_user_id > 0) {
+        $test_sql .= " AND fk_user = " . $dolibarr_user_id;
+    }
+
+    $test_sql .= " ORDER BY date_rapport DESC, rowid DESC LIMIT 5";
+
+    $api_test_result['sql_query'] = $test_sql;
+
+    $resql_test = $db->query($test_sql);
+
+    if ($resql_test) {
+        $api_test_result['success'] = true;
+        $api_test_result['rows_returned'] = $db->num_rows($resql_test);
+    } else {
+        $api_test_result['error'] = $db->lasterror();
+        $api_test_result['sql_error'] = $db->lasterrno();
+    }
+
+} catch (Exception $e) {
+    $api_test_result['error'] = $e->getMessage();
+}
+
+// 9. GÉNÉRER SQL DE CORRECTION AUTOMATIQUE
+$fix_sql = [];
+if (!empty($missing_columns)) {
+    foreach ($missing_columns as $col) {
+        switch ($col) {
+            case 'heure_debut':
+                $fix_sql[] = "ALTER TABLE {$table_name} ADD COLUMN heure_debut TIME DEFAULT NULL AFTER date_rapport;";
+                break;
+            case 'heure_fin':
+                $fix_sql[] = "ALTER TABLE {$table_name} ADD COLUMN heure_fin TIME DEFAULT NULL AFTER heure_debut;";
+                break;
+            case 'duree_heures':
+                $fix_sql[] = "ALTER TABLE {$table_name} ADD COLUMN duree_heures DECIMAL(10,2) DEFAULT 0 AFTER heure_fin;";
+                break;
+            case 'type_travail':
+                $fix_sql[] = "ALTER TABLE {$table_name} ADD COLUMN type_travail VARCHAR(50) DEFAULT NULL AFTER description;";
+                break;
+            case 'date_modification':
+                $fix_sql[] = "ALTER TABLE {$table_name} ADD COLUMN date_modification DATETIME DEFAULT NULL;";
+                break;
+            default:
+                $fix_sql[] = "-- Ajouter manuellement : {$col}";
+        }
+    }
+}
+
 $response = [
     'success' => true,
     'debug_info' => [
@@ -166,6 +273,24 @@ $response = [
     'comparison' => [
         'old_system' => "auth['user_id'] = " . ($auth['user_id'] ?? 'NULL') . " → {$rapports_with_old_filter} rapport(s)",
         'new_system' => "dolibarr_user_id = {$dolibarr_user_id} → {$rapports_with_filter} rapport(s)",
+    ],
+    'table_structure' => [
+        'table_name' => $table_name,
+        'total_columns' => count($existing_columns),
+        'existing_columns' => $existing_columns,
+        'column_details' => $column_details,
+        'expected_columns' => $expected_columns,
+        'missing_columns' => array_values($missing_columns),
+        'extra_columns' => array_values($extra_columns),
+        'has_issues' => !empty($missing_columns),
+    ],
+    'api_test' => $api_test_result,
+    'fix_sql' => $fix_sql,
+    'diagnostic_summary' => [
+        'table_exists' => !empty($existing_columns),
+        'all_columns_present' => empty($missing_columns),
+        'api_query_works' => $api_test_result['success'],
+        'ready_for_production' => empty($missing_columns) && $api_test_result['success'],
     ],
 ];
 
