@@ -7,6 +7,7 @@
  */
 
 require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/../../core/init.php';
 
 global $db, $conf;
 
@@ -16,13 +17,8 @@ require_method('GET');
 // Authentification obligatoire
 $auth = require_auth(true);
 
-// Récupérer le statut admin
-$is_admin = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->admin));
-
-// Vérifier que l'utilisateur est admin
-if (!$is_admin) {
-    json_error('Accès réservé aux administrateurs', 'FORBIDDEN', 403);
-}
+// Vérifier que l'utilisateur est admin (erreur 403 si pas admin)
+mv3_require_admin($auth);
 
 // Récupérer l'entité
 $entity = isset($conf->entity) ? (int)$conf->entity : 1;

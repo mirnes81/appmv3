@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/../../core/init.php';
 
 global $db, $conf;
 
@@ -15,9 +16,9 @@ $auth = require_auth(true);
 
 $entity = isset($conf->entity) ? (int)$conf->entity : 1;
 
-// Récupérer le vrai ID Dolibarr et le statut admin
-$dolibarr_user_id = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->id)) ? (int)$auth['dolibarr_user']->id : 0;
-$is_admin = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->admin));
+// Récupérer le vrai ID Dolibarr et le statut admin via fonctions centralisées
+$dolibarr_user_id = mv3_get_dolibarr_user_id($auth);
+$is_admin = mv3_is_admin($auth);
 
 // 1. Info utilisateur connecté
 $user_info = [

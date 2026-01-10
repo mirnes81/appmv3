@@ -14,6 +14,7 @@
  */
 
 require_once __DIR__.'/_bootstrap.php';
+require_once __DIR__ . '/../../core/init.php';
 
 // Auth requise
 $auth = require_auth(true);
@@ -21,9 +22,9 @@ $auth = require_auth(true);
 // Méthode GET uniquement
 require_method('GET');
 
-// Récupérer le vrai ID Dolibarr et le statut admin
-$dolibarr_user_id = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->id)) ? (int)$auth['dolibarr_user']->id : 0;
-$is_admin = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->admin));
+// Récupérer le vrai ID Dolibarr et le statut admin via fonctions centralisées
+$dolibarr_user_id = mv3_get_dolibarr_user_id($auth);
+$is_admin = mv3_is_admin($auth);
 
 // Vérifier que l'utilisateur a un dolibarr_user_id (sauf si admin)
 if ($dolibarr_user_id === 0 && !$is_admin) {
