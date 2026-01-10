@@ -49,19 +49,23 @@ $where = [];
 $entity = isset($conf->entity) ? (int)$conf->entity : 1;
 $where[] = "r.entity = ".$entity;
 
-// Filtrer par utilisateur (sauf si admin)
-if ($filter_user_id && !empty($auth['dolibarr_user']->admin)) {
-    $where[] = "r.fk_user = ".(int)$filter_user_id;
+// Récupérer le vrai ID Dolibarr et le statut admin
+$dolibarr_user_id = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->id)) ? (int)$auth['dolibarr_user']->id : 0;
+$is_admin = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->admin));
+
+// Filtrer par utilisateur selon le rôle
+if ($is_admin) {
+    // Admin : peut voir tous les rapports ou filtrer par employé
+    if ($filter_user_id) {
+        $where[] = "r.fk_user = ".(int)$filter_user_id;
+    }
+    // Sinon pas de filtre sur fk_user → voit tous les rapports de l'entité
 } else {
-    // Voir seulement ses propres rapports
-    if ($auth['user_id']) {
-        $where[] = "r.fk_user = ".(int)$auth['user_id'];
-    } elseif (!empty($auth['mobile_user_id'])) {
-        // Si compte unlinked, filtrer par mobile_user_id via une table de correspondance
-        // Pour l'instant, retourner une liste vide pour les comptes unlinked
-        $where[] = "1 = 0"; // Pas de résultats pour comptes non liés
+    // Employé : voit uniquement ses propres rapports
+    if ($dolibarr_user_id > 0) {
+        $where[] = "r.fk_user = ".$dolibarr_user_id;
     } else {
-        // Pas d'utilisateur identifié, retourner vide
+        // Pas d'utilisateur Dolibarr lié, retourner vide
         $where[] = "1 = 0";
     }
 }

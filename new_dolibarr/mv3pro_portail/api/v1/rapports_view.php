@@ -21,8 +21,12 @@ $auth = require_auth(true);
 // Méthode GET uniquement
 require_method('GET');
 
-// Vérifier que l'utilisateur a un dolibarr_user_id
-if (empty($auth['user_id'])) {
+// Récupérer le vrai ID Dolibarr et le statut admin
+$dolibarr_user_id = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->id)) ? (int)$auth['dolibarr_user']->id : 0;
+$is_admin = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->admin));
+
+// Vérifier que l'utilisateur a un dolibarr_user_id (sauf si admin)
+if ($dolibarr_user_id === 0 && !$is_admin) {
     json_error(
         'Compte non lié à un utilisateur Dolibarr',
         'ACCOUNT_UNLINKED',
@@ -30,8 +34,6 @@ if (empty($auth['user_id'])) {
         ['hint' => 'Contactez un administrateur pour lier votre compte']
     );
 }
-
-$dolibarr_user_id = (int)$auth['user_id'];
 
 // Paramètres
 $rapport_id = (int)get_param('id', 0);
@@ -57,7 +59,11 @@ $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."user as u ON u.rowid = r.fk_user";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."projet as p ON p.rowid = r.fk_projet";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as t ON t.rowid = p.fk_soc";
 $sql .= " WHERE r.rowid = ".(int)$rapport_id;
-$sql .= " AND r.fk_user = ".$dolibarr_user_id; // SECURITE: utilisateur ne voit que ses rapports
+
+// SECURITE: employé ne voit que ses rapports, admin voit tout
+if (!$is_admin) {
+    $sql .= " AND r.fk_user = ".$dolibarr_user_id;
+}
 
 log_debug('rapports_view.php SQL query', ['sql' => $sql]);
 

@@ -15,16 +15,21 @@ $auth = require_auth(true);
 
 $entity = isset($conf->entity) ? (int)$conf->entity : 1;
 
+// Récupérer le vrai ID Dolibarr et le statut admin
+$dolibarr_user_id = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->id)) ? (int)$auth['dolibarr_user']->id : 0;
+$is_admin = (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->admin));
+
 // 1. Info utilisateur connecté
 $user_info = [
     'mode' => $auth['mode'] ?? 'N/A',
-    'user_id' => $auth['user_id'] ?? null,
+    'OLD_user_id' => $auth['user_id'] ?? null,
     'mobile_user_id' => $auth['mobile_user_id'] ?? null,
     'email' => $auth['email'] ?? 'N/A',
     'name' => $auth['name'] ?? 'N/A',
     'is_unlinked' => $auth['is_unlinked'] ?? false,
-    'dolibarr_user_id' => $auth['dolibarr_user'] ? $auth['dolibarr_user']->id : null,
-    'is_admin' => $auth['dolibarr_user'] ? $auth['dolibarr_user']->admin : false,
+    'dolibarr_user_id' => $dolibarr_user_id,
+    'is_admin' => $is_admin,
+    'auth_keys' => array_keys($auth),
 ];
 
 // 2. Compter les rapports totaux dans l'entité
@@ -46,17 +51,28 @@ if ($resql_by_user) {
     }
 }
 
-// 4. Compter les rapports avec le filtre actuel
-$filter_user_id = $auth['user_id'] ?? null;
+// 4. Compter les rapports avec le filtre DOLIBARR actuel
 $rapports_with_filter = 0;
+$rapports_with_old_filter = 0;
 
-if ($filter_user_id) {
+if ($dolibarr_user_id > 0) {
     $sql_filtered = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."mv3_rapport
-                     WHERE entity = ".$entity." AND fk_user = ".(int)$filter_user_id;
+                     WHERE entity = ".$entity." AND fk_user = ".$dolibarr_user_id;
     $resql_filtered = $db->query($sql_filtered);
     if ($resql_filtered) {
         $obj = $db->fetch_object($resql_filtered);
         $rapports_with_filter = (int)$obj->total;
+    }
+}
+
+// Compter aussi avec l'ancien user_id pour comparaison
+if (!empty($auth['user_id'])) {
+    $sql_old = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."mv3_rapport
+                WHERE entity = ".$entity." AND fk_user = ".(int)$auth['user_id'];
+    $resql_old = $db->query($sql_old);
+    if ($resql_old) {
+        $obj = $db->fetch_object($resql_old);
+        $rapports_with_old_filter = (int)$obj->total;
     }
 }
 
@@ -89,16 +105,20 @@ if ($resql_recent) {
 
 // 6. Recommandation
 $recommendation = '';
-if ($total_rapports > 0 && $rapports_with_filter === 0) {
-    $recommendation = "PROBLÈME DÉTECTÉ : Il y a {$total_rapports} rapport(s) dans l'entité, mais 0 visible avec le filtre user_id={$filter_user_id}. ";
+if ($total_rapports > 0 && $rapports_with_filter === 0 && !$is_admin) {
+    $recommendation = "⚠️ PROBLÈME : Il y a {$total_rapports} rapport(s) dans l'entité, mais 0 visible avec le filtre fk_user={$dolibarr_user_id}. ";
 
     if ($user_info['is_unlinked']) {
         $recommendation .= "Le compte mobile n'est pas lié à un utilisateur Dolibarr. Vous devez lier ce compte dans /custom/mv3pro_portail/mobile_app/admin/manage_users.php";
-    } elseif (!$filter_user_id) {
-        $recommendation .= "Aucun user_id détecté dans l'authentification.";
+    } elseif ($dolibarr_user_id === 0) {
+        $recommendation .= "Aucun dolibarr_user_id détecté dans l'authentification.";
     } else {
-        $recommendation .= "Les rapports ne sont pas créés avec fk_user={$filter_user_id}. Solution: Modifier l'API pour afficher tous les rapports de l'entité (sans filtre par utilisateur) ou créer les rapports avec le bon fk_user.";
+        $recommendation .= "Les rapports ne sont pas créés avec fk_user={$dolibarr_user_id}. Vérifiez que les rapports ont le bon fk_user.";
     }
+} elseif ($is_admin) {
+    $recommendation = "✅ Utilisateur ADMIN détecté : peut voir tous les rapports de l'entité ({$total_rapports} au total).";
+} elseif ($rapports_with_filter > 0) {
+    $recommendation = "✅ {$rapports_with_filter} rapport(s) visible(s) pour cet utilisateur.";
 }
 
 $response = [
@@ -106,14 +126,18 @@ $response = [
     'debug_info' => [
         'user_info' => $user_info,
         'entity' => $entity,
-        'total_rapports' => $total_rapports,
+        'total_rapports_in_entity' => $total_rapports,
         'rapports_by_user' => $rapports_by_user,
-        'rapports_with_filter' => $rapports_with_filter,
-        'filter_applied' => $filter_user_id ? "fk_user = {$filter_user_id}" : 'AUCUN (compte unlinked)',
+        'rapports_with_NEW_filter' => $rapports_with_filter,
+        'rapports_with_OLD_filter' => $rapports_with_old_filter,
+        'filter_applied' => $dolibarr_user_id > 0 ? "fk_user = {$dolibarr_user_id} (Dolibarr ID)" : 'AUCUN',
         'recent_rapports' => $recent_rapports,
     ],
     'recommendation' => $recommendation,
-    'solution' => 'Voir la recommandation ci-dessus ou modifier rapports.php pour ne pas filtrer par user_id',
+    'comparison' => [
+        'old_system' => "auth['user_id'] = " . ($auth['user_id'] ?? 'NULL') . " → {$rapports_with_old_filter} rapport(s)",
+        'new_system' => "dolibarr_user_id = {$dolibarr_user_id} → {$rapports_with_filter} rapport(s)",
+    ],
 ];
 
 json_ok($response);
