@@ -63,7 +63,7 @@ export function RegieDetail() {
         regie: RegieDetail;
         lines: RegieLine[];
         photos: any[];
-      }>(`/api/v1/regie_view.php?id=${id}`);
+      }>(`/regie_view.php?id=${id}`);
 
       setRegie(response.regie);
       setLines(response.lines);

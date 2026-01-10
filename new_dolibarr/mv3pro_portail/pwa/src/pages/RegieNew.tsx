@@ -29,7 +29,7 @@ export function RegieNew() {
       setLoading(true);
       setError(null);
 
-      const response = await apiClient<{ regie_id: number; ref: string }>('/api/v1/regie_create.php', {
+      const response = await apiClient<{ regie_id: number; ref: string }>('/regie_create.php', {
         method: 'POST',
         body: JSON.stringify({
           fk_project: parseInt(formData.fk_project),

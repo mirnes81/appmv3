@@ -45,7 +45,7 @@ export function Regie() {
       }
 
       const response = await apiClient<{ regies: Regie[] }>(
-        `/api/v1/regie.php?${params.toString()}`
+        `/regie.php?${params.toString()}`
       );
 
       setRegies(response.regies);
