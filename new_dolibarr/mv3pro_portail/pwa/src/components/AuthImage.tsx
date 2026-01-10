@@ -31,6 +31,7 @@ export function AuthImage({ src, alt, style, className, loading, onClick }: Auth
 
         const token = storage.getToken();
         if (!token) {
+          console.error('[AuthImage] Token manquant');
           throw new Error('Token manquant');
         }
 
@@ -38,6 +39,9 @@ export function AuthImage({ src, alt, style, className, loading, onClick }: Auth
         const imageUrl = src.startsWith('http')
           ? src
           : `${window.location.origin}${src}`;
+
+        console.log('[AuthImage] Chargement:', imageUrl);
+        console.log('[AuthImage] Token présent:', token.substring(0, 20) + '...');
 
         const response = await fetch(imageUrl, {
           method: 'GET',
@@ -47,11 +51,16 @@ export function AuthImage({ src, alt, style, className, loading, onClick }: Auth
           }
         });
 
+        console.log('[AuthImage] Réponse HTTP:', response.status, response.statusText);
+
         if (!response.ok) {
+          const text = await response.text();
+          console.error('[AuthImage] Erreur réponse:', text.substring(0, 500));
           throw new Error(`HTTP ${response.status}`);
         }
 
         const blob = await response.blob();
+        console.log('[AuthImage] Blob reçu:', blob.size, 'bytes, type:', blob.type);
 
         if (!mounted) {
           return;
@@ -60,8 +69,9 @@ export function AuthImage({ src, alt, style, className, loading, onClick }: Auth
         objectUrl = URL.createObjectURL(blob);
         setBlobUrl(objectUrl);
         setIsLoading(false);
+        console.log('[AuthImage] Image chargée avec succès');
       } catch (err) {
-        console.error('Erreur chargement image:', err);
+        console.error('[AuthImage] Erreur chargement:', err, 'pour URL:', src);
         if (mounted) {
           setError(true);
           setIsLoading(false);

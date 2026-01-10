@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vider le cache - MV3 PRO</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #1f2937;
+            margin: 0 0 16px 0;
+            font-size: 28px;
+        }
+        p {
+            color: #6b7280;
+            line-height: 1.6;
+            margin: 0 0 24px 0;
+        }
+        .btn {
+            background: #3b82f6;
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: none;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🔄</div>
+        <h1>Vider le cache PWA</h1>
+        <p>Cliquez sur le bouton ci-dessous pour vider complètement le cache de l'application et recharger la dernière version.</p>
+
+        <button class="btn" onclick="clearAndReload()">
+            🗑️ Vider le cache et recharger
+        </button>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        async function clearAndReload() {
+            const status = document.getElementById('status');
+            status.style.display = 'block';
+            status.className = 'status success';
+            status.textContent = '⏳ Vidage du cache en cours...';
+
+            try {
+                // Supprimer le service worker
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                }
+
+                // Vider tous les caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                }
+
+                // Vider localStorage
+                localStorage.clear();
+
+                // Vider sessionStorage
+                sessionStorage.clear();
+
+                status.textContent = '✅ Cache vidé ! Redirection...';
+
+                // Rediriger vers la page d'accueil
+                setTimeout(() => {
+                    window.location.href = '/custom/mv3pro_portail/pwa_dist/';
+                }, 1500);
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = '❌ Erreur: ' + err.message;
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>
