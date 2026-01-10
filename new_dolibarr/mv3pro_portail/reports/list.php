@@ -17,6 +17,10 @@ if (!$user->rights->mv3pro_portail->reports_create) {
     accessforbidden();
 }
 
+// Forcer le menu principal et sous-menu
+$_GET['mainmenu'] = 'mv3pro';
+$_GET['leftmenu'] = 'mv3pro_reports';
+
 // Paramètres
 $action = GETPOST('action', 'alpha');
 $search_ref = GETPOST('search_ref', 'alpha');
