@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "build_date": "2026-01-10T13:46:00Z",
+  "changes": [
+    "Dashboard moderne et compact",
+    "Widget météo 5 jours intégré",
+    "Icônes réduites pour mobile",
+    "Grille 3x2 actions rapides (6 boutons)",
+    "Nettoyage complet pwa_dist",
+    "Build propre avec assets hashés uniques",
+    "Cache optimisé StaleWhileRevalidate",
+    "Animations tactiles fluides",
+    "Design tenant sur 1 écran smartphone"
+  ],
+  "files": {
+    "js": "assets/index-DPR2n2Xy.js",
+    "css": "assets/index-BQiQB-1j.css",
+    "sw": "sw.js",
+    "workbox": "workbox-d4f8be5c.js"
+  },
+  "features": {
+    "weather": true,
+    "compact_design": true,
+    "quick_actions": 6,
+    "cache_strategy": "StaleWhileRevalidate",
+    "skip_waiting": true
+  }
+}
