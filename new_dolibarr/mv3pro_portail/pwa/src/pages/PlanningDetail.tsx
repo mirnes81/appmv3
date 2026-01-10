@@ -141,7 +141,7 @@ export function PlanningDetail() {
     }
   };
 
-  // Fonction de compression d'image
+  // Fonction de compression d'image AGRESSIVE pour téléphones
   const compressImage = async (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.85): Promise<File> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -210,13 +210,42 @@ export function PlanningDetail() {
     try {
       console.log('[Upload] Taille originale:', (file.size / 1024 / 1024).toFixed(2), 'MB');
 
-      // Compresser automatiquement si > 500KB
+      // Détecter si mobile
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      // TOUJOURS compresser sur mobile, ou si > 300KB
       let fileToUpload = file;
-      if (file.size > 500 * 1024) {
-        console.log('[Upload] Compression en cours...');
+      const shouldCompress = isMobile || file.size > 300 * 1024;
+
+      if (shouldCompress) {
+        console.log('[Upload] Compression en cours... (Mobile:', isMobile, ')');
         setUploadProgress(10);
-        fileToUpload = await compressImage(file);
+
+        // Paramètres de compression adaptés à la taille
+        let maxSize = 1920;
+        let quality = 0.85;
+
+        if (file.size > 10 * 1024 * 1024) {
+          // Très grosse photo (> 10 MB) - compression MAXIMALE
+          maxSize = 1600;
+          quality = 0.70;
+          console.log('[Upload] Mode compression MAXIMALE (photo > 10MB)');
+        } else if (file.size > 5 * 1024 * 1024) {
+          // Grosse photo (> 5 MB) - compression FORTE
+          maxSize = 1600;
+          quality = 0.75;
+          console.log('[Upload] Mode compression FORTE (photo > 5MB)');
+        } else if (isMobile) {
+          // Photo de téléphone
+          maxSize = 1600;
+          quality = 0.80;
+          console.log('[Upload] Mode compression MOBILE');
+        }
+
+        fileToUpload = await compressImage(file, maxSize, maxSize, quality);
         console.log('[Upload] Taille finale:', (fileToUpload.size / 1024 / 1024).toFixed(2), 'MB');
+      } else {
+        console.log('[Upload] Pas de compression nécessaire (< 300KB)');
       }
 
       const formData = new FormData();

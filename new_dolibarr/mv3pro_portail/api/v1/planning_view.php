@@ -212,7 +212,7 @@ $sql_files = "SELECT
 FROM ".MAIN_DB_PREFIX."ecm_files as ecm
 WHERE ecm.src_object_type = 'actioncomm'
 AND ecm.src_object_id = ".$id."
-ORDER BY ecm.position ASC, ecm.date_c DESC";
+ORDER BY ecm.date_c DESC, ecm.position ASC";
 
 log_debug("SQL ECM:", ['sql' => $sql_files]);
 
