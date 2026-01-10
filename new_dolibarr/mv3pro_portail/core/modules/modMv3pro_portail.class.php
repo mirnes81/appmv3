@@ -76,7 +76,7 @@ class modMv3pro_portail extends DolibarrModules
         $this->rights[$r][4] = 'write';
         $r++;
 
-        // Menus (MINIMAL - uniquement Planning)
+        // Menus (Dashboard + Planning)
         $this->menu = array();
         $r = 0;
 
@@ -88,7 +88,7 @@ class modMv3pro_portail extends DolibarrModules
             'prefix'    => '<span class="fa fa-calendar fa-fw paddingright pictofixedwidth"></span>',
             'mainmenu'  => 'mv3pro',
             'leftmenu'  => '',
-            'url'       => '/agenda/index.php?mainmenu=mv3pro',
+            'url'       => '/custom/mv3pro_portail/dashboard/index.php',
             'langs'     => 'mv3pro_portail@mv3pro_portail',
             'position'  => 1000,
             'enabled'   => '1',
@@ -98,14 +98,31 @@ class modMv3pro_portail extends DolibarrModules
         );
         $r++;
 
-        // Sous-menu gauche: Planning UNIQUEMENT
+        // Sous-menu gauche: Dashboard
+        $this->menu[$r] = array(
+            'fk_menu'   => 'fk_mainmenu=mv3pro',
+            'type'      => 'left',
+            'titre'     => 'Dashboard',
+            'mainmenu'  => 'mv3pro',
+            'leftmenu'  => 'mv3pro_dashboard',
+            'url'       => '/custom/mv3pro_portail/dashboard/index.php',
+            'langs'     => 'mv3pro_portail@mv3pro_portail',
+            'position'  => 10,
+            'enabled'   => '1',
+            'perms'     => '1',
+            'target'    => '',
+            'user'      => 2
+        );
+        $r++;
+
+        // Sous-menu gauche: Planning
         $this->menu[$r] = array(
             'fk_menu'   => 'fk_mainmenu=mv3pro',
             'type'      => 'left',
             'titre'     => 'Planning',
             'mainmenu'  => 'mv3pro',
             'leftmenu'  => 'mv3pro_planning',
-            'url'       => '/agenda/index.php?mainmenu=mv3pro',
+            'url'       => '/comm/action/index.php?mainmenu=mv3pro',
             'langs'     => 'mv3pro_portail@mv3pro_portail',
             'position'  => 100,
             'enabled'   => '1',
