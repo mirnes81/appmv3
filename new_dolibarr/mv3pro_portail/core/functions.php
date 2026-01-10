@@ -17,7 +17,8 @@ if (!defined('MV3_CORE_FUNCTIONS')) {
  * @param string $label Label pour message d'erreur
  * @return void (ou json_ok si table absente)
  */
-function mv3_check_table_or_empty($db, $table_name, $label = 'Table') {
+if (!function_exists('mv3_check_table_or_empty')) {
+    function mv3_check_table_or_empty($db, $table_name, $label = 'Table') {
     global $conf;
 
     $entity = isset($conf->entity) ? (int)$conf->entity : 1;
@@ -41,6 +42,7 @@ function mv3_check_table_or_empty($db, $table_name, $label = 'Table') {
         ]);
         exit;
     }
+    }
 }
 
 /**
@@ -50,7 +52,8 @@ function mv3_check_table_or_empty($db, $table_name, $label = 'Table') {
  * @param string $format Format de sortie (défaut: d/m/Y)
  * @return string Date formatée
  */
-function mv3_format_date($date, $format = 'd/m/Y') {
+if (!function_exists('mv3_format_date')) {
+    function mv3_format_date($date, $format = 'd/m/Y') {
     if (empty($date) || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') {
         return '';
     }
@@ -65,6 +68,7 @@ function mv3_format_date($date, $format = 'd/m/Y') {
     }
 
     return date($format, $timestamp);
+    }
 }
 
 /**
@@ -74,7 +78,8 @@ function mv3_format_date($date, $format = 'd/m/Y') {
  * @param string $format Format de sortie (défaut: H:i)
  * @return string Heure formatée
  */
-function mv3_format_time($time, $format = 'H:i') {
+if (!function_exists('mv3_format_time')) {
+    function mv3_format_time($time, $format = 'H:i') {
     if (empty($time) || $time === '00:00:00') {
         return '';
     }
@@ -85,6 +90,7 @@ function mv3_format_time($time, $format = 'H:i') {
     }
 
     return date($format, $timestamp);
+    }
 }
 
 /**
@@ -94,19 +100,21 @@ function mv3_format_time($time, $format = 'H:i') {
  * @param string $heure_fin Heure de fin (HH:MM:SS)
  * @return float Durée en heures (0 si invalide)
  */
-function mv3_calculate_duration($heure_debut, $heure_fin) {
-    if (empty($heure_debut) || empty($heure_fin)) {
-        return 0;
+if (!function_exists('mv3_calculate_duration')) {
+    function mv3_calculate_duration($heure_debut, $heure_fin) {
+        if (empty($heure_debut) || empty($heure_fin)) {
+            return 0;
+        }
+
+        $start = strtotime($heure_debut);
+        $end = strtotime($heure_fin);
+
+        if ($end <= $start) {
+            return 0;
+        }
+
+        return round(($end - $start) / 3600, 2);
     }
-
-    $start = strtotime($heure_debut);
-    $end = strtotime($heure_fin);
-
-    if ($end <= $start) {
-        return 0;
-    }
-
-    return round(($end - $start) / 3600, 2);
 }
 
 /**
@@ -115,18 +123,20 @@ function mv3_calculate_duration($heure_debut, $heure_fin) {
  * @param int $statut Code statut (0=brouillon, 1=validé, 2=soumis)
  * @return string Label du statut
  */
-function mv3_get_statut_label($statut) {
-    $statut = (int)$statut;
+if (!function_exists('mv3_get_statut_label')) {
+    function mv3_get_statut_label($statut) {
+        $statut = (int)$statut;
 
-    switch ($statut) {
-        case 0:
-            return 'brouillon';
-        case 1:
-            return 'valide';
-        case 2:
-            return 'soumis';
-        default:
-            return 'inconnu';
+        switch ($statut) {
+            case 0:
+                return 'brouillon';
+            case 1:
+                return 'valide';
+            case 2:
+                return 'soumis';
+            default:
+                return 'inconnu';
+        }
     }
 }
 
@@ -137,8 +147,10 @@ function mv3_get_statut_label($statut) {
  * @param string $string Chaîne à nettoyer
  * @return string Chaîne nettoyée
  */
-function mv3_sql_escape($db, $string) {
-    return $db->escape($string);
+if (!function_exists('mv3_sql_escape')) {
+    function mv3_sql_escape($db, $string) {
+        return $db->escape($string);
+    }
 }
 
 /**
@@ -148,8 +160,10 @@ function mv3_sql_escape($db, $string) {
  * @param string $context Contexte (ex: 'API', 'Auth', 'Upload')
  * @return void
  */
-function mv3_log_error($message, $context = 'MV3') {
-    error_log("[MV3 $context] $message");
+if (!function_exists('mv3_log_error')) {
+    function mv3_log_error($message, $context = 'MV3') {
+        error_log("[MV3 $context] $message");
+    }
 }
 
 /**
@@ -159,8 +173,10 @@ function mv3_log_error($message, $context = 'MV3') {
  * @param string $context Contexte (ex: 'API', 'Auth', 'Upload')
  * @return void
  */
-function mv3_log_info($message, $context = 'MV3') {
-    error_log("[MV3 $context] $message");
+if (!function_exists('mv3_log_info')) {
+    function mv3_log_info($message, $context = 'MV3') {
+        error_log("[MV3 $context] $message");
+    }
 }
 
 /**
@@ -171,9 +187,11 @@ function mv3_log_info($message, $context = 'MV3') {
  * @param string $error_message Message d'erreur personnalisé
  * @return void (ou json_error si invalide)
  */
-function mv3_require_param($param_name, $value, $error_message = null) {
-    if (empty($value) && $value !== '0' && $value !== 0) {
-        $message = $error_message ?? "Le paramètre '$param_name' est requis";
-        json_error($message, 'INVALID_PARAMETER', 400);
+if (!function_exists('mv3_require_param')) {
+    function mv3_require_param($param_name, $value, $error_message = null) {
+        if (empty($value) && $value !== '0' && $value !== 0) {
+            $message = $error_message ?? "Le paramètre '$param_name' est requis";
+            json_error($message, 'INVALID_PARAMETER', 400);
+        }
     }
 }

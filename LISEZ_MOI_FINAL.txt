@@ -1,200 +1,63 @@
-═══════════════════════════════════════════════════════════════════════════════
-  ✅ PWA MV3 PRO - AUTHENTIFICATION TOTALEMENT CORRIGÉE
-═══════════════════════════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════════════════════
+  🚨 ACTION IMMÉDIATE REQUISE - FIX ERREUR 500
+═══════════════════════════════════════════════════════════════════════════
 
-Date: 10 janvier 2026
-Version: 3.0
-Build: DmJXHRZF
-Statut: ✅ PRÊT POUR PRODUCTION
+❌ PROBLÈME ACTUEL
+  Cannot redeclare mv3_check_table_or_empty()
+  → Aucun rapport ne s'affiche dans la PWA
 
-═══════════════════════════════════════════════════════════════════════════════
-  🎯 CE QUI A ÉTÉ FAIT
-═══════════════════════════════════════════════════════════════════════════════
+✅ SOLUTION
+  Uploader 2 fichiers corrigés (au lieu de 1 seul)
 
-✅ PROBLÈME RÉSOLU: Upload photo depuis PWA ne fonctionnait pas
-   → Maintenant: Auth par token (Bearer + X-Auth-Token)
-   → Plus de dépendance session PHP obligatoire
+═══════════════════════════════════════════════════════════════════════════
 
-✅ MIDDLEWARE AUTH COMMUN:
-   → Fichier: new_dolibarr/mv3pro_portail/api/v1/mv3_auth.php
-   → Fonctions: mv3_getBearerToken(), mv3_authenticateOrFail()
-   → Support: Bearer token + X-Auth-Token + Session (fallback)
+📦 FICHIERS À UPLOADER (5 MINUTES)
 
-✅ ENDPOINTS CORRIGÉS/CRÉÉS:
-   → planning_upload_photo.php ✅ (auth token)
-   → object/get.php, object/upload.php, object/file.php ✅ (auth token)
-   → sens_pose.php ✅ (créé)
-   → materiel.php ✅ (créé)
-   → regie.php, notifications.php ✅ (déjà fonctionnels)
+  1️⃣  new_dolibarr/mv3pro_portail/api/v1/_bootstrap.php  (31 Ko)
+      → custom/mv3pro_portail/api/v1/_bootstrap.php
 
-✅ RÉPONSES JSON STANDARDISÉES:
-   → Format: {"success": true|false, "error": "...", "data": {...}}
-   → HTTP codes cohérents (200/201/400/401/403/404/500)
-   → Aucune erreur PHP brute exposée
+  2️⃣  new_dolibarr/mv3pro_portail/core/functions.php     (5 Ko)
+      → custom/mv3pro_portail/core/functions.php
 
-✅ LOGGING & DEBUG:
-   → Fichier: documents/mv3pro_portail/logs/api.log
-   → Activable avec: MV3_DEBUG=1
-   → Traçabilité complète
+═══════════════════════════════════════════════════════════════════════════
 
-✅ PWA BUILD:
-   → Nouveau build: index-DmJXHRZF.js (276.30 KB)
-   → Page force-reload créée: FORCE_RELOAD.html
+🔧 ÉTAPES RAPIDES
 
-═══════════════════════════════════════════════════════════════════════════════
-  📁 STRUCTURE FINALE
-═══════════════════════════════════════════════════════════════════════════════
+  1. Connexion FTP : ftp.mv-3pro.ch
+  2. Naviguer : /public_html/custom/mv3pro_portail/
+  3. Backup : Renommer les 2 fichiers en .OLD
+  4. Upload : Les 2 nouveaux fichiers
+  5. Test : https://crm.mv-3pro.ch/.../rapports_debug.php
 
-new_dolibarr/mv3pro_portail/
-├── api/v1/
-│   ├── mv3_auth.php ⭐ NOUVEAU (middleware auth)
-│   ├── _bootstrap.php ✅ (auth multi-mode)
-│   ├── planning_upload_photo.php ⭐ MODIFIÉ (auth token)
-│   ├── object/
-│   │   ├── get.php ⭐ MODIFIÉ
-│   │   ├── upload.php ⭐ MODIFIÉ
-│   │   └── file.php ⭐ MODIFIÉ
-│   ├── regie.php ✅
-│   ├── sens_pose.php ⭐ NOUVEAU
-│   ├── materiel.php ⭐ NOUVEAU
-│   └── notifications.php ✅
-├── pwa_dist/ ⭐ NOUVEAU BUILD
-│   ├── index.html
-│   ├── assets/index-DmJXHRZF.js ⭐
-│   └── FORCE_RELOAD.html ⭐ NOUVEAU
-└── docs/
-    ├── PWA_AUTH_FIX_COMPLETE.md ⭐
-    ├── GUIDE_TEST_FINAL.md ⭐
-    ├── VALIDATION_FINALE.md ⭐
-    └── DEPLOIEMENT_RAPIDE.sh ⭐
+═══════════════════════════════════════════════════════════════════════════
 
-═══════════════════════════════════════════════════════════════════════════════
-  🚀 DÉPLOIEMENT (SIMPLIFIÉ)
-═══════════════════════════════════════════════════════════════════════════════
+✅ TEST DE VALIDATION
 
-1. COPIER LES FICHIERS SUR LE SERVEUR:
+  Ouvrir dans le navigateur :
+  https://crm.mv-3pro.ch/custom/mv3pro_portail/api/v1/rapports_debug.php
 
-   cd /var/www/dolibarr/custom/mv3pro_portail
+  AVANT : Fatal error: Cannot redeclare...
+  APRÈS : {"success": true, "debug_info": {...}}
 
-   Copier:
-   - api/v1/mv3_auth.php
-   - api/v1/planning_upload_photo.php
-   - api/v1/object/ (get.php, upload.php, file.php)
-   - api/v1/sens_pose.php
-   - api/v1/materiel.php
-   - pwa_dist/ (tout le contenu)
+═══════════════════════════════════════════════════════════════════════════
 
-2. PERMISSIONS:
+📄 CHECKSUMS (pour vérification)
 
-   mkdir -p /var/www/dolibarr/documents/mv3pro_portail/logs
-   mkdir -p /var/www/dolibarr/documents/mv3pro_portail/planning
+  _bootstrap.php : 4205ac8f47db685a06f5a40bc12a59d2
+  functions.php  : 094901ba0e0c75ea91aa3c401dd2092e
 
-   chown -R www-data:www-data /var/www/dolibarr/documents/mv3pro_portail
-   chmod -R 755 /var/www/dolibarr/documents/mv3pro_portail
+═══════════════════════════════════════════════════════════════════════════
 
-3. FORCER RECHARGEMENT PWA (téléphone):
+📚 GUIDES DISPONIBLES
 
-   Ouvrir:
-   https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/FORCE_RELOAD.html
+  • FIX_FINAL_DOUBLE_DECLARATION.md  → Guide rapide (1 page)
+  • GUIDE_DEPLOIEMENT_URGENT.md      → Guide détaillé complet
+  • VERIFICATION_DEPLOIEMENT.txt     → Checklist de tests
 
-   Cliquer: "🚀 Forcer la mise à jour"
+═══════════════════════════════════════════════════════════════════════════
 
-═══════════════════════════════════════════════════════════════════════════════
-  🧪 TESTS RAPIDES
-═══════════════════════════════════════════════════════════════════════════════
+⏱️  TEMPS ESTIMÉ : 5 minutes
+🎯  IMPACT       : CRITIQUE (bloque les rapports)
+✅  STATUS       : PRÊT À DÉPLOYER
 
-TEST 1 - LOGIN:
----------------
-curl -X POST "https://crm.mv-3pro.ch/custom/mv3pro_portail/mobile_app/api/auth.php?action=login" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"xxx"}'
-
-→ Doit retourner: {"success":true,"token":"..."}
-
-TEST 2 - UPLOAD PHOTO:
-----------------------
-TOKEN="..." # Token du test 1
-
-curl -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "event_id=74049" \
-  -F "file=@photo.jpg" \
-  "https://crm.mv-3pro.ch/custom/mv3pro_portail/api/v1/planning_upload_photo.php"
-
-→ Doit retourner: {"success":true,"file":{...}}
-
-TEST 3 - ENDPOINTS MÉTIER:
----------------------------
-curl -H "Authorization: Bearer $TOKEN" \
-  "https://crm.mv-3pro.ch/custom/mv3pro_portail/api/v1/regie.php"
-
-→ Doit retourner: {"success":true,"regies":[...]}
-
-═══════════════════════════════════════════════════════════════════════════════
-  📚 DOCUMENTATION COMPLÈTE
-═══════════════════════════════════════════════════════════════════════════════
-
-Consultez ces fichiers pour plus de détails:
-
-1. GUIDE_TEST_FINAL.md
-   → Tests étape par étape avec tous les cas d'erreur
-
-2. PWA_AUTH_FIX_COMPLETE.md
-   → Documentation technique complète
-   → Architecture d'authentification
-   → Flow d'upload photo
-   → Dépannage
-
-3. VALIDATION_FINALE.md
-   → Validation conformité aux spécifications
-   → Métriques avant/après
-   → Checklist complète
-
-4. DEPLOIEMENT_RAPIDE.sh
-   → Script bash de déploiement automatisé
-
-═══════════════════════════════════════════════════════════════════════════════
-  📊 RÉSULTAT
-═══════════════════════════════════════════════════════════════════════════════
-
-AVANT:
-------
-❌ Upload photo PWA → 401 Unauthorized
-❌ 5 endpoints → 501 Not Implemented
-❌ Auth → Session cookie uniquement
-❌ Erreurs PHP exposées
-
-MAINTENANT:
------------
-✅ Upload photo PWA → Fonctionne avec token
-✅ 0 endpoint → 501
-✅ Auth → Token + Session (fallback)
-✅ Erreurs JSON propres
-
-═══════════════════════════════════════════════════════════════════════════════
-  ✅ STATUT FINAL
-═══════════════════════════════════════════════════════════════════════════════
-
-CONFORMITÉ: 100% ✅
-
-Toutes les exigences ont été implémentées:
-
-1. ✅ Authentification unique par token (middleware mv3_auth.php)
-2. ✅ Upload photo fonctionnel sans session PHP
-3. ✅ Réponses JSON standardisées partout
-4. ✅ Endpoints métier créés (pas de 501)
-5. ✅ Logging et debug implémentés
-6. ✅ Aucune modification hors new_dolibarr/
-7. ✅ Aucune dépendance session obligatoire
-
-PRÊT POUR PRODUCTION: ✅
-
-═══════════════════════════════════════════════════════════════════════════════
-
-Version: 3.0
-Build: DmJXHRZF
-Date: 10 janvier 2026
-
-🚀 DÉPLOYER MAINTENANT !
-
-═══════════════════════════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════════════════════
