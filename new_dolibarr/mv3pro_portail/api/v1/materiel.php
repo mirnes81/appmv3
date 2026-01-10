@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__.'/_bootstrap.php';
+require_once __DIR__ . '/../../core/init.php';
 
 require_method('GET');
 $auth = require_auth();
@@ -23,9 +24,10 @@ try {
             LEFT JOIN " . MAIN_DB_PREFIX . "user as u ON u.rowid = m.fk_user
             WHERE m.entity = " . (int)$conf->entity;
 
-    // Filtre par utilisateur si non admin
-    if (empty($auth['dolibarr_user']->admin)) {
-        $sql .= " AND m.fk_user = " . (int)$auth['user_id'];
+    // Filtre par utilisateur (admin voit tout, employé voit son matériel)
+    $user_filter = mv3_get_user_filter_sql($auth, 'm.fk_user');
+    if (!empty($user_filter)) {
+        $sql .= " AND " . $user_filter;
     }
 
     $sql .= " ORDER BY m.date_creation DESC LIMIT 100";

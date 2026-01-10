@@ -25,11 +25,19 @@
  */
 
 require_once __DIR__.'/_bootstrap.php';
+require_once __DIR__ . '/../../core/init.php';
 
 require_method('GET');
 $auth = require_auth();
 
-log_debug("Regie list endpoint - user_id: ".$auth['user_id']);
+// Récupérer ID Dolibarr et statut admin via fonctions centralisées
+$dolibarr_user_id = mv3_get_dolibarr_user_id($auth);
+$is_admin = mv3_is_admin($auth);
+
+log_debug("Regie list endpoint", [
+    'dolibarr_user_id' => $dolibarr_user_id,
+    'is_admin' => $is_admin
+]);
 
 // Paramètres de filtrage
 $search_status = get_param('search_status', '', 'GET');
@@ -39,45 +47,20 @@ $search = get_param('search', '', 'GET');
 $limit = min((int)get_param('limit', 50, 'GET'), 200);
 $offset = (int)get_param('offset', 0, 'GET');
 
-// Déterminer le rôle de l'utilisateur
-$is_admin = false;
-$filter_user_id = null;
-
-if ($auth['mode'] === 'mobile_token' && !empty($auth['mobile_user_id'])) {
-    // Utilisateur mobile
-    $mobile_user_id = $auth['mobile_user_id'];
-
-    // Si pas lié à un utilisateur Dolibarr, on ne peut rien voir
-    if (empty($auth['user_id'])) {
-        json_ok([
-            'regies' => [],
-            'total' => 0,
-            'limit' => $limit,
-            'offset' => $offset,
-            'reason' => 'account_unlinked'
-        ]);
-    }
-
-    $filter_user_id = $auth['user_id'];
-
-    // Vérifier si admin via Dolibarr user
-    if (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->admin)) {
-        $is_admin = true;
-        $filter_user_id = null; // Admin voit tout
-    }
-} else {
-    // Utilisateur Dolibarr standard
-    $filter_user_id = $auth['user_id'];
-
-    if (!empty($auth['dolibarr_user']) && !empty($auth['dolibarr_user']->admin)) {
-        $is_admin = true;
-        $filter_user_id = null; // Admin voit tout
-    }
+// Si pas lié à un utilisateur Dolibarr et pas admin, retour vide
+if ($dolibarr_user_id === 0 && !$is_admin) {
+    json_ok([
+        'regies' => [],
+        'total' => 0,
+        'limit' => $limit,
+        'offset' => $offset,
+        'reason' => 'account_unlinked'
+    ]);
 }
 
 log_debug("Filters", [
     'is_admin' => $is_admin,
-    'filter_user_id' => $filter_user_id,
+    'dolibarr_user_id' => $dolibarr_user_id,
     'search_status' => $search_status,
     'date_from' => $date_from,
     'date_to' => $date_to,
@@ -103,9 +86,9 @@ $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."user as u_author ON r.fk_user_author = u_a
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."user as u_valid ON r.fk_user_valid = u_valid.rowid";
 $sql .= " WHERE r.entity = ".$conf->entity;
 
-// Filtrer par utilisateur si non-admin
-if ($filter_user_id) {
-    $sql .= " AND (r.fk_user_author = ".(int)$filter_user_id." OR r.fk_user_valid = ".(int)$filter_user_id.")";
+// Filtrer par utilisateur (admin voit tout, employé voit ses régies)
+if (!$is_admin && $dolibarr_user_id > 0) {
+    $sql .= " AND (r.fk_user_author = ".$dolibarr_user_id." OR r.fk_user_valid = ".$dolibarr_user_id.")";
 }
 
 // Filtrer par statut

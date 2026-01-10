@@ -16,9 +16,14 @@
  */
 
 require_once __DIR__.'/_bootstrap.php';
+require_once __DIR__ . '/../../core/init.php';
 
 $auth = require_auth();
 require_method('GET');
+
+// Récupérer ID Dolibarr et statut admin
+$dolibarr_user_id = mv3_get_dolibarr_user_id($auth);
+$is_admin = mv3_is_admin($auth);
 
 // Paramètres
 $limit = (int)get_param('limit', 50);
@@ -45,13 +50,10 @@ $sql = "SELECT rowid, fk_user, type, titre, message, fk_object, object_type, sta
 $sql .= " FROM ".MAIN_DB_PREFIX."mv3_notifications";
 $sql .= " WHERE 1=1";
 
-// Filtrage par utilisateur
-if ($auth['is_admin'] && $user_id_filter > 0) {
-    // Admin peut filtrer par user_id spécifique
-    $sql .= " AND fk_user = ".$user_id_filter;
-} else {
-    // Employé voit uniquement ses notifications
-    $sql .= " AND fk_user = ".$auth['user_id'];
+// Filtrage par utilisateur (admin voit tout ou filtre, employé voit ses notifications)
+$user_filter = mv3_get_user_filter_sql($auth, 'fk_user', $user_id_filter);
+if (!empty($user_filter)) {
+    $sql .= " AND " . $user_filter;
 }
 
 // Filtrage par statut
