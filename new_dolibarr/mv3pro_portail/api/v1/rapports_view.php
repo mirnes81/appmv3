@@ -208,9 +208,11 @@ log_debug('rapports_view.php success', [
     'nb_photos' => count($photos)
 ]);
 
-// Retourner la réponse
+// Retourner la réponse (enveloppé dans data)
 json_ok([
-    'rapport' => $rapport_data,
-    'photos' => $photos,
-    'pdf_url' => $pdf_url,
+    'data' => [
+        'rapport' => $rapport_data,
+        'photos' => $photos,
+        'pdf_url' => $pdf_url,
+    ]
 ]);

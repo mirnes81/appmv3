@@ -183,11 +183,13 @@ while ($obj = $db->fetch_object($resql)) {
     $rapports[] = $rapport;
 }
 
-// Retourner avec format standard API v1
+// Retourner avec format standard API v1 (enveloppé dans data)
 json_ok([
-    'items' => $rapports,
-    'page' => $page,
-    'limit' => $limit,
-    'total' => $total,
-    'total_pages' => $limit > 0 ? ceil($total / $limit) : 0,
+    'data' => [
+        'items' => $rapports,
+        'page' => $page,
+        'limit' => $limit,
+        'total' => $total,
+        'total_pages' => $limit > 0 ? ceil($total / $limit) : 0,
+    ]
 ]);

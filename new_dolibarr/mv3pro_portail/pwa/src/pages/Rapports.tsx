@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { api, Rapport } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Rapports() {
+  const { user } = useAuth();
   const [rapports, setRapports] = useState<Rapport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -12,10 +14,15 @@ export function Rapports() {
   const [filterStatut, setFilterStatut] = useState<string>('all');
   const [filterDateDebut, setFilterDateDebut] = useState('');
   const [filterDateFin, setFilterDateFin] = useState('');
+  const [filterUserId, setFilterUserId] = useState<number | undefined>(undefined);
+  const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const limit = 20;
+
+  const isAdmin = user?.admin === true;
 
   const loadRapports = async (resetPage = false) => {
     setLoading(true);
@@ -31,6 +38,7 @@ export function Rapports() {
         statut: filterStatut !== 'all' ? filterStatut : undefined,
         from: filterDateDebut || undefined,
         to: filterDateFin || undefined,
+        user_id: filterUserId,
       });
 
       // Fallback robuste pour gérer différents formats de réponse
@@ -55,7 +63,18 @@ export function Rapports() {
 
   useEffect(() => {
     loadRapports(true);
-  }, [searchQuery, filterStatut, filterDateDebut, filterDateFin]);
+  }, [searchQuery, filterStatut, filterDateDebut, filterDateFin, filterUserId]);
+
+  // Charger la liste des utilisateurs si admin
+  useEffect(() => {
+    if (isAdmin && users.length === 0) {
+      setLoadingUsers(true);
+      api.usersList()
+        .then(usersList => setUsers(usersList))
+        .catch(err => console.error('Erreur chargement utilisateurs:', err))
+        .finally(() => setLoadingUsers(false));
+    }
+  }, [isAdmin]);
 
   const handleLoadMore = () => {
     const nextPage = page + 1;
@@ -114,21 +133,43 @@ export function Rapports() {
             </div>
           </div>
 
-          <div>
-            <label style={{ fontSize: '12px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
-              Statut
-            </label>
-            <select
-              value={filterStatut}
-              onChange={(e) => setFilterStatut(e.target.value)}
-              className="form-input"
-              style={{ width: '100%' }}
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="brouillon">Brouillon</option>
-              <option value="valide">Validé</option>
-              <option value="soumis">Soumis</option>
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1fr' : '1fr', gap: '12px' }}>
+            <div>
+              <label style={{ fontSize: '12px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
+                Statut
+              </label>
+              <select
+                value={filterStatut}
+                onChange={(e) => setFilterStatut(e.target.value)}
+                className="form-input"
+                style={{ width: '100%' }}
+              >
+                <option value="all">Tous les statuts</option>
+                <option value="brouillon">Brouillon</option>
+                <option value="valide">Validé</option>
+                <option value="soumis">Soumis</option>
+              </select>
+            </div>
+
+            {isAdmin && (
+              <div>
+                <label style={{ fontSize: '12px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
+                  👤 Employé (admin)
+                </label>
+                <select
+                  value={filterUserId || ''}
+                  onChange={(e) => setFilterUserId(e.target.value ? Number(e.target.value) : undefined)}
+                  className="form-input"
+                  style={{ width: '100%' }}
+                  disabled={loadingUsers}
+                >
+                  <option value="">Tous les employés</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {total > 0 && (

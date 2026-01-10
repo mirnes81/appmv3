@@ -153,6 +153,7 @@ export interface User {
   mobile_user_id?: number;
   role?: string;
   auth_mode?: string;
+  admin?: boolean;
   is_unlinked?: boolean;
   warning?: string;
   rights?: {
@@ -340,6 +341,7 @@ export const api = {
       success: response.success,
       user: user,
       is_unlinked: user.is_unlinked,
+      admin: user.admin,
     });
 
     // Extraire firstname/lastname depuis name si nécessaire
@@ -350,6 +352,12 @@ export const api = {
     }
 
     return user as User;
+  },
+
+  async usersList(): Promise<{ id: number; name: string; login: string; email?: string }[]> {
+    debugLog('Fetching /users.php');
+    const response = await apiFetch<{ success: boolean; data: { users: any[]; count: number } }>('/users.php');
+    return response.data.users || [];
   },
 
   async planning(from?: string, to?: string): Promise<PlanningEvent[]> {
@@ -367,6 +375,7 @@ export const api = {
     statut?: string;
     from?: string;
     to?: string;
+    user_id?: number;
   }): Promise<{ data: { items: Rapport[]; total: number; page: number; limit: number; total_pages: number } }> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', String(params.limit));
@@ -375,8 +384,11 @@ export const api = {
     if (params?.statut) queryParams.append('statut', params.statut);
     if (params?.from) queryParams.append('from', params.from);
     if (params?.to) queryParams.append('to', params.to);
+    if (params?.user_id) queryParams.append('user_id', String(params.user_id));
 
+    debugLog('rapportsList called', { params });
     const response = await apiFetch<{ success: boolean; data: { items: Rapport[]; total: number; page: number; limit: number; total_pages: number } }>(`/rapports.php?${queryParams.toString()}`);
+    debugLog('rapportsList response', { total: response.data?.total, items_count: response.data?.items?.length });
     return response;
   },
 
