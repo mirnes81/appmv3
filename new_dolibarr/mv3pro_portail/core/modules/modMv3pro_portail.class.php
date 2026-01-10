@@ -1,7 +1,7 @@
 <?php
 /**
- * Module MV-3 PRO Portail - Descriptor
- * Classe de description du module
+ * Module MV-3 PRO Portail - MINIMAL VERSION
+ * Planning + PWA uniquement
  */
 
 include_once DOL_DOCUMENT_ROOT.'/core/modules/DolibarrModules.class.php';
@@ -17,27 +17,22 @@ class modMv3pro_portail extends DolibarrModules
         $this->rights_class = 'mv3pro_portail';
         $this->family      = 'mv3pro';
         $this->name        = 'MV3 PRO Portail';
-        $this->description = 'Portail MV-3 PRO (rapports, signalements, matériel, régie, sens pose, frais, TV)';
-        $this->version     = '1.1.0';
+        $this->description = 'Planning + PWA (Progressive Web App) pour les techniciens';
+        $this->version     = '2.0.0-minimal';
         $this->const_name  = 'MAIN_MODULE_MV3PRO_PORTAIL';
-        $this->picto       = 'fa-cubes'; // Icône cubes/carrelage
+        $this->picto       = 'fa-calendar';
 
         $this->module_parts = array(
-            'triggers' => 1,
-            'hooks'    => array('propalcard'),
-            'css'      => array(),
-            'models'   => 1,
-            'moduleparts' => array('mv3pro_portail' => array('dir' => 'mv3pro_portail', 'label' => 'MV3 PRO Portail'))
+            'css' => array(),
         );
 
+        // Répertoires documents (minimal)
         $this->dirs = array(
             '/mv3pro_portail/temp',
-            '/mv3pro_portail/rapports',
-            '/mv3pro_portail/planning',
-            '/mv3pro_portail/regie',
-            '/mv3pro_portail/sens_pose'
+            '/mv3pro_portail/planning'
         );
 
+        // Constantes (minimal)
         $this->const = array();
         $r = 0;
 
@@ -52,42 +47,36 @@ class modMv3pro_portail extends DolibarrModules
         );
         $r++;
 
-        $this->config_page_url = array('config.php@mv3pro_portail');
+        $this->const[$r] = array(
+            'MV3PRO_PWA_URL',
+            'chaine',
+            '',
+            'URL de la Progressive Web App',
+            0,
+            'current',
+            1
+        );
+        $r++;
 
-        // Droits
+        $this->config_page_url = array('setup.php@mv3pro_portail');
+
+        // Droits (minimal)
         $this->rights = array();
         $r = 0;
 
         $this->rights[$r][0] = 510001;
-        $this->rights[$r][1] = 'Lire module MV3';
+        $this->rights[$r][1] = 'Accès module MV-3 PRO';
         $this->rights[$r][3] = 1;
         $this->rights[$r][4] = 'read';
         $r++;
 
         $this->rights[$r][0] = 510002;
-        $this->rights[$r][1] = 'Écrire module MV3';
+        $this->rights[$r][1] = 'Modification planning';
         $this->rights[$r][3] = 0;
         $this->rights[$r][4] = 'write';
         $r++;
 
-        $this->rights[$r][0] = 510003;
-        $this->rights[$r][1] = 'Valider rapports';
-        $this->rights[$r][3] = 0;
-        $this->rights[$r][4] = 'validate';
-        $r++;
-
-        $this->rights[$r][0] = 510004;
-        $this->rights[$r][1] = 'Accès interface mobile ouvrier';
-        $this->rights[$r][3] = 0;
-        $this->rights[$r][4] = 'worker';
-        $r++;
-
-        $this->rights[$r][0] = 510005;
-        $this->rights[$r][1] = 'Accès affichage TV';
-        $this->rights[$r][3] = 0;
-        $this->rights[$r][4] = 'tv';
-
-        // Menus
+        // Menus (MINIMAL - uniquement Planning)
         $this->menu = array();
         $r = 0;
 
@@ -96,10 +85,10 @@ class modMv3pro_portail extends DolibarrModules
             'fk_menu'   => '',
             'type'      => 'top',
             'titre'     => 'MV-3 PRO',
-            'prefix'    => '<span class="fa fa-cubes fa-fw paddingright pictofixedwidth"></span>',
+            'prefix'    => '<span class="fa fa-calendar fa-fw paddingright pictofixedwidth"></span>',
             'mainmenu'  => 'mv3pro',
             'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/index.php',
+            'url'       => '/agenda/index.php?mainmenu=mv3pro',
             'langs'     => 'mv3pro_portail@mv3pro_portail',
             'position'  => 1000,
             'enabled'   => '1',
@@ -109,511 +98,18 @@ class modMv3pro_portail extends DolibarrModules
         );
         $r++;
 
-        // Sous-menu gauche: Dashboard
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro',
-            'type'      => 'left',
-            'titre'     => 'Tableau de bord',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => 'mv3pro_dashboard',
-            'url'       => '/custom/mv3pro_portail/index.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 100,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu gauche: Rapports
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro',
-            'type'      => 'left',
-            'titre'     => 'Rapports journaliers',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => 'mv3pro_rapports',
-            'url'       => '/custom/mv3pro_portail/rapports/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 200,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Liste des rapports
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_rapports',
-            'type'      => 'left',
-            'titre'     => '- Liste des rapports',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/rapports/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 201,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Nouveau rapport
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_rapports',
-            'type'      => 'left',
-            'titre'     => '- Nouveau rapport',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/rapports/new.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 202,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu gauche: Signalements
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro',
-            'type'      => 'left',
-            'titre'     => 'Signalements',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => 'mv3pro_signalements',
-            'url'       => '/custom/mv3pro_portail/signalements/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 300,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Liste des signalements
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_signalements',
-            'type'      => 'left',
-            'titre'     => '- Liste des signalements',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/signalements/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 301,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Nouveau signalement
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_signalements',
-            'type'      => 'left',
-            'titre'     => '- Nouveau signalement',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/signalements/edit.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 302,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu gauche: Matériel
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro',
-            'type'      => 'left',
-            'titre'     => 'Matériel',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => 'mv3pro_materiel',
-            'url'       => '/custom/mv3pro_portail/materiel/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 400,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Liste du matériel
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_materiel',
-            'type'      => 'left',
-            'titre'     => '- Liste du matériel',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/materiel/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 401,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Nouveau matériel
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_materiel',
-            'type'      => 'left',
-            'titre'     => '- Nouveau matériel',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/materiel/edit.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 402,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu gauche: Planning
+        // Sous-menu gauche: Planning UNIQUEMENT
         $this->menu[$r] = array(
             'fk_menu'   => 'fk_mainmenu=mv3pro',
             'type'      => 'left',
             'titre'     => 'Planning',
             'mainmenu'  => 'mv3pro',
             'leftmenu'  => 'mv3pro_planning',
-            'url'       => '/custom/mv3pro_portail/planning/index.php',
+            'url'       => '/agenda/index.php?mainmenu=mv3pro',
             'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 500,
+            'position'  => 100,
             'enabled'   => '1',
             'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Liste du planning
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_planning',
-            'type'      => 'left',
-            'titre'     => '- Vue planning',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/planning/index.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 501,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Nouveau planning
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_planning',
-            'type'      => 'left',
-            'titre'     => '- Nouveau planning',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/planning/new.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 502,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu gauche: Notifications
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro',
-            'type'      => 'left',
-            'titre'     => 'Notifications',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => 'mv3pro_notifications',
-            'url'       => '/custom/mv3pro_portail/notifications/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 600,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Mes notifications
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_notifications',
-            'type'      => 'left',
-            'titre'     => '- Mes notifications',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/notifications/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 601,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Envoyer notification (admin only)
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_notifications',
-            'type'      => 'left',
-            'titre'     => '- Envoyer notification',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/send_notification.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 602,
-            'enabled'   => '1',
-            'perms'     => '$user->admin',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Configuration notifications (admin only)
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_notifications',
-            'type'      => 'left',
-            'titre'     => '- Configuration',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/admin/notifications.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 603,
-            'enabled'   => '1',
-            'perms'     => '$user->admin',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu gauche: Bons de régie
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro',
-            'type'      => 'left',
-            'titre'     => 'Bons de régie',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => 'mv3pro_regie',
-            'url'       => '/custom/mv3pro_portail/regie/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 700,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Liste des bons de régie
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_regie',
-            'type'      => 'left',
-            'titre'     => '- Liste des bons',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/regie/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 701,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Nouveau bon de régie
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_regie',
-            'type'      => 'left',
-            'titre'     => '- Nouveau bon',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/regie/card.php?action=create',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 702,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu gauche: Sens de pose
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro',
-            'type'      => 'left',
-            'titre'     => 'Sens de pose',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => 'mv3pro_sens_pose',
-            'url'       => '/custom/mv3pro_portail/sens_pose/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 750,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Liste des plans
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_sens_pose',
-            'type'      => 'left',
-            'titre'     => '- Liste des plans',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/sens_pose/list.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 751,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Nouveau plan
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_sens_pose',
-            'type'      => 'left',
-            'titre'     => '- Nouveau plan',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/sens_pose/new.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 752,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Créer depuis devis
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_sens_pose',
-            'type'      => 'left',
-            'titre'     => '- Depuis devis',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/sens_pose/new_from_devis.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 753,
-            'enabled'   => '1',
-            'perms'     => '1',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu gauche: Mobile
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro',
-            'type'      => 'left',
-            'titre'     => 'Interface mobile',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/mobile_app/index.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 800,
-            'enabled'   => '1',
-            'perms'     => '$user->rights->mv3pro_portail->worker',
-            'target'    => '_blank',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu gauche: Administration (Admin uniquement)
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro',
-            'type'      => 'left',
-            'titre'     => 'Administration',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => 'mv3pro_admin',
-            'url'       => '/custom/mv3pro_portail/admin/setup.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 900,
-            'enabled'   => '1',
-            'perms'     => '$user->admin',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Configuration PWA
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_admin',
-            'type'      => 'left',
-            'titre'     => '- Configuration PWA',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/admin/setup.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 901,
-            'enabled'   => '1',
-            'perms'     => '$user->admin',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Gestion utilisateurs mobiles
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_admin',
-            'type'      => 'left',
-            'titre'     => '- Gestion utilisateurs mobiles',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/mobile_app/admin/manage_users.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 902,
-            'enabled'   => '1',
-            'perms'     => '$user->admin',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Créer utilisateur mobile
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_admin',
-            'type'      => 'left',
-            'titre'     => '- Créer utilisateur mobile',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/mobile_app/admin/manage_users.php?action=create',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 903,
-            'enabled'   => '1',
-            'perms'     => '$user->admin',
-            'target'    => '',
-            'user'      => 2
-        );
-        $r++;
-
-        // Sous-menu: Configuration générale (ancien lien)
-        $this->menu[$r] = array(
-            'fk_menu'   => 'fk_mainmenu=mv3pro,fk_leftmenu=mv3pro_admin',
-            'type'      => 'left',
-            'titre'     => '- Configuration module',
-            'mainmenu'  => 'mv3pro',
-            'leftmenu'  => '',
-            'url'       => '/custom/mv3pro_portail/admin/config.php',
-            'langs'     => 'mv3pro_portail@mv3pro_portail',
-            'position'  => 904,
-            'enabled'   => '1',
-            'perms'     => '$user->admin',
             'target'    => '',
             'user'      => 2
         );
