@@ -10,6 +10,12 @@
  * - Mode C: Token API ancien (X-Auth-Token)
  */
 
+// Protection contre les chargements multiples
+if (defined('MV3_BOOTSTRAP_V1_LOADED')) {
+    return;
+}
+define('MV3_BOOTSTRAP_V1_LOADED', true);
+
 // Désactiver les erreurs PHP en mode production (à adapter selon besoin)
 if (!defined('SHOW_PHP_ERRORS')) {
     error_reporting(E_ALL);
@@ -117,8 +123,10 @@ global $db, $conf, $user, $langs;
  * @param array $data Données supplémentaires (optionnel)
  * @return void
  */
-function log_debug($message, $data = null) {
-    DebugLogger::log($message, $data);
+if (!function_exists('log_debug')) {
+    function log_debug($message, $data = null) {
+        DebugLogger::log($message, $data);
+    }
 }
 
 /**
@@ -130,7 +138,8 @@ function log_debug($message, $data = null) {
  * @param string|null $sql_error Erreur SQL éventuelle
  * @return void
  */
-function log_error($code, $message, $extra_data = [], $sql_error = null) {
+if (!function_exists('log_error')) {
+    function log_error($code, $message, $extra_data = [], $sql_error = null) {
     try {
         $error_data = [
             'code' => $code,
@@ -150,6 +159,7 @@ function log_error($code, $message, $extra_data = [], $sql_error = null) {
             error_log("[MV3PRO SQL ERROR] $sql_error");
         }
     }
+    }
 }
 
 /**
@@ -159,15 +169,17 @@ function log_error($code, $message, $extra_data = [], $sql_error = null) {
  * @param int $code Code HTTP (défaut: 200)
  * @return void
  */
-function json_ok($data, $code = 200) {
-    http_response_code($code);
+if (!function_exists('json_ok')) {
+    function json_ok($data, $code = 200) {
+        http_response_code($code);
 
-    if (is_array($data) && !isset($data['success'])) {
-        $data = ['success' => true] + $data;
+        if (is_array($data) && !isset($data['success'])) {
+            $data = ['success' => true] + $data;
+        }
+
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
     }
-
-    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
 }
 
 /**
@@ -179,63 +191,65 @@ function json_ok($data, $code = 200) {
  * @param array $extra_data Données supplémentaires (reason, hint, debug, etc.)
  * @return void
  */
-function json_error($message, $code = 'ERROR', $http_code = 400, $extra_data = []) {
-    global $db;
+if (!function_exists('json_error')) {
+    function json_error($message, $code = 'ERROR', $http_code = 400, $extra_data = []) {
+        global $db;
 
-    http_response_code($http_code);
+        http_response_code($http_code);
 
-    $response = [
-        'success' => false,
-        'error' => $message,
-        'code' => $code
-    ];
-
-    // Générer debug_id unique
-    $debug_id = 'ERR_'.strtoupper(substr(md5(microtime(true).mt_rand()), 0, 12));
-    $response['debug_id'] = $debug_id;
-
-    // Ajouter les données supplémentaires
-    if (!empty($extra_data)) {
-        foreach ($extra_data as $key => $value) {
-            $response[$key] = $value;
-        }
-    }
-
-    // Ajouter debug info si disponible
-    $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-    $caller = $backtrace[0] ?? null;
-
-    if ($caller) {
-        $response['debug'] = [
-            'file' => basename($caller['file'] ?? 'unknown'),
-            'line' => $caller['line'] ?? 0
+        $response = [
+            'success' => false,
+            'error' => $message,
+            'code' => $code
         ];
-    }
 
-    // Ajouter SQL error si disponible
-    if ($db && method_exists($db, 'lasterror')) {
-        $sql_error = $db->lasterror();
-        if (!empty($sql_error)) {
-            $response['sql_error'] = $sql_error;
+        // Générer debug_id unique
+        $debug_id = 'ERR_'.strtoupper(substr(md5(microtime(true).mt_rand()), 0, 12));
+        $response['debug_id'] = $debug_id;
+
+        // Ajouter les données supplémentaires
+        if (!empty($extra_data)) {
+            foreach ($extra_data as $key => $value) {
+                $response[$key] = $value;
+            }
         }
-    }
 
-    // Log l'erreur (ne doit jamais casser la réponse)
-    try {
-        log_error(
-            $code,
-            $message,
-            array_merge(['debug_id' => $debug_id], $extra_data),
-            $db ? $db->lasterror() : null
-        );
-    } catch (Exception $e) {
-        // Fallback si le logging échoue - on log avec error_log natif
-        error_log("[MV3PRO CRITICAL] Failed to log error: " . $e->getMessage());
-        error_log("[MV3PRO ERROR] Original error: $code - $message");
-    }
+        // Ajouter debug info si disponible
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        $caller = $backtrace[0] ?? null;
 
-    echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
+        if ($caller) {
+            $response['debug'] = [
+                'file' => basename($caller['file'] ?? 'unknown'),
+                'line' => $caller['line'] ?? 0
+            ];
+        }
+
+        // Ajouter SQL error si disponible
+        if ($db && method_exists($db, 'lasterror')) {
+            $sql_error = $db->lasterror();
+            if (!empty($sql_error)) {
+                $response['sql_error'] = $sql_error;
+            }
+        }
+
+        // Log l'erreur (ne doit jamais casser la réponse)
+        try {
+            log_error(
+                $code,
+                $message,
+                array_merge(['debug_id' => $debug_id], $extra_data),
+                $db ? $db->lasterror() : null
+            );
+        } catch (Exception $e) {
+            // Fallback si le logging échoue - on log avec error_log natif
+            error_log("[MV3PRO CRITICAL] Failed to log error: " . $e->getMessage());
+            error_log("[MV3PRO ERROR] Original error: $code - $message");
+        }
+
+        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
 }
 
 /**
@@ -244,16 +258,18 @@ function json_error($message, $code = 'ERROR', $http_code = 400, $extra_data = [
  * @param string|array $methods Méthode(s) autorisée(s) (ex: 'GET' ou ['GET', 'POST'])
  * @return void
  */
-function require_method($methods) {
-    $methods = (array)$methods;
-    $current = $_SERVER['REQUEST_METHOD'];
+if (!function_exists('require_method')) {
+    function require_method($methods) {
+        $methods = (array)$methods;
+        $current = $_SERVER['REQUEST_METHOD'];
 
-    if (!in_array($current, $methods)) {
-        json_error(
-            'Méthode ' . $current . ' non autorisée. Utiliser: ' . implode(', ', $methods),
-            'METHOD_NOT_ALLOWED',
-            405
-        );
+        if (!in_array($current, $methods)) {
+            json_error(
+                'Méthode ' . $current . ' non autorisée. Utiliser: ' . implode(', ', $methods),
+                'METHOD_NOT_ALLOWED',
+                405
+            );
+        }
     }
 }
 
@@ -265,29 +281,31 @@ function require_method($methods) {
  * @param string $method 'GET' ou 'POST' ou 'ANY'
  * @return mixed
  */
-function get_param($name, $default = '', $method = 'ANY') {
-    global $db;
+if (!function_exists('get_param')) {
+    function get_param($name, $default = '', $method = 'ANY') {
+        global $db;
 
-    $value = null;
+        $value = null;
 
-    if ($method === 'GET' || $method === 'ANY') {
-        $value = $_GET[$name] ?? null;
+        if ($method === 'GET' || $method === 'ANY') {
+            $value = $_GET[$name] ?? null;
+        }
+
+        if (($method === 'POST' || $method === 'ANY') && $value === null) {
+            $value = $_POST[$name] ?? null;
+        }
+
+        if ($value === null) {
+            return $default;
+        }
+
+        // Protection basique
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+
+        return $value;
     }
-
-    if (($method === 'POST' || $method === 'ANY') && $value === null) {
-        $value = $_POST[$name] ?? null;
-    }
-
-    if ($value === null) {
-        return $default;
-    }
-
-    // Protection basique
-    if (is_string($value)) {
-        $value = trim($value);
-    }
-
-    return $value;
 }
 
 /**
@@ -296,15 +314,17 @@ function get_param($name, $default = '', $method = 'ANY') {
  * @param bool $required Si true, erreur 400 si pas de JSON valide
  * @return array|null
  */
-function get_json_body($required = false) {
-    $body = file_get_contents('php://input');
-    $data = json_decode($body, true);
+if (!function_exists('get_json_body')) {
+    function get_json_body($required = false) {
+        $body = file_get_contents('php://input');
+        $data = json_decode($body, true);
 
-    if ($required && (!$data || json_last_error() !== JSON_ERROR_NONE)) {
-        json_error('Body JSON invalide ou manquant', 'INVALID_JSON', 400);
+        if ($required && (!$data || json_last_error() !== JSON_ERROR_NONE)) {
+            json_error('Body JSON invalide ou manquant', 'INVALID_JSON', 400);
+        }
+
+        return $data ?: [];
     }
-
-    return $data ?: [];
 }
 
 /**
@@ -314,7 +334,8 @@ function get_json_body($required = false) {
  * @param bool $required Si true, erreur 401 si non authentifié
  * @return array|null Informations utilisateur ou null
  */
-function require_auth($required = true) {
+if (!function_exists('require_auth')) {
+    function require_auth($required = true) {
     global $db, $conf, $user;
 
     $is_debug = isset($_SERVER['HTTP_X_MV3_DEBUG']) && $_SERVER['HTTP_X_MV3_DEBUG'] === '1';
@@ -636,6 +657,7 @@ function require_auth($required = true) {
     }
 
     return $auth_result;
+    }
 }
 
 /**
@@ -645,16 +667,18 @@ function require_auth($required = true) {
  * @param array $auth_data Données d'authentification (retour de require_auth)
  * @return void
  */
-function require_rights($rights, $auth_data) {
-    $rights = (array)$rights;
+if (!function_exists('require_rights')) {
+    function require_rights($rights, $auth_data) {
+        $rights = (array)$rights;
 
-    foreach ($rights as $right) {
-        if (empty($auth_data['rights'][$right])) {
-            json_error(
-                'Droits insuffisants. Droit requis: ' . $right,
-                'FORBIDDEN',
-                403
-            );
+        foreach ($rights as $right) {
+            if (empty($auth_data['rights'][$right])) {
+                json_error(
+                    'Droits insuffisants. Droit requis: ' . $right,
+                    'FORBIDDEN',
+                    403
+                );
+            }
         }
     }
 }
@@ -665,7 +689,8 @@ function require_rights($rights, $auth_data) {
  * @param array|null $auth_data Données d'authentification (retour de require_auth)
  * @return void
  */
-function check_dev_mode($auth_data = null) {
+if (!function_exists('check_dev_mode')) {
+    function check_dev_mode($auth_data = null) {
     global $db;
 
     // Charger la config
@@ -703,6 +728,7 @@ function check_dev_mode($auth_data = null) {
     }
 
     // Admin = accès autorisé même en mode DEV
+    }
 }
 
 /**
@@ -712,9 +738,11 @@ function check_dev_mode($auth_data = null) {
  * @param string $name Nom du paramètre (pour message d'erreur)
  * @return void
  */
-function require_param($value, $name) {
-    if ($value === null || $value === '') {
-        json_error('Paramètre requis manquant: ' . $name, 'MISSING_PARAMETER', 400);
+if (!function_exists('require_param')) {
+    function require_param($value, $name) {
+        if ($value === null || $value === '') {
+            json_error('Paramètre requis manquant: ' . $name, 'MISSING_PARAMETER', 400);
+        }
     }
 }
 
@@ -726,11 +754,13 @@ function require_param($value, $name) {
  * @param array $extra_data Données supplémentaires
  * @return void
  */
-function log_api_call($endpoint, $auth_data, $extra_data = []) {
-    global $db;
+if (!function_exists('log_api_call')) {
+    function log_api_call($endpoint, $auth_data, $extra_data = []) {
+        global $db;
 
-    // TODO: Implémenter si besoin de logs API
-    // Exemple: INSERT INTO llx_mv3_api_logs...
+        // TODO: Implémenter si besoin de logs API
+        // Exemple: INSERT INTO llx_mv3_api_logs...
+    }
 }
 
 // =============================================================================
@@ -751,7 +781,8 @@ $MV3_DB_SCHEMA_CACHE = [];
  * @param string $table_name Nom de la table (avec ou sans préfixe)
  * @return bool
  */
-function mv3_table_exists($db, $table_name) {
+if (!function_exists('mv3_table_exists')) {
+    function mv3_table_exists($db, $table_name) {
     global $MV3_DB_SCHEMA_CACHE;
 
     // Ajouter le préfixe si nécessaire
@@ -780,6 +811,7 @@ function mv3_table_exists($db, $table_name) {
     $MV3_DB_SCHEMA_CACHE[$cache_key] = $exists;
 
     return $exists;
+    }
 }
 
 /**
@@ -790,7 +822,8 @@ function mv3_table_exists($db, $table_name) {
  * @param string $column_name Nom de la colonne
  * @return bool
  */
-function mv3_column_exists($db, $table_name, $column_name) {
+if (!function_exists('mv3_column_exists')) {
+    function mv3_column_exists($db, $table_name, $column_name) {
     global $MV3_DB_SCHEMA_CACHE;
 
     // Ajouter le préfixe si nécessaire
@@ -819,6 +852,7 @@ function mv3_column_exists($db, $table_name, $column_name) {
     $MV3_DB_SCHEMA_CACHE[$cache_key] = $exists;
 
     return $exists;
+    }
 }
 
 /**
@@ -832,7 +866,8 @@ function mv3_column_exists($db, $table_name, $column_name) {
  * @param string $alias_prefix Préfixe de table (ex: 'a' pour 'a.note_private')
  * @return string Fragment SQL à insérer dans la requête SELECT
  */
-function mv3_select_column($db, $table_name, $column_name, $default_value = null, $alias_prefix = '') {
+if (!function_exists('mv3_select_column')) {
+    function mv3_select_column($db, $table_name, $column_name, $default_value = null, $alias_prefix = '') {
     $exists = mv3_column_exists($db, $table_name, $column_name);
 
     if ($exists) {
@@ -853,6 +888,7 @@ function mv3_select_column($db, $table_name, $column_name, $default_value = null
         }
 
         return $value . ' AS ' . $column_name;
+    }
     }
 }
 
