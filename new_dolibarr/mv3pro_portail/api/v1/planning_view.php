@@ -193,17 +193,36 @@ if ($event->elementtype && $event->fk_element) {
 // Les fichiers d'un actioncomm sont dans documents/actioncomm/{id}/
 $upload_dir = DOL_DATA_ROOT.'/actioncomm/'.dol_sanitizeFileName($id);
 
-log_debug("Recherche fichiers dans: ".$upload_dir);
+log_debug("===== SCAN FICHIERS PLANNING #".$id." =====");
+log_debug("DOL_DATA_ROOT: ".DOL_DATA_ROOT);
+log_debug("Upload dir: ".$upload_dir);
+log_debug("Dossier existe: ".(is_dir($upload_dir) ? 'OUI' : 'NON'));
 
 if (is_dir($upload_dir)) {
     $files = scandir($upload_dir);
+    log_debug("Fichiers bruts trouvés par scandir: ".count($files)." fichiers", $files);
 
+    $files_count = 0;
     foreach ($files as $file) {
-        if ($file === '.' || $file === '..' || is_dir($upload_dir.'/'.$file)) {
+        log_debug("  - Analyse fichier: ".$file);
+
+        if ($file === '.' || $file === '..') {
+            log_debug("    => Ignoré (., ..)");
+            continue;
+        }
+
+        if (is_dir($upload_dir.'/'.$file)) {
+            log_debug("    => Ignoré (répertoire)");
             continue;
         }
 
         $filepath = $upload_dir.'/'.$file;
+
+        if (!file_exists($filepath)) {
+            log_debug("    => Ignoré (n'existe pas!)");
+            continue;
+        }
+
         $filesize = filesize($filepath);
         $mime = mime_content_type($filepath);
 
@@ -213,7 +232,7 @@ if (is_dir($upload_dir)) {
         // Déterminer le base path de l'API (relatif au contexte d'exécution)
         $base_api_path = dirname($_SERVER['SCRIPT_NAME']);
 
-        $response['fichiers'][] = [
+        $file_info = [
             'name' => $file,
             'size' => $filesize,
             'size_human' => format_file_size($filesize),
@@ -221,10 +240,19 @@ if (is_dir($upload_dir)) {
             'is_image' => $is_image,
             'url' => $base_api_path.'/planning_file.php?id='.$id.'&file='.urlencode($file)
         ];
+
+        log_debug("    => AJOUTÉ: ".$file." (".$mime.", ".format_file_size($filesize).", is_image=".($is_image?'yes':'no').")");
+        $response['fichiers'][] = $file_info;
+        $files_count++;
     }
+
+    log_debug("Total fichiers valides ajoutés: ".$files_count);
+} else {
+    log_debug("⚠️ DOSSIER INEXISTANT: ".$upload_dir);
 }
 
-log_debug("Planning view #".$id." - ".count($response['fichiers'])." fichiers trouvés");
+log_debug("Planning view #".$id." - ".count($response['fichiers'])." fichiers retournés dans la réponse");
+log_debug("===== FIN SCAN FICHIERS =====");
 
 json_ok($response);
 

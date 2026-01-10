@@ -69,6 +69,19 @@ export function PlanningDetail() {
       console.log('[PlanningDetail] API URL:', `/planning_view.php?id=${id}`);
       const data = await apiClient(`/planning_view.php?id=${id}`);
       console.log('[PlanningDetail] Event data received:', data);
+      console.log('[PlanningDetail] ===== FICHIERS DEBUG =====');
+      console.log('[PlanningDetail] Fichiers array:', data.fichiers);
+      console.log('[PlanningDetail] Nombre de fichiers:', data.fichiers ? data.fichiers.length : 0);
+      if (data.fichiers && data.fichiers.length > 0) {
+        console.log('[PlanningDetail] Premier fichier:', data.fichiers[0]);
+        const photos = data.fichiers.filter((f: EventFile) => f.is_image);
+        const docs = data.fichiers.filter((f: EventFile) => !f.is_image);
+        console.log('[PlanningDetail] Photos:', photos.length, photos);
+        console.log('[PlanningDetail] Documents:', docs.length, docs);
+      } else {
+        console.warn('[PlanningDetail] ⚠️ AUCUN FICHIER RETOURNÉ PAR L\'API!');
+      }
+      console.log('[PlanningDetail] ===========================');
       setEvent(data);
     } catch (err: any) {
       console.error('[PlanningDetail] Erreur chargement événement:', err);
