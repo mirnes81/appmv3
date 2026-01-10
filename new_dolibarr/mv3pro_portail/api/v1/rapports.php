@@ -132,8 +132,12 @@ if (!$resql) {
     error_log('[MV3 Rapports] SQL Error: ' . $error_msg);
     error_log('[MV3 Rapports] SQL Query: ' . $sql);
 
-    // Retourner format standard même en erreur
-    json_error($error_msg, 'DATABASE_ERROR', [
+    // Retourner format standard même en erreur avec items vide
+    http_response_code(200);
+    echo json_encode([
+        'success' => false,
+        'error_code' => 'DATABASE_ERROR',
+        'message' => $error_msg,
         'data' => [
             'items' => [],
             'page' => $page,
@@ -141,7 +145,8 @@ if (!$resql) {
             'total' => 0,
             'total_pages' => 0,
         ]
-    ]);
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
 $rapports = [];
@@ -180,11 +185,9 @@ while ($obj = $db->fetch_object($resql)) {
 
 // Retourner avec format standard API v1
 json_ok([
-    'data' => [
-        'items' => $rapports,
-        'page' => $page,
-        'limit' => $limit,
-        'total' => $total,
-        'total_pages' => $limit > 0 ? ceil($total / $limit) : 0,
-    ]
+    'items' => $rapports,
+    'page' => $page,
+    'limit' => $limit,
+    'total' => $total,
+    'total_pages' => $limit > 0 ? ceil($total / $limit) : 0,
 ]);

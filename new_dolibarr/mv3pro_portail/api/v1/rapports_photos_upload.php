@@ -56,7 +56,8 @@ $upload_dir = $conf->mv3pro_portail->dir_output . '/rapports/' . $rapport_id;
 
 // Créer le répertoire si n'existe pas
 if (!is_dir($upload_dir)) {
-    if (!dol_mkdir($upload_dir, 0755) < 0) {
+    $mkdir_result = dol_mkdir($upload_dir, 0755);
+    if ($mkdir_result < 0) {
         json_error('Impossible de créer le répertoire de destination', 'MKDIR_ERROR', 500);
     }
 }

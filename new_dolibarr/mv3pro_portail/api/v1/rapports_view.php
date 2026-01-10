@@ -210,9 +210,7 @@ log_debug('rapports_view.php success', [
 
 // Retourner la réponse
 json_ok([
-    'data' => [
-        'rapport' => $rapport_data,
-        'photos' => $photos,
-        'pdf_url' => $pdf_url,
-    ]
+    'rapport' => $rapport_data,
+    'photos' => $photos,
+    'pdf_url' => $pdf_url,
 ]);
