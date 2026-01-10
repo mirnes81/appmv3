@@ -197,6 +197,14 @@ if (!isset($_SESSION['dol_login']) || empty($user->id)) {
 - 🔧 Issues résolus: 2 bugs (Reliability/Low) + 2 code smells (Maintainability/Medium)
 - 📝 Note: Les suggestions de namespace import ne s'appliquent pas aux fichiers bootstrap Dolibarr (main.inc.php) qui ne sont pas des classes
 
+### Corrections Sécurité (Security Issues)
+- ✅ **XSS**: Fixed in `mobile_app/admin/create_mobile_user.php` (lignes 192, 196, 204)
+  - Échappement HTML de `$email`, `$password`, `$db->lasterror()`
+- ✅ **XSS**: Fixed in `rapports/edit_simple.php` (ligne 414, 417)
+  - Échappement HTML de `$_SERVER["PHP_SELF"]` et cast `(int)$id`
+- 🔧 Vulnérabilités XSS corrigées: **2 fichiers**
+- 📄 Rapport détaillé: Voir `SECURITY_FIXES.md`
+
 ---
 
 ## Bénéfices

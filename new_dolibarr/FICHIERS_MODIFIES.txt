@@ -1,8 +1,8 @@
 FICHIERS MODIFIÉS - REFACTORISATION DUPLICATIONS
 ================================================
 
-NOUVEAUX FICHIERS CRÉÉS (Helpers)
-----------------------------------
+NOUVEAUX FICHIERS CRÉÉS (Helpers + Documentation)
+--------------------------------------------------
 ✨ mv3pro_portail/mobile_app/includes/dolibarr_bootstrap.php
 ✨ mv3pro_portail/mobile_app/includes/api_helpers.php
 ✨ mv3pro_portail/mobile_app/includes/auth_helpers.php
@@ -11,6 +11,7 @@ NOUVEAUX FICHIERS CRÉÉS (Helpers)
 ✨ mv3pro_portail/mobile_app/includes/rapport_helpers.php
 ✨ REFACTORING_SUMMARY.md
 ✨ FICHIERS_MODIFIES.txt
+✨ SECURITY_FIXES.md (nouveau)
 
 FICHIERS REFACTORISÉS - API (mobile_app/api/)
 ----------------------------------------------
@@ -60,22 +61,37 @@ FICHIERS REFACTORISÉS - NOTIFICATIONS (mobile_app/notifications/)
 FICHIERS REFACTORISÉS - RAPPORTS RACINE (rapports/)
 ----------------------------------------------------
 ✅ rapports/edit_simple.php
+✅ rapports/edit_simple.php (fix XSS $_SERVER["PHP_SELF"])
 ✅ rapports/ajax_client.php
+
+FICHIERS SÉCURITÉ (Security Fixes)
+-----------------------------------
+✅ mobile_app/admin/create_mobile_user.php (fix XSS email/password)
+✅ rapports/edit_simple.php (fix XSS $_SERVER["PHP_SELF"])
+✅ mobile_app/includes/dolibarr_bootstrap.php (fix include_once)
 
 TOTAL
 -----
-📝 Fichiers créés: 8
+📝 Fichiers créés: 9 (8 helpers + 1 doc sécurité)
 ✏️  Fichiers modifiés: 36
-📊 Total: 44 fichiers
+📊 Total: 45 fichiers
 
 STATISTIQUES FINALES
 ---------------------
+**Duplication:**
 - Lignes de code dupliqué supprimées: ~1000-1200
 - Lignes de helpers ajoutées: ~610
 - Gain net: -390 à -590 lignes
-- Score global New Code: 46.2% → 6.4% ✅ (réduction de 86%)
+- Score global New Code: 46.2% → 6.4% → 8.7% ✅ (sous 10%)
 - Réduction duplication mobile_app: 78.9% → ~5-8%
 - Réduction duplication rapports: 54.5% → ~5-8%
 - new_pro.php: 84% → <5% (180+ lignes factorisées) ✅
 - new.php: 60% → <5% (130+ lignes factorisées) ✅
 - Objectif atteint: < 10% duplication sur New Code ✅✅✅
+
+**Sécurité:**
+- Vulnérabilités XSS corrigées: 2 fichiers (4 instances)
+- Problèmes include_once: 2 fichiers corrigés
+- Total issues security résolues: ~4-6 sur 42
+- Documentation: SECURITY_FIXES.md créé avec analyse complète
+- Issues restantes identifiées: MD5 legacy, validation uploads, etc.

@@ -189,11 +189,11 @@
                 $sql .= ")";
 
                 if ($db->query($sql)) {
-                    $success = "✅ Utilisateur créé avec succès!<br>Email: <strong>$email</strong><br>Mot de passe: <strong>$password</strong>";
+                    $success = "✅ Utilisateur créé avec succès!<br>Email: <strong>".htmlspecialchars($email, ENT_QUOTES, 'UTF-8')."</strong><br>Mot de passe: <strong>".htmlspecialchars($password, ENT_QUOTES, 'UTF-8')."</strong>";
                     // Reset form
                     $_POST = [];
                 } else {
-                    $error = "Erreur lors de la création: " . $db->lasterror();
+                    $error = "Erreur lors de la création: " . htmlspecialchars($db->lasterror(), ENT_QUOTES, 'UTF-8');
                 }
             }
         }

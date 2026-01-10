@@ -411,10 +411,10 @@ if ($error) {
 }
 </style>
 
-<form method="POST" action="<?php echo $_SERVER["PHP_SELF"].($id ? '?id='.$id : ''); ?>" accept-charset="UTF-8" enctype="multipart/form-data" class="mv3-simple-form">
+<form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"], ENT_QUOTES, 'UTF-8').($id ? '?id='.(int)$id : ''); ?>" accept-charset="UTF-8" enctype="multipart/form-data" class="mv3-simple-form">
     <input type="hidden" name="token" value="<?php echo newToken(); ?>">
     <input type="hidden" name="action" value="save">
-    <?php if ($id) echo '<input type="hidden" name="id" value="'.$id.'">'; ?>
+    <?php if ($id) echo '<input type="hidden" name="id" value="'.(int)$id.'">'; ?>
 
     <!-- Carreleur -->
     <div class="mv3-field">
