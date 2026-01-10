@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -33,12 +33,21 @@ export function Rapports() {
         to: filterDateFin || undefined,
       });
 
-      setRapports(response.data.items);
-      setTotal(response.data.total);
-      setHasMore(currentPage < response.data.total_pages);
+      // Fallback robuste pour gérer différents formats de réponse
+      const items = response?.data?.items ?? [];
+      const totalCount = response?.data?.total ?? 0;
+      const totalPages = response?.data?.total_pages ?? 0;
+
+      setRapports(Array.isArray(items) ? items : []);
+      setTotal(totalCount);
+      setHasMore(currentPage < totalPages);
       if (resetPage) setPage(1);
     } catch (err: any) {
-      setError(err.message);
+      console.error('[Rapports] Error loading rapports:', err);
+      setError(err.message || 'Erreur lors du chargement des rapports');
+      setRapports([]);
+      setTotal(0);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }

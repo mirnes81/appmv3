@@ -132,10 +132,16 @@ if (!$resql) {
     error_log('[MV3 Rapports] SQL Error: ' . $error_msg);
     error_log('[MV3 Rapports] SQL Query: ' . $sql);
 
-    // Retourner un tableau vide plutôt qu'une erreur 500
-    http_response_code(200);
-    echo json_encode([], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
+    // Retourner format standard même en erreur
+    json_error($error_msg, 'DATABASE_ERROR', [
+        'data' => [
+            'items' => [],
+            'page' => $page,
+            'limit' => $limit,
+            'total' => 0,
+            'total_pages' => 0,
+        ]
+    ]);
 }
 
 $rapports = [];

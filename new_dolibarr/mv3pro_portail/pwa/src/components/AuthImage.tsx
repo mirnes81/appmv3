@@ -120,15 +120,20 @@ export function AuthImage({ src, alt, style, className, loading, onClick }: Auth
         style={{
           ...style,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#fee2e2',
-          color: '#ef4444',
-          fontSize: '32px'
+          backgroundColor: '#f3f4f6',
+          color: '#9ca3af',
+          gap: '8px',
+          padding: '16px',
+          textAlign: 'center'
         }}
         className={className}
+        title={alt}
       >
-        ❌
+        <div style={{ fontSize: '32px' }}>📷</div>
+        <div style={{ fontSize: '12px', fontWeight: '500' }}>Image indisponible</div>
       </div>
     );
   }

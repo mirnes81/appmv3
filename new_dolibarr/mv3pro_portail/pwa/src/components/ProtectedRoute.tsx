@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from './LoadingSpinner';
 import { storage } from '../lib/api';
+
+// Cache global pour éviter les vérifications répétées
+let tokenCheckCache: { token: string; valid: boolean; timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [checking, setChecking] = useState(true);
   const [hasValidToken, setHasValidToken] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     const token = storage.getToken();
@@ -20,10 +23,19 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Token existe, on vérifie avec /me.php
+    // Vérifier le cache
+    const now = Date.now();
+    if (tokenCheckCache && tokenCheckCache.token === token && (now - tokenCheckCache.timestamp) < CACHE_DURATION) {
+      console.log('[ProtectedRoute] Using cached token validation');
+      setHasValidToken(tokenCheckCache.valid);
+      setChecking(false);
+      return;
+    }
+
+    // Token existe et pas de cache valide, on vérifie avec /me.php
     const checkToken = async () => {
       try {
-        console.log('[ProtectedRoute] Checking token with /me.php');
+        console.log('[ProtectedRoute] Checking token with /me.php (no cache)');
         const response = await fetch('/custom/mv3pro_portail/api/v1/me.php', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -36,9 +48,16 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         if (response.status === 401) {
           console.log('[ProtectedRoute] Token invalid (401), clearing');
           storage.clearToken();
+          tokenCheckCache = null;
           setHasValidToken(false);
         } else if (response.ok) {
           console.log('[ProtectedRoute] Token valid');
+          // Mettre en cache
+          tokenCheckCache = {
+            token,
+            valid: true,
+            timestamp: now,
+          };
           setHasValidToken(true);
         } else {
           // Erreur serveur (500), on garde le token et on affiche l'erreur
@@ -54,7 +73,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     };
 
     checkToken();
-  }, [location.pathname]);
+  }, []); // Pas de dépendance location.pathname pour éviter les appels répétés
 
   const loading = authLoading || checking;
 
