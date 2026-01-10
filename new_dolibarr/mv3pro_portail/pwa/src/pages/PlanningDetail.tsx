@@ -146,8 +146,9 @@ export function PlanningDetail() {
     if (!file) return;
 
     // Vérifier que c'est une image
-    if (!file.type.startsWith('image/')) {
-      alert('Veuillez sélectionner une image (JPG, PNG, GIF)');
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Veuillez sélectionner une image (JPEG, PNG, GIF ou WebP)');
       return;
     }
 
@@ -161,14 +162,9 @@ export function PlanningDetail() {
     setUploadProgress(0);
 
     try {
-      const token = localStorage.getItem('mv3pro_token');
-      if (!token) {
-        throw new Error('Token manquant. Veuillez vous reconnecter.');
-      }
-
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('id', id || '');
+      formData.append('event_id', id || '');
 
       // Simuler une progression pendant l'upload
       const progressInterval = setInterval(() => {
@@ -178,12 +174,11 @@ export function PlanningDetail() {
         });
       }, 200);
 
+      console.log('[PlanningDetail] Upload photo pour event ID:', id);
+
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || '/custom/mv3pro_portail/api/v1'}/planning_upload_photo.php`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Auth-Token': token
-        },
+        credentials: 'include', // ✅ Envoyer les cookies de session Dolibarr
         body: formData
       });
 
@@ -191,23 +186,43 @@ export function PlanningDetail() {
       setUploadProgress(100);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erreur ${response.status}`);
+        const errorData = await response.json().catch(() => ({ error: 'Erreur serveur', code: 'UNKNOWN' }));
+
+        // Gestion des erreurs selon le code HTTP
+        let errorMessage = errorData.error || 'Erreur inconnue';
+
+        if (response.status === 401) {
+          errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+          // Rediriger vers la page de connexion après 2s
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+        } else if (response.status === 413) {
+          errorMessage = 'Fichier trop volumineux. Taille maximum autorisée dépassée.';
+        } else if (response.status === 415) {
+          errorMessage = 'Type de fichier non autorisé. Utilisez uniquement des images (JPEG, PNG, GIF, WebP).';
+        } else if (response.status === 404) {
+          errorMessage = 'Événement non trouvé.';
+        } else if (response.status === 500) {
+          errorMessage = errorData.error || 'Erreur serveur. Veuillez réessayer.';
+        }
+
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
-      console.log('Upload réussi:', result);
+      console.log('[PlanningDetail] Upload réussi:', result);
 
       // Attendre un peu pour montrer 100%
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Recharger les détails de l'événement
+      // ✅ Recharger automatiquement les détails de l'événement pour afficher la nouvelle photo
       await loadEventDetail();
 
-      alert('Photo uploadée avec succès!');
+      alert('✅ Photo uploadée avec succès!');
     } catch (err: any) {
-      console.error('Erreur upload photo:', err);
-      alert('Erreur lors de l\'upload: ' + (err.message || 'Erreur inconnue'));
+      console.error('[PlanningDetail] Erreur upload photo:', err);
+      alert('❌ ' + (err.message || 'Erreur inconnue'));
     } finally {
       setUploading(false);
       setUploadProgress(0);
