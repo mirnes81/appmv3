@@ -40,30 +40,31 @@ export function RapportDetail() {
     );
   }
 
-  const { rapport: r, photos, frais } = rapport;
+  const { rapport: r, photos, pdf_url } = rapport.data;
 
   return (
-    <Layout title={`Rapport #${r.id}`} showBack>
+    <Layout title={r.ref} showBack>
       <div style={{ padding: '20px' }}>
         <div className="card" style={{ marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
             <div>
               <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '4px' }}>
-                {r.projet?.title || `Rapport #${r.id}`}
+                {r.ref}
               </h2>
-              {r.projet?.client && (
-                <div style={{ fontSize: '14px', color: '#6b7280' }}>{r.projet.client}</div>
+              {r.client?.nom && (
+                <div style={{ fontSize: '14px', color: '#6b7280' }}>🏢 {r.client.nom}</div>
+              )}
+              {r.projet?.title && (
+                <div style={{ fontSize: '14px', color: '#9ca3af' }}>📁 {r.projet.ref} - {r.projet.title}</div>
               )}
             </div>
-            {r.statut && (
-              <span
-                className={`badge badge-${
-                  r.statut === 'valide' ? 'success' : r.statut === 'soumis' ? 'info' : 'warning'
-                }`}
-              >
-                {r.statut}
-              </span>
-            )}
+            <span
+              className={`badge badge-${
+                r.statut_text === 'valide' ? 'success' : r.statut_text === 'soumis' ? 'info' : 'warning'
+              }`}
+            >
+              {r.statut_text}
+            </span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
@@ -73,12 +74,11 @@ export function RapportDetail() {
                 📅 {new Date(r.date_rapport).toLocaleDateString('fr-FR')}
               </div>
             </div>
-            {r.heures_debut && r.heures_fin && (
+            {r.temps_total && r.temps_total > 0 && (
               <div>
-                <div style={{ color: '#6b7280', marginBottom: '2px' }}>Horaires</div>
+                <div style={{ color: '#6b7280', marginBottom: '2px' }}>Temps total</div>
                 <div style={{ fontWeight: '500' }}>
-                  ⏱️ {r.heures_debut} - {r.heures_fin}
-                  {r.temps_total && ` (${r.temps_total}h)`}
+                  ⏱️ {r.temps_total}h
                 </div>
               </div>
             )}
@@ -88,23 +88,8 @@ export function RapportDetail() {
                 <div style={{ fontWeight: '500' }}>👤 {r.auteur.nom}</div>
               </div>
             )}
-            {r.projet?.ref && (
-              <div>
-                <div style={{ color: '#6b7280', marginBottom: '2px' }}>Projet</div>
-                <div style={{ fontWeight: '500' }}>🏗️ {r.projet.ref}</div>
-              </div>
-            )}
           </div>
         </div>
-
-        {r.zone_travail && (
-          <div className="card" style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '600' }}>
-              ZONE DE TRAVAIL
-            </div>
-            <div style={{ fontSize: '14px' }}>{r.zone_travail}</div>
-          </div>
-        )}
 
         {r.travaux_realises && (
           <div className="card" style={{ marginBottom: '16px' }}>
@@ -115,7 +100,7 @@ export function RapportDetail() {
           </div>
         )}
 
-        {r.description && r.description !== r.travaux_realises && (
+        {r.description && (
           <div className="card" style={{ marginBottom: '16px' }}>
             <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '600' }}>
               DESCRIPTION
@@ -181,8 +166,9 @@ export function RapportDetail() {
               {photos.map((photo) => (
                 <div
                   key={photo.id}
-                  onClick={() => setSelectedPhoto(photo.url || '')}
+                  onClick={() => setSelectedPhoto(photo.url)}
                   style={{
+                    position: 'relative',
                     aspectRatio: '1',
                     borderRadius: '8px',
                     overflow: 'hidden',
@@ -190,25 +176,26 @@ export function RapportDetail() {
                     border: '1px solid #e5e7eb',
                   }}
                 >
-                  {photo.url ? (
-                    <img
-                      src={photo.url}
-                      alt={photo.description || photo.filename}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
+                  <img
+                    src={photo.url}
+                    alt={photo.filename}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  {photo.categorie_label && (
                     <div
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: '#f3f4f6',
-                        fontSize: '24px',
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        background: 'rgba(0,0,0,0.7)',
+                        color: 'white',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        fontWeight: '500',
                       }}
                     >
-                      📷
+                      {photo.categorie_label}
                     </div>
                   )}
                 </div>
@@ -217,31 +204,15 @@ export function RapportDetail() {
           </div>
         )}
 
-        {frais && frais.length > 0 && (
-          <div className="card" style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '12px', fontWeight: '600' }}>
-              FRAIS ({frais.length})
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {frais.map((f, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    padding: '12px',
-                    background: '#f9fafb',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                  }}
-                >
-                  <div style={{ fontWeight: '500', marginBottom: '4px' }}>{f.type}</div>
-                  <div style={{ color: '#6b7280' }}>
-                    {f.montant}€ · {f.mode_paiement}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <a
+          href={pdf_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-primary"
+          style={{ width: '100%', marginBottom: '16px', textAlign: 'center', textDecoration: 'none' }}
+        >
+          📄 Télécharger PDF
+        </a>
 
         {selectedPhoto && (
           <div

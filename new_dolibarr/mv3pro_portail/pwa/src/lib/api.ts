@@ -180,44 +180,26 @@ export interface PlanningEvent {
 
 export interface Rapport {
   rowid: number;
-  id: number;
-  ref?: string;
-  fk_user: number;
-  projet_nom?: string;
+  ref: string;
+  date_rapport: string;
+  temps_total: number | null;
+  statut: number;
+  statut_text: string;
+  client_nom?: string;
   projet_ref?: string;
   projet_title?: string;
-  client?: string;
-  date_rapport: string;
-  date?: string;
-  heure_debut?: string;
-  heure_fin?: string;
-  heures?: number;
-  description?: string;
-  travaux?: string;
-  observations?: string;
-  statut?: string;
-  type?: string;
-  zones?: string;
-  surface?: number;
-  format?: string;
-  type_carrelage?: string;
-  user?: string;
-  has_photos?: boolean;
-  nb_photos?: number;
-  url?: string;
+  nb_photos: number;
 }
 
 export interface RapportPhoto {
   id: number;
+  categorie: string;
+  categorie_label: string;
   filename: string;
-  filepath?: string;
-  url?: string;
-  description?: string;
-  legende?: string;
-  categorie?: string;
-  zone?: string;
-  date_ajout?: string;
-  ordre?: number;
+  filesize: number | null;
+  position: number;
+  url: string;
+  date_creation: string | null;
 }
 
 export interface RapportProbleme {
@@ -231,32 +213,45 @@ export interface RapportProbleme {
 }
 
 export interface RapportDetail {
-  rapport: {
-    id: number;
-    date_rapport: string;
-    zone_travail?: string;
-    description?: string;
-    heures_debut?: string;
-    heures_fin?: string;
-    temps_total?: number;
-    travaux_realises?: string;
-    observations?: string;
-    statut?: string;
-    date_creation?: string;
-    date_modification?: string;
-    auteur?: {
-      id: number;
-      login: string;
-      nom: string;
-    };
-    projet?: {
-      id: number;
+  data: {
+    rapport: {
+      rowid: number;
       ref: string;
-      title: string;
-      client?: string;
-    } | null;
-    photos_count?: number;
-    frais_count?: number;
+      date_rapport: string;
+      temps_total: number;
+      statut: number;
+      statut_text: string;
+      description: string;
+      travaux_realises?: string;
+      observations?: string;
+      client: {
+        id: number | null;
+        nom?: string;
+      };
+      projet: {
+        id: number | null;
+        ref?: string;
+        title?: string;
+      };
+      auteur: {
+        id: number;
+        nom: string;
+        login: string;
+      };
+      date_creation?: string;
+      date_modification?: string;
+      gps?: {
+        latitude: number;
+        longitude: number;
+        precision: number;
+      };
+      meteo?: {
+        temperature: number;
+        condition: string;
+      };
+    };
+    photos: RapportPhoto[];
+    pdf_url: string;
     gps?: {
       latitude: number;
       longitude: number;
@@ -365,12 +360,29 @@ export const api = {
     return apiFetch<PlanningEvent[]>(`/planning.php${query ? '?' + query : ''}`);
   },
 
-  async rapportsList(limit = 50, page = 1): Promise<Rapport[]> {
-    return apiFetch<Rapport[]>(`/rapports.php?limit=${limit}&page=${page}`);
+  async rapportsList(params?: {
+    limit?: number;
+    page?: number;
+    search?: string;
+    statut?: string;
+    from?: string;
+    to?: string;
+  }): Promise<{ data: { items: Rapport[]; total: number; page: number; limit: number; total_pages: number } }> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+    if (params?.page) queryParams.append('page', String(params.page));
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.statut) queryParams.append('statut', params.statut);
+    if (params?.from) queryParams.append('from', params.from);
+    if (params?.to) queryParams.append('to', params.to);
+
+    const response = await apiFetch<{ success: boolean; data: { items: Rapport[]; total: number; page: number; limit: number; total_pages: number } }>(`/rapports.php?${queryParams.toString()}`);
+    return response;
   },
 
   async rapportsView(id: number): Promise<RapportDetail> {
-    return apiFetch<RapportDetail>(`/rapports_view.php?id=${id}`);
+    const response = await apiFetch<{ success: boolean } & RapportDetail>(`/rapports_view.php?id=${id}`);
+    return response;
   },
 
   async rapportsCreate(payload: RapportCreatePayload): Promise<any> {

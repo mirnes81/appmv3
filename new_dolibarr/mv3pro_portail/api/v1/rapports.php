@@ -7,9 +7,11 @@
  * Paramètres:
  * - limit: Nombre de résultats (défaut: 20, max: 100)
  * - page: Page (défaut: 1)
+ * - search: Recherche dans client_nom, ref, projet_ref (optionnel)
+ * - statut: Filtrer par statut: all|brouillon|valide|soumis (défaut: all)
+ * - from: Date début (YYYY-MM-DD) (optionnel)
+ * - to: Date fin (YYYY-MM-DD) (optionnel)
  * - user_id: Filtrer par utilisateur (optionnel, admin uniquement)
- * - date_from: Date début (YYYY-MM-DD) (optionnel)
- * - date_to: Date fin (YYYY-MM-DD) (optionnel)
  */
 
 require_once __DIR__ . '/_bootstrap.php';
@@ -25,9 +27,11 @@ $auth = require_auth(true);
 // Récupérer les paramètres
 $limit = (int)get_param('limit', 20);
 $page = (int)get_param('page', 1);
+$search = get_param('search', '');
+$statut = get_param('statut', 'all');
+$date_from = get_param('from', get_param('date_from', null));
+$date_to = get_param('to', get_param('date_to', null));
 $filter_user_id = get_param('user_id', null);
-$date_from = get_param('date_from', null);
-$date_to = get_param('date_to', null);
 
 // Validation
 if ($limit < 1) $limit = 20;
@@ -60,6 +64,20 @@ if ($filter_user_id && !empty($auth['dolibarr_user']->admin)) {
         // Pas d'utilisateur identifié, retourner vide
         $where[] = "1 = 0";
     }
+}
+
+// Filtrer par recherche
+if (!empty($search)) {
+    $search_escaped = $db->escape($search);
+    $where[] = "(s.nom LIKE '%".$search_escaped."%' OR r.ref LIKE '%".$search_escaped."%' OR p.ref LIKE '%".$search_escaped."%')";
+}
+
+// Filtrer par statut
+if ($statut !== 'all') {
+    $statut_value = 0;
+    if ($statut === 'valide') $statut_value = 1;
+    elseif ($statut === 'soumis') $statut_value = 2;
+    $where[] = "r.statut = ".(int)$statut_value;
 }
 
 // Filtrer par dates
@@ -123,52 +141,44 @@ if (!$resql) {
 $rapports = [];
 
 while ($obj = $db->fetch_object($resql)) {
-    // Calculer les heures travaillées
-    $heures = 0;
+    // Calculer les heures travaillées (temps_total)
+    $temps_total = 0;
     if ($obj->heure_debut && $obj->heure_fin) {
         $start = strtotime($obj->heure_debut);
         $end = strtotime($obj->heure_fin);
         if ($end > $start) {
-            $heures = round(($end - $start) / 3600, 2);
+            $temps_total = round(($end - $start) / 3600, 2);
         }
     }
 
+    // Statut en texte
+    $statut_text = 'brouillon';
+    if ($obj->statut == 1) $statut_text = 'valide';
+    elseif ($obj->statut == 2) $statut_text = 'soumis';
+
     $rapport = [
         'rowid' => (int)$obj->rowid,
-        'id' => (int)$obj->rowid, // Alias pour compatibilité
         'ref' => $obj->ref,
         'date_rapport' => $obj->date_rapport,
-        'date' => $obj->date_rapport, // Alias pour compatibilité
-        'heure_debut' => $obj->heure_debut ? substr($obj->heure_debut, 0, 5) : null,
-        'heure_fin' => $obj->heure_fin ? substr($obj->heure_fin, 0, 5) : null,
-        'heures' => $heures,
-        'fk_user' => $obj->fk_user ? (int)$obj->fk_user : null,
-        'projet_id' => $obj->fk_projet ? (int)$obj->fk_projet : null,
-        'fk_projet' => $obj->fk_projet ? (int)$obj->fk_projet : null,
+        'temps_total' => $temps_total,
+        'statut' => (int)$obj->statut,
+        'statut_text' => $statut_text,
+        'client_nom' => $obj->client_nom,
         'projet_ref' => $obj->projet_ref,
-        'projet_nom' => $obj->projet_title, // Frontend attend projet_nom
         'projet_title' => $obj->projet_title,
-        'client' => $obj->client_nom,
-        'zones' => $obj->zones,
-        'surface' => (float)$obj->surface_total,
-        'format' => $obj->format,
-        'type_carrelage' => $obj->type_carrelage,
-        'travaux' => $obj->travaux_realises,
-        'description' => $obj->travaux_realises, // Alias
-        'observations' => $obj->observations,
-        'statut' => $obj->statut,
-        'user' => trim($obj->firstname . ' ' . $obj->lastname),
-        'has_photos' => (int)$obj->nb_photos > 0,
         'nb_photos' => (int)$obj->nb_photos,
-        'url' => '/custom/mv3pro_portail/mobile_app/rapports/view.php?id='.$obj->rowid
     ];
 
     $rapports[] = $rapport;
 }
 
-// Retourner directement le tableau de rapports (sans wrapper)
-// Le frontend attend Rapport[] directement
-// Note: headers déjà envoyés par _bootstrap.php
-http_response_code(200);
-echo json_encode($rapports, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-exit;
+// Retourner avec format standard API v1
+json_ok([
+    'data' => [
+        'items' => $rapports,
+        'page' => $page,
+        'limit' => $limit,
+        'total' => $total,
+        'total_pages' => $limit > 0 ? ceil($total / $limit) : 0,
+    ]
+]);

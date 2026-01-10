@@ -51,6 +51,48 @@ export default defineConfig(({ mode }) => {
                 statuses: [0, 200]
               }
             }
+          },
+          {
+            urlPattern: /\/api\/v1\/rapports\.php/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'rapports-list-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 2
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /\/api\/v1\/rapports_view\.php/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'rapports-detail-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 4
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /\/mobile_app\/rapports\/photo\.php/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'rapports-photos-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
           }
           ]
         }
