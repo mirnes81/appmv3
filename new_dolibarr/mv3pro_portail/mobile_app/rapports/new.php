@@ -7,143 +7,43 @@ require_once __DIR__ . '/../includes/dolibarr_bootstrap.php';
 require_once __DIR__ . '/../includes/auth_helpers.php';
 require_once __DIR__ . '/../includes/html_helpers.php';
 require_once __DIR__ . '/../includes/db_helpers.php';
+require_once __DIR__ . '/../includes/rapport_helpers.php';
 
 loadDolibarr();
 requireMobileSession('../login_mobile.php');
 
-global $db, $user;
+global $db, $user, $conf;
 
 $user_id = $user->id;
 $error = '';
 $action = GETPOST('action', 'alpha');
 
 if ($action == 'create') {
-    $fk_user = $user_id;
-    $fk_projet = GETPOST('fk_projet', 'int');
-    $fk_soc = GETPOST('fk_soc', 'int');
-    $date_rapport = GETPOST('date_rapport', 'alpha');
-    $type_lieu = GETPOST('type_lieu', 'alpha');
-    $numero_lieu = GETPOST('numero_lieu', 'alpha');
-    $zone_travail = GETPOST('zone_travail', 'alpha');
-    $heures_debut = GETPOST('heures_debut', 'alpha');
-    $heures_fin = GETPOST('heures_fin', 'alpha');
-    $surface_carrelee = GETPOST('surface_carrelee', 'alpha');
-    $format_carreaux = GETPOST('format_carreaux', 'alpha');
-    $type_pose = GETPOST('type_pose', 'alpha');
-    $zone_pose = GETPOST('zone_pose', 'alpha');
-    $travaux_realises = GETPOST('travaux_realises', 'restricthtml');
-    $observations = GETPOST('observations', 'restricthtml');
+    $rapport_data = [
+        'fk_user' => $user_id,
+        'fk_projet' => GETPOST('fk_projet', 'int'),
+        'fk_soc' => GETPOST('fk_soc', 'int'),
+        'date_rapport' => GETPOST('date_rapport', 'alpha'),
+        'type_lieu' => GETPOST('type_lieu', 'alpha'),
+        'numero_lieu' => GETPOST('numero_lieu', 'alpha'),
+        'zone_travail' => GETPOST('zone_travail', 'alpha'),
+        'heures_debut' => GETPOST('heures_debut', 'alpha'),
+        'heures_fin' => GETPOST('heures_fin', 'alpha'),
+        'surface_carrelee' => GETPOST('surface_carrelee', 'alpha'),
+        'format_carreaux' => GETPOST('format_carreaux', 'alpha'),
+        'type_pose' => GETPOST('type_pose', 'alpha'),
+        'zone_pose' => GETPOST('zone_pose', 'alpha'),
+        'travaux_realises' => GETPOST('travaux_realises', 'restricthtml'),
+        'observations' => GETPOST('observations', 'restricthtml')
+    ];
 
-    $temps_total = 0;
-    if ($heures_debut && $heures_fin) {
-        $debut = strtotime($heures_debut);
-        $fin = strtotime($heures_fin);
-        if ($fin > $debut) {
-            $temps_total = round(($fin - $debut) / 3600, 2);
-        }
-    }
+    $rapport_id = createRapport($db, $conf, $rapport_data);
 
-    $sql = "INSERT INTO ".MAIN_DB_PREFIX."mv3_rapport (";
-    $sql .= "entity, fk_user, fk_projet, fk_soc, date_rapport, type_lieu, numero_lieu, zone_travail, heures_debut, heures_fin, temps_total,";
-    $sql .= "surface_carrelee, format_carreaux, type_pose, zone_pose, travaux_realises, observations, statut, date_creation";
-    $sql .= ") VALUES (";
-    $sql .= $conf->entity.",";
-    $sql .= (int)$fk_user.",";
-    $sql .= ($fk_projet ? (int)$fk_projet : "NULL").",";
-    $sql .= ($fk_soc ? (int)$fk_soc : "NULL").",";
-    $sql .= "'".$db->escape($date_rapport)."',";
-    $sql .= "'".$db->escape($type_lieu)."',";
-    $sql .= "'".$db->escape($numero_lieu)."',";
-    $sql .= "'".$db->escape($zone_travail)."',";
-    $sql .= ($heures_debut ? "'".$db->escape($heures_debut)."'" : "NULL").",";
-    $sql .= ($heures_fin ? "'".$db->escape($heures_fin)."'" : "NULL").",";
-    $sql .= $temps_total.",";
-    $sql .= ($surface_carrelee ? (float)$surface_carrelee : "NULL").",";
-    $sql .= "'".$db->escape($format_carreaux)."',";
-    $sql .= "'".$db->escape($type_pose)."',";
-    $sql .= "'".$db->escape($zone_pose)."',";
-    $sql .= "'".$db->escape($travaux_realises)."',";
-    $sql .= "'".$db->escape($observations)."',";
-    $sql .= "0,";
-    $sql .= "NOW()";
-    $sql .= ")";
-
-    if ($db->query($sql)) {
-        $rapport_id = $db->last_insert_id(MAIN_DB_PREFIX."mv3_rapport");
-
+    if ($rapport_id) {
         $ref = 'RAP'.str_pad($rapport_id, 6, '0', STR_PAD_LEFT);
-        $db->query("UPDATE ".MAIN_DB_PREFIX."mv3_rapport SET ref = '".$ref."' WHERE rowid = ".$rapport_id);
 
-        if (isset($_FILES['photos']) && !empty($_FILES['photos']['name'][0])) {
-            $upload_dir = DOL_DATA_ROOT.'/mv3pro_portail/rapports/'.$rapport_id;
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0755, true);
-            }
-
-            for ($i = 0; $i < count($_FILES['photos']['name']); $i++) {
-                if ($_FILES['photos']['error'][$i] === UPLOAD_ERR_OK) {
-                    $tmp_name = $_FILES['photos']['tmp_name'][$i];
-                    $ext = pathinfo($_FILES['photos']['name'][$i], PATHINFO_EXTENSION);
-                    $filename = 'photo_'.time().'_'.$i.'.'.$ext;
-                    $target = $upload_dir.'/'.$filename;
-
-                    if (move_uploaded_file($tmp_name, $target)) {
-                        $relative_path = '/mv3pro_portail/rapports/'.$rapport_id.'/'.$filename;
-                        $categorie = GETPOST('photo_categorie_'.$i, 'alpha') ?: 'pendant';
-
-                        $sql_photo = "INSERT INTO ".MAIN_DB_PREFIX."mv3_rapport_photo";
-                        $sql_photo .= " (fk_rapport, path, filename, position, categorie)";
-                        $sql_photo .= " VALUES (".$rapport_id.", '".$db->escape($relative_path)."', '".$db->escape($filename)."', ".$i.", '".$db->escape($categorie)."')";
-                        $db->query($sql_photo);
-                    }
-                }
-            }
-        }
-
-        $frais_type = GETPOST('frais_type', 'alpha');
-        $frais_montant = GETPOST('frais_montant', 'alpha');
-        $frais_mode = GETPOST('frais_mode', 'alpha');
-
-        if ($frais_type && $frais_montant) {
-            $frais_statut = ($frais_mode == 'company_paid') ? 'reimbursed' : 'to_reimburse';
-
-            $sql_frais = "INSERT INTO ".MAIN_DB_PREFIX."mv3_frais (";
-            $sql_frais .= "entity, fk_user, fk_projet, date_frais, type, montant, mode_paiement, statut, note_private, date_creation";
-            $sql_frais .= ") VALUES (";
-            $sql_frais .= $conf->entity.",";
-            $sql_frais .= (int)$fk_user.",";
-            $sql_frais .= ($fk_projet ? (int)$fk_projet : "NULL").",";
-            $sql_frais .= "'".$db->escape($date_rapport)."',";
-            $sql_frais .= "'".$db->escape($frais_type)."',";
-            $sql_frais .= (float)$frais_montant.",";
-            $sql_frais .= "'".$db->escape($frais_mode)."',";
-            $sql_frais .= "'".$db->escape($frais_statut)."',";
-            $sql_frais .= "'Associé au rapport ".$ref."',";
-            $sql_frais .= "NOW()";
-            $sql_frais .= ")";
-
-            if ($db->query($sql_frais)) {
-                $frais_id = $db->last_insert_id(MAIN_DB_PREFIX."mv3_frais");
-                $frais_ref = 'FRA'.str_pad($frais_id, 6, '0', STR_PAD_LEFT);
-                $db->query("UPDATE ".MAIN_DB_PREFIX."mv3_frais SET ref = '".$frais_ref."' WHERE rowid = ".$frais_id);
-
-                if (isset($_FILES['frais_photo']) && $_FILES['frais_photo']['error'] === UPLOAD_ERR_OK) {
-                    $frais_upload_dir = DOL_DATA_ROOT.'/mv3pro_portail/frais/'.$frais_id;
-                    if (!is_dir($frais_upload_dir)) {
-                        mkdir($frais_upload_dir, 0755, true);
-                    }
-
-                    $ext = pathinfo($_FILES['frais_photo']['name'], PATHINFO_EXTENSION);
-                    $filename = 'ticket_'.time().'.'.$ext;
-                    $target = $frais_upload_dir.'/'.$filename;
-
-                    if (move_uploaded_file($_FILES['frais_photo']['tmp_name'], $target)) {
-                        $relative_path = '/mv3pro_portail/frais/'.$frais_id.'/'.$filename;
-                        $db->query("UPDATE ".MAIN_DB_PREFIX."mv3_frais SET photo_path = '".$db->escape($relative_path)."' WHERE rowid = ".$frais_id);
-                    }
-                }
-            }
-        }
+        processRapportPhotos($db, $rapport_id);
+        processFrais($db, $conf, $user_id, $rapport_data['fk_projet'], $rapport_data['date_rapport'], $ref);
 
         header('Location: view.php?id='.$rapport_id);
         exit;
