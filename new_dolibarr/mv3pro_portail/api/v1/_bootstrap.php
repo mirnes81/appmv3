@@ -865,12 +865,14 @@ function mv3_select_column($db, $table_name, $column_name, $default_value = null
  * @param string $endpoint_name Nom de l'endpoint pour les logs
  * @return bool true si la table existe, false si elle n'existe pas (et response envoyée)
  */
-function mv3_check_table_or_empty($db, $table_name, $endpoint_name = 'unknown') {
-    if (!mv3_table_exists($db, $table_name)) {
-        error_log("[MV3 $endpoint_name] Table manquante: $table_name");
-        http_response_code(200);
-        echo json_encode([], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        exit;
+if (!function_exists('mv3_check_table_or_empty')) {
+    function mv3_check_table_or_empty($db, $table_name, $endpoint_name = 'unknown') {
+        if (!mv3_table_exists($db, $table_name)) {
+            error_log("[MV3 $endpoint_name] Table manquante: $table_name");
+            http_response_code(200);
+            echo json_encode([], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+        return true;
     }
-    return true;
 }
