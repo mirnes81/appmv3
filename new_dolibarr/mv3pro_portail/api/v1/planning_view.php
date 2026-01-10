@@ -56,10 +56,14 @@ AND a.entity IN (".getEntity('agenda').")";
 
 $resql = $db->query($sql);
 if (!$resql || $db->num_rows($resql) === 0) {
+    if ($resql) {
+        $db->free($resql);
+    }
     json_error('Événement non trouvé', 'NOT_FOUND', 404);
 }
 
 $event = $db->fetch_object($resql);
+$db->free($resql);
 
 // Construire la réponse
 $response = [
@@ -122,6 +126,9 @@ if ($event->elementtype && $event->fk_element) {
                 $objet_ref = $obj->ref;
                 $objet_label = 'Commande';
             }
+            if ($res_obj) {
+                $db->free($res_obj);
+            }
             break;
 
         case 'invoice':
@@ -133,6 +140,9 @@ if ($event->elementtype && $event->fk_element) {
                 $objet_ref = $obj->ref;
                 $objet_label = 'Facture';
             }
+            if ($res_obj) {
+                $db->free($res_obj);
+            }
             break;
 
         case 'propal':
@@ -142,6 +152,9 @@ if ($event->elementtype && $event->fk_element) {
                 $obj = $db->fetch_object($res_obj);
                 $objet_ref = $obj->ref;
                 $objet_label = 'Proposition commerciale';
+            }
+            if ($res_obj) {
+                $db->free($res_obj);
             }
             break;
 
@@ -153,6 +166,9 @@ if ($event->elementtype && $event->fk_element) {
                 $obj = $db->fetch_object($res_obj);
                 $objet_ref = $obj->ref;
                 $objet_label = 'Projet';
+            }
+            if ($res_obj) {
+                $db->free($res_obj);
             }
             break;
     }

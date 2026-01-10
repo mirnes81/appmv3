@@ -30,6 +30,9 @@ AND a.entity IN (".getEntity('agenda').")";
 
 $resql = $db->query($sql);
 if (!$resql || $db->num_rows($resql) === 0) {
+    if ($resql) {
+        $db->free($resql);
+    }
     http_response_code(404);
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'error' => 'Événement non trouvé']);
@@ -37,6 +40,7 @@ if (!$resql || $db->num_rows($resql) === 0) {
 }
 
 $event = $db->fetch_object($resql);
+$db->free($resql);
 
 // Vérifier les droits d'accès
 $has_access = false;
