@@ -1,3 +1,10 @@
+<?php
+/**
+ * REDIRECTION vers la nouvelle PWA React
+ */
+header('Location: /custom/mv3pro_portail/pwa_dist/', true, 301);
+exit;
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -7,7 +14,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Connexion - MV3 PRO Mobile</title>
+    <title>Connexion - MV3 PRO Mobile (ANCIEN)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/mobile_app.css">
     <style>

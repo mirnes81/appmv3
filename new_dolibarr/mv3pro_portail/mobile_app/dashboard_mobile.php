@@ -1,6 +1,14 @@
 <?php
 /**
- * Dashboard mobile avec authentification indépendante
+ * REDIRECTION vers la nouvelle PWA React
+ * L'ancienne version mobile PHP a été remplacée
+ */
+
+header('Location: /custom/mv3pro_portail/pwa_dist/', true, 301);
+exit;
+
+/**
+ * Dashboard mobile avec authentification indépendante (ANCIEN - désactivé)
  */
 
 require_once __DIR__ . '/includes/dolibarr_bootstrap.php';
