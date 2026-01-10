@@ -43,21 +43,10 @@ $event = $db->fetch_object($resql);
 $db->free($resql);
 
 // Vérifier les droits d'accès
-$has_access = false;
-
-if ($auth['is_admin']) {
-    // Admin : accès total
-    $has_access = true;
-    log_debug("Planning file #".$id." - Admin access granted");
-} else {
-    // Employee : vérifier qu'il est assigné à l'événement
-    if ($event->fk_user_action == $auth['dolibarr_user_id']) {
-        $has_access = true;
-        log_debug("Planning file #".$id." - Employee access granted (assigned user)");
-    } else {
-        log_debug("Planning file #".$id." - Access denied (user not assigned)");
-    }
-}
+// RÈGLE: Tous les employés authentifiés peuvent voir les fichiers de planning
+// (contexte: app mobile où tout le monde doit voir les chantiers)
+$has_access = true;
+log_debug("Planning file #".$id." - Access granted (authenticated user)");
 
 if (!$has_access) {
     http_response_code(403);
