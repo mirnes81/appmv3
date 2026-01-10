@@ -22,6 +22,12 @@ export function Rapports() {
   const [hasMore, setHasMore] = useState(false);
   const limit = 20;
 
+  // Mode debug
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugData, setDebugData] = useState<any>(null);
+  const [loadingDebug, setLoadingDebug] = useState(false);
+  const [lastApiCall, setLastApiCall] = useState<any>(null);
+
   const isAdmin = user?.admin === true;
 
   const loadRapports = async (resetPage = false) => {
@@ -31,7 +37,7 @@ export function Rapports() {
     const currentPage = resetPage ? 1 : page;
 
     try {
-      const response = await api.rapportsList({
+      const params = {
         limit,
         page: currentPage,
         search: searchQuery || undefined,
@@ -39,12 +45,38 @@ export function Rapports() {
         from: filterDateDebut || undefined,
         to: filterDateFin || undefined,
         user_id: filterUserId,
-      });
+      };
+
+      // Log de l'appel API pour le debug
+      const apiCallInfo = {
+        timestamp: new Date().toISOString(),
+        endpoint: '/rapports.php',
+        params,
+        user: {
+          id: user?.id,
+          name: user?.name,
+          admin: user?.admin,
+        },
+      };
+      setLastApiCall(apiCallInfo);
+
+      const response = await api.rapportsList(params);
 
       // Fallback robuste pour gérer différents formats de réponse
       const items = response?.data?.items ?? [];
       const totalCount = response?.data?.total ?? 0;
       const totalPages = response?.data?.total_pages ?? 0;
+
+      // Log de la réponse pour le debug
+      setLastApiCall({
+        ...apiCallInfo,
+        response: {
+          status: 'success',
+          items_count: items.length,
+          total: totalCount,
+          total_pages: totalPages,
+        },
+      });
 
       setRapports(Array.isArray(items) ? items : []);
       setTotal(totalCount);
@@ -56,6 +88,16 @@ export function Rapports() {
       setRapports([]);
       setTotal(0);
       setHasMore(false);
+
+      // Log de l'erreur pour le debug
+      setLastApiCall({
+        ...lastApiCall,
+        response: {
+          status: 'error',
+          error: err.message,
+          stack: err.stack,
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -82,6 +124,27 @@ export function Rapports() {
     loadRapports();
   };
 
+  const loadDebugInfo = async () => {
+    setLoadingDebug(true);
+    try {
+      const debugResponse = await api.rapportsDebug();
+      setDebugData(debugResponse);
+    } catch (err: any) {
+      console.error('Erreur chargement debug:', err);
+      setDebugData({ error: err.message });
+    } finally {
+      setLoadingDebug(false);
+    }
+  };
+
+  const toggleDebugMode = () => {
+    const newDebugMode = !debugMode;
+    setDebugMode(newDebugMode);
+    if (newDebugMode && !debugData) {
+      loadDebugInfo();
+    }
+  };
+
   return (
     <Layout title="Rapports">
       <div style={{ padding: '20px' }}>
@@ -93,6 +156,187 @@ export function Rapports() {
             ⭐ Rapport PRO
           </Link>
         </div>
+
+        <button
+          onClick={toggleDebugMode}
+          className="btn"
+          style={{
+            width: '100%',
+            marginBottom: '20px',
+            background: debugMode ? '#ef4444' : '#6b7280',
+            color: 'white',
+            border: 'none',
+          }}
+        >
+          {debugMode ? '🔴 Désactiver Debug' : '🔧 Mode Debug'}
+        </button>
+
+        {debugMode && (
+          <div className="card" style={{ marginBottom: '20px', background: '#1f2937', color: '#fff', padding: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>🔧 Panneau de Debug</h3>
+              <button
+                onClick={loadDebugInfo}
+                disabled={loadingDebug}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '14px' }}
+              >
+                {loadingDebug ? '⏳' : '🔄 Rafraîchir'}
+              </button>
+            </div>
+
+            {loadingDebug && (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
+                Chargement des infos de debug...
+              </div>
+            )}
+
+            {debugData && !loadingDebug && (
+              <div style={{ fontSize: '13px', fontFamily: 'monospace' }}>
+                {/* Section 1: Info utilisateur */}
+                <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
+                  <div style={{ fontWeight: '600', marginBottom: '8px', color: '#60a5fa' }}>👤 Informations Utilisateur</div>
+                  <div style={{ display: 'grid', gap: '4px' }}>
+                    <div>• Nom: {debugData.debug_info?.user_info?.name || 'N/A'}</div>
+                    <div>• Email: {debugData.debug_info?.user_info?.email || 'N/A'}</div>
+                    <div>• Dolibarr User ID: <span style={{ color: '#10b981', fontWeight: '600' }}>
+                      {debugData.debug_info?.user_info?.dolibarr_user_id || 'NON DÉFINI ❌'}
+                    </span></div>
+                    <div>• Mobile User ID (OLD): <span style={{ color: '#f59e0b' }}>
+                      {debugData.debug_info?.user_info?.OLD_user_id || 'N/A'}
+                    </span></div>
+                    <div>• Mode: {debugData.debug_info?.user_info?.mode || 'N/A'}</div>
+                    <div>• Admin: <span style={{ color: debugData.debug_info?.user_info?.is_admin ? '#10b981' : '#ef4444' }}>
+                      {debugData.debug_info?.user_info?.is_admin ? '✅ OUI' : '❌ NON'}
+                    </span></div>
+                    <div>• Compte non lié: {debugData.debug_info?.user_info?.is_unlinked ? '⚠️ OUI' : '✅ NON'}</div>
+                  </div>
+                </div>
+
+                {/* Section 2: Comparaison ancien/nouveau système */}
+                <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
+                  <div style={{ fontWeight: '600', marginBottom: '8px', color: '#f59e0b' }}>🔄 Comparaison Systèmes</div>
+                  <div style={{ display: 'grid', gap: '4px' }}>
+                    <div style={{ padding: '8px', background: '#ef444420', borderRadius: '4px', border: '1px solid #ef4444' }}>
+                      <div style={{ color: '#ef4444', fontWeight: '600' }}>❌ ANCIEN SYSTÈME (bugué)</div>
+                      <div>{debugData.comparison?.old_system || 'N/A'}</div>
+                    </div>
+                    <div style={{ padding: '8px', background: '#10b98120', borderRadius: '4px', border: '1px solid #10b981' }}>
+                      <div style={{ color: '#10b981', fontWeight: '600' }}>✅ NOUVEAU SYSTÈME (corrigé)</div>
+                      <div>{debugData.comparison?.new_system || 'N/A'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Stats rapports */}
+                <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
+                  <div style={{ fontWeight: '600', marginBottom: '8px', color: '#a78bfa' }}>📊 Statistiques Rapports</div>
+                  <div style={{ display: 'grid', gap: '4px' }}>
+                    <div>• Total dans l'entité: <span style={{ color: '#60a5fa', fontWeight: '600' }}>
+                      {debugData.debug_info?.total_rapports_in_entity || 0}
+                    </span></div>
+                    <div>• Visibles avec NOUVEAU filtre: <span style={{ color: '#10b981', fontWeight: '600' }}>
+                      {debugData.debug_info?.rapports_with_NEW_filter || 0}
+                    </span></div>
+                    <div>• Visibles avec ANCIEN filtre: <span style={{ color: '#f59e0b', fontWeight: '600' }}>
+                      {debugData.debug_info?.rapports_with_OLD_filter || 0}
+                    </span></div>
+                    <div>• Filtre appliqué: {debugData.debug_info?.filter_applied || 'AUCUN'}</div>
+                  </div>
+                </div>
+
+                {/* Section 4: Recommandation */}
+                {debugData.recommendation && (
+                  <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '8px', color: '#fbbf24' }}>💡 Recommandation</div>
+                    <div style={{ lineHeight: '1.6' }}>{debugData.recommendation}</div>
+                  </div>
+                )}
+
+                {/* Section 5: Rapports par utilisateur */}
+                {debugData.debug_info?.rapports_by_user && Object.keys(debugData.debug_info.rapports_by_user).length > 0 && (
+                  <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '8px', color: '#f472b6' }}>👥 Rapports par Utilisateur</div>
+                    <div style={{ display: 'grid', gap: '4px' }}>
+                      {Object.entries(debugData.debug_info.rapports_by_user).map(([userId, count]) => (
+                        <div key={userId}>
+                          • User ID {userId}: {count as number} rapport(s)
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Section 6: Derniers rapports */}
+                {debugData.debug_info?.recent_rapports && debugData.debug_info.recent_rapports.length > 0 && (
+                  <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '8px', color: '#34d399' }}>📋 5 Derniers Rapports (BD)</div>
+                    <div style={{ display: 'grid', gap: '8px' }}>
+                      {debugData.debug_info.recent_rapports.map((r: any) => (
+                        <div key={r.rowid} style={{ padding: '8px', background: '#4b556320', borderRadius: '4px' }}>
+                          <div><span style={{ color: '#60a5fa' }}>ID:</span> {r.rowid} | <span style={{ color: '#60a5fa' }}>Ref:</span> {r.ref}</div>
+                          <div><span style={{ color: '#60a5fa' }}>Date:</span> {r.date_rapport}</div>
+                          <div><span style={{ color: '#60a5fa' }}>User ID:</span> {r.fk_user} | <span style={{ color: '#60a5fa' }}>Login:</span> {r.user_login}</div>
+                          <div><span style={{ color: '#60a5fa' }}>User:</span> {r.user_name}</div>
+                          <div><span style={{ color: '#60a5fa' }}>Projet:</span> {r.projet_title || 'N/A'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Section 7: Dernier appel API */}
+                {lastApiCall && (
+                  <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '8px' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '8px', color: '#fb923c' }}>🌐 Dernier Appel API</div>
+                    <div style={{ display: 'grid', gap: '4px' }}>
+                      <div>• Endpoint: {lastApiCall.endpoint}</div>
+                      <div>• Timestamp: {new Date(lastApiCall.timestamp).toLocaleString('fr-FR')}</div>
+                      <div>• Params: <pre style={{ margin: '4px 0', padding: '8px', background: '#1f2937', borderRadius: '4px', overflow: 'auto' }}>
+                        {JSON.stringify(lastApiCall.params, null, 2)}
+                      </pre></div>
+                      {lastApiCall.response && (
+                        <div>• Réponse: <pre style={{ margin: '4px 0', padding: '8px', background: '#1f2937', borderRadius: '4px', overflow: 'auto' }}>
+                          {JSON.stringify(lastApiCall.response, null, 2)}
+                        </pre></div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Section 8: Rapports actuels affichés dans la PWA */}
+                <div style={{ padding: '12px', background: '#374151', borderRadius: '8px' }}>
+                  <div style={{ fontWeight: '600', marginBottom: '8px', color: '#818cf8' }}>📱 Rapports Affichés dans la PWA</div>
+                  <div style={{ marginBottom: '8px' }}>
+                    Total affiché: <span style={{ color: '#10b981', fontWeight: '600' }}>{rapports.length}</span> / {total}
+                  </div>
+                  {rapports.length > 0 ? (
+                    <div style={{ display: 'grid', gap: '8px', maxHeight: '400px', overflow: 'auto' }}>
+                      {rapports.map((r) => (
+                        <div key={r.rowid} style={{ padding: '8px', background: '#4b556320', borderRadius: '4px' }}>
+                          <div><span style={{ color: '#60a5fa' }}>ID:</span> {r.rowid} | <span style={{ color: '#60a5fa' }}>Ref:</span> {r.ref}</div>
+                          <div><span style={{ color: '#60a5fa' }}>Date:</span> {r.date_rapport}</div>
+                          <div><span style={{ color: '#60a5fa' }}>Client:</span> {r.client_nom || 'N/A'}</div>
+                          <div><span style={{ color: '#60a5fa' }}>Projet:</span> {r.projet_ref || 'N/A'}</div>
+                          <div><span style={{ color: '#60a5fa' }}>Statut:</span> {r.statut_text}</div>
+                          <div><span style={{ color: '#60a5fa' }}>Photos:</span> {r.nb_photos || 0}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ color: '#f59e0b', padding: '8px' }}>⚠️ Aucun rapport affiché</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!debugData && !loadingDebug && (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
+                Cliquez sur "Rafraîchir" pour charger les infos de debug
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="card" style={{ marginBottom: '16px' }}>
           <div style={{ marginBottom: '12px' }}>

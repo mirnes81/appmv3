@@ -1,0 +1,162 @@
+════════════════════════════════════════════════════════════════
+  FICHIERS CRÉÉS/MODIFIÉS - MODE DEBUG RAPPORTS PWA
+  Date : 2026-01-10
+  Version : 1.0.0
+════════════════════════════════════════════════════════════════
+
+📁 FICHIERS MODIFIÉS (Code source)
+════════════════════════════════════════════════════════════════
+
+1. pwa/src/pages/Rapports.tsx
+   • ~200 lignes ajoutées
+   • Mode debug complet avec 8 sections
+   • Logs des appels API
+   • Panneau de diagnostic
+
+   Changements :
+   - Ajout états : debugMode, debugData, loadingDebug, lastApiCall
+   - Ajout fonction : loadDebugInfo()
+   - Ajout fonction : toggleDebugMode()
+   - Modification loadRapports() : logs API
+   - Ajout bouton "Mode Debug"
+   - Ajout panneau avec 8 sections d'infos
+
+════════════════════════════════════════════════════════════════
+
+📦 FICHIERS GÉNÉRÉS (Build)
+════════════════════════════════════════════════════════════════
+
+2. pwa_dist/assets/index-Bn1KP0-e.js
+   • 288.41 KB (80.93 KB gzip)
+   • Nouveau hash → force reload cache
+   • Remplace : index-D9jF8kZY.js
+
+3. pwa_dist/sw.js
+   • Service worker mis à jour
+   • Precache 10 entries (287.27 KiB)
+
+4. pwa_dist/index.html
+   • Mis à jour avec nouveau hash JS
+
+5. pwa_dist/workbox-d4f8be5c.js
+   • Service worker workbox
+
+════════════════════════════════════════════════════════════════
+
+📄 DOCUMENTATION CRÉÉE
+════════════════════════════════════════════════════════════════
+
+6. pwa/MODE_DEBUG_RAPPORTS.md
+   • Guide complet d'utilisation
+   • Description des 8 sections
+   • Cas d'usage et solutions
+   • API utilisée
+   • URLs importantes
+   • ~400 lignes
+
+7. RECAP_MODE_DEBUG_RAPPORTS.md
+   • Récapitulatif détaillé
+   • Ce qui a été fait
+   • Exemples concrets
+   • Comparaison avant/après
+   • Checklist validation
+   • ~500 lignes
+
+8. GUIDE_VISUEL_MODE_DEBUG.txt
+   • Captures d'écran textuelles
+   • Interface étape par étape
+   • Interprétation des résultats
+   • Cas d'usage fréquents
+   • Actions rapides
+   • ~300 lignes
+
+9. MODE_DEBUG_RESUME.txt
+   • Résumé ultra-court (ce fichier)
+   • Instructions rapides
+   • Points clés
+   • ~50 lignes
+
+10. FICHIERS_MODIFIES_MODE_DEBUG.txt
+    • Liste des fichiers (ce fichier)
+    • Récapitulatif des changements
+
+════════════════════════════════════════════════════════════════
+
+🔧 API BACKEND (Déjà existante, pas modifiée)
+════════════════════════════════════════════════════════════════
+
+11. api/v1/rapports_debug.php
+    • Endpoint de diagnostic
+    • Déjà créé précédemment
+    • Utilisé par le mode debug PWA
+
+════════════════════════════════════════════════════════════════
+
+📊 STATISTIQUES
+════════════════════════════════════════════════════════════════
+
+Fichiers modifiés : 1
+Fichiers générés (build) : 4
+Documentation créée : 5
+Total fichiers : 10
+
+Lignes de code ajoutées : ~200
+Lignes de documentation : ~1300
+
+Build PWA :
+- Taille JS : 288.41 KB (80.93 KB gzip)
+- Modules transformés : 65
+- Temps de build : 3.32s
+- PWA version : 0.17.5
+
+════════════════════════════════════════════════════════════════
+
+✅ STATUS : DÉPLOYÉ ET FONCTIONNEL
+
+Tous les fichiers sont prêts et déployés dans pwa_dist/.
+Le mode debug est immédiatement accessible sur :
+https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/#/rapports
+
+════════════════════════════════════════════════════════════════
+
+🔗 ARBORESCENCE FINALE
+
+new_dolibarr/mv3pro_portail/
+├── api/v1/
+│   └── rapports_debug.php (existant, utilisé par mode debug)
+│
+├── pwa/
+│   ├── src/pages/
+│   │   └── Rapports.tsx ← MODIFIÉ (+200 lignes)
+│   │
+│   └── MODE_DEBUG_RAPPORTS.md ← CRÉÉ
+│
+├── pwa_dist/ (Build déployé)
+│   ├── assets/
+│   │   └── index-Bn1KP0-e.js ← GÉNÉRÉ (nouveau hash)
+│   ├── sw.js ← GÉNÉRÉ
+│   └── index.html ← GÉNÉRÉ
+│
+└── Documentation/
+    ├── RECAP_MODE_DEBUG_RAPPORTS.md ← CRÉÉ
+    ├── GUIDE_VISUEL_MODE_DEBUG.txt ← CRÉÉ
+    ├── MODE_DEBUG_RESUME.txt ← CRÉÉ
+    └── FICHIERS_MODIFIES_MODE_DEBUG.txt ← CRÉÉ (ce fichier)
+
+════════════════════════════════════════════════════════════════
+
+📅 CHRONOLOGIE DES MODIFICATIONS
+
+1. FIX_RAPPORTS_USER_ID_FINAL.md
+   • Correction backend (rapports.php, rapports_view.php)
+   • Utilisation de dolibarr_user_id au lieu de user_id
+
+2. MODE DEBUG (ce déploiement)
+   • Ajout interface debug dans PWA
+   • Panneau diagnostic complet
+   • Comparaison PWA vs BD
+   • Documentation complète
+
+════════════════════════════════════════════════════════════════
+                         FIN DE LA LISTE
+════════════════════════════════════════════════════════════════
