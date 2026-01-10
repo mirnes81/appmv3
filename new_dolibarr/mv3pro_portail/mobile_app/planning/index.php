@@ -414,7 +414,7 @@ if ($week_offset == 0) {
     <?php include '../includes/bottom_nav.php'; ?>
 
     <!-- Modal détails -->
-    <div class="modal-overlay" id="eventModal" ontouchstart="if(event.target === this) closeModal()" onclick="if(event.target === this) closeModal()">
+    <div class="modal-overlay" id="eventModal" role="dialog" aria-modal="true" tabindex="-1" ontouchstart="if(event.target === this) closeModal()" onclick="if(event.target === this) closeModal()" onkeydown="if(event.key === 'Escape') closeModal()">
         <div class="modal-sheet">
             <div class="modal-header">
                 <div class="modal-title" id="modalTitle"></div>
