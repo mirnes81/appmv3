@@ -56,6 +56,8 @@ export function PlanningDetail() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('details');
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     loadEventDetail();
@@ -136,6 +138,81 @@ export function PlanningDetail() {
     } catch (err: any) {
       console.error('Erreur ouverture fichier:', err);
       alert('Erreur lors de l\'ouverture du fichier: ' + (err.message || 'Erreur inconnue'));
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Vérifier que c'est une image
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image (JPG, PNG, GIF)');
+      return;
+    }
+
+    // Vérifier la taille (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux (max 10MB)');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const token = localStorage.getItem('mv3pro_token');
+      if (!token) {
+        throw new Error('Token manquant. Veuillez vous reconnecter.');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('id', id || '');
+
+      // Simuler une progression pendant l'upload
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) return prev;
+          return prev + 10;
+        });
+      }, 200);
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || '/custom/mv3pro_portail/api/v1'}/planning_upload_photo.php`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-Auth-Token': token
+        },
+        body: formData
+      });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Erreur ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Upload réussi:', result);
+
+      // Attendre un peu pour montrer 100%
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Recharger les détails de l'événement
+      await loadEventDetail();
+
+      alert('Photo uploadée avec succès!');
+    } catch (err: any) {
+      console.error('Erreur upload photo:', err);
+      alert('Erreur lors de l\'upload: ' + (err.message || 'Erreur inconnue'));
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      // Réinitialiser l'input pour permettre de ré-uploader le même fichier
+      e.target.value = '';
     }
   };
 
@@ -383,6 +460,71 @@ export function PlanningDetail() {
           {/* Onglet Photos */}
           {activeTab === 'photos' && (
             <div>
+              {/* Bouton d'upload */}
+              <div style={{ marginBottom: '20px' }}>
+                <label
+                  htmlFor="photo-upload"
+                  style={{
+                    display: 'block',
+                    padding: '16px',
+                    backgroundColor: uploading ? '#9ca3af' : '#3b82f6',
+                    color: '#fff',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    textAlign: 'center',
+                    cursor: uploading ? 'not-allowed' : 'pointer',
+                    transition: 'background-color 0.2s',
+                    opacity: uploading ? 0.7 : 1
+                  }}
+                  onMouseOver={(e) => {
+                    if (!uploading) e.currentTarget.style.backgroundColor = '#2563eb';
+                  }}
+                  onMouseOut={(e) => {
+                    if (!uploading) e.currentTarget.style.backgroundColor = '#3b82f6';
+                  }}
+                >
+                  {uploading ? '📤 Upload en cours...' : '📷 Ajouter une photo'}
+                </label>
+                <input
+                  id="photo-upload"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoUpload}
+                  disabled={uploading}
+                  style={{ display: 'none' }}
+                />
+
+                {/* Barre de progression */}
+                {uploading && (
+                  <div style={{ marginTop: '12px' }}>
+                    <div style={{
+                      height: '8px',
+                      backgroundColor: '#e5e7eb',
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${uploadProgress}%`,
+                        backgroundColor: '#3b82f6',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                    <div style={{
+                      marginTop: '8px',
+                      textAlign: 'center',
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      fontWeight: '500'
+                    }}>
+                      {uploadProgress}%
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {photos.length === 0 ? (
                 <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
                   <div style={{ fontSize: '48px', marginBottom: '16px' }}>📸</div>

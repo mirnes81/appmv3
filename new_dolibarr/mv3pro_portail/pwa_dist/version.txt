@@ -1,1 +1,1 @@
-v2.2.0 - Photos et documents dans la liste du planning
+v2.3.0 - Upload de photos depuis la PWA avec barre de progression
