@@ -207,12 +207,22 @@ $base_name = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($file['name'], PATHI
 $filename = $base_name . '_' . time() . '.' . $extension;
 
 // Créer le répertoire si nécessaire
+// Utiliser un chemin robuste qui fonctionne toujours
+$base_dir = DOL_DATA_ROOT . '/documents/mv3pro_portail';
+
+// Si le module a défini dir_output, l'utiliser
+if (isset($conf->mv3pro_portail->dir_output) && !empty($conf->mv3pro_portail->dir_output)) {
+    $base_dir = $conf->mv3pro_portail->dir_output;
+}
+
 if (DEBUG_UPLOAD) {
+    error_log('[MV3 UPLOAD DEBUG] DOL_DATA_ROOT: ' . DOL_DATA_ROOT);
+    error_log('[MV3 UPLOAD DEBUG] Base dir: ' . $base_dir);
     error_log('[MV3 UPLOAD DEBUG] Vérification $conf->mv3pro_portail: ' . (isset($conf->mv3pro_portail) ? 'EXISTS' : 'NOT EXISTS'));
     error_log('[MV3 UPLOAD DEBUG] Vérification $conf->mv3pro_portail->dir_output: ' . (isset($conf->mv3pro_portail->dir_output) ? $conf->mv3pro_portail->dir_output : 'NOT SET'));
 }
 
-$upload_dir = $conf->mv3pro_portail->dir_output . '/planning/' . $event_id;
+$upload_dir = $base_dir . '/planning/' . $event_id;
 if (DEBUG_UPLOAD) error_log('[MV3 UPLOAD DEBUG] Upload dir: ' . $upload_dir);
 if (DEBUG_UPLOAD) error_log('[MV3 UPLOAD DEBUG] Dir existe: ' . (is_dir($upload_dir) ? 'OUI' : 'NON'));
 

@@ -30,7 +30,13 @@ class modMv3pro_portail extends DolibarrModules
             'moduleparts' => array('mv3pro_portail' => array('dir' => 'mv3pro_portail', 'label' => 'MV3 PRO Portail'))
         );
 
-        $this->dirs = array('/mv3pro_portail/temp', '/mv3pro_portail/rapports');
+        $this->dirs = array(
+            '/mv3pro_portail/temp',
+            '/mv3pro_portail/rapports',
+            '/mv3pro_portail/planning',
+            '/mv3pro_portail/regie',
+            '/mv3pro_portail/sens_pose'
+        );
 
         $this->const = array();
         $r = 0;
@@ -38,7 +44,7 @@ class modMv3pro_portail extends DolibarrModules
         $this->const[$r] = array(
             'MV3PRO_PORTAIL_DIR_OUTPUT',
             'chaine',
-            DOL_DATA_ROOT.'/mv3pro_portail',
+            DOL_DATA_ROOT.'/documents/mv3pro_portail',
             'Répertoire des documents du module MV3 PRO',
             0,
             'current',
