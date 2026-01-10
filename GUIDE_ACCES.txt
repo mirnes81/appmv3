@@ -1,0 +1,167 @@
+═══════════════════════════════════════════════════════════════════════════
+  📂 GUIDE D'ACCÈS - OÙ TROUVER QUOI ?
+═══════════════════════════════════════════════════════════════════════════
+
+🚀 DÉMARRER LE SERVEUR DEMO
+
+  Fichiers de démarrage:
+  • START.sh                Linux/Mac (chmod +x START.sh puis ./START.sh)
+  • START.bat               Windows (double-clic)
+  • package.json            npm run dev
+
+═══════════════════════════════════════════════════════════════════════════
+
+📂 MODULE DOLIBARR (À DÉPLOYER)
+
+  Emplacement:  new_dolibarr/mv3pro_portail/
+
+  Fichiers principaux:
+  • dashboard/index.php                    Dashboard avec widgets ⭐ NOUVEAU
+  • admin/setup.php                        Configuration module
+  • api/v1/auth/login.php                  API Login
+  • api/v1/planning.php                    API Planning
+  • core/modules/modMv3pro_portail.class.php  Descripteur module
+  • pwa_dist/                              PWA buildée (production)
+  • pwa/                                   Sources React (dev)
+
+═══════════════════════════════════════════════════════════════════════════
+
+📱 PWA MOBILE
+
+  Sources (dev):
+  • new_dolibarr/mv3pro_portail/pwa/src/    Composants React
+  • new_dolibarr/mv3pro_portail/pwa/package.json
+  • new_dolibarr/mv3pro_portail/pwa/vite.config.ts
+
+  Build (prod):
+  • new_dolibarr/mv3pro_portail/pwa_dist/   Prête à déployer
+
+  Accès demo:
+  • http://localhost:3000/pwa               Via serveur demo
+
+═══════════════════════════════════════════════════════════════════════════
+
+📊 DASHBOARD
+
+  Fichier PHP (production Dolibarr):
+  • new_dolibarr/mv3pro_portail/dashboard/index.php
+
+  Démo HTML (test local):
+  • public/dashboard-demo.html
+  • http://localhost:3000/dashboard-demo
+
+═══════════════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION
+
+  • README.md                              Documentation complète
+  • DEMARRAGE_RAPIDE.txt                   Guide express
+  • DEPLOIEMENT_FINAL.md                   Guide déploiement Dolibarr
+  • STRUCTURE_FINALE.txt                   Structure détaillée module
+  • RESUME_FINAL.txt                       Résumé des changements
+
+═══════════════════════════════════════════════════════════════════════════
+
+🌐 SERVEUR DEMO
+
+  Fichiers serveur:
+  • server.js                              Serveur Express Node.js
+  • package.json                           Dépendances (express)
+  • public/index.html                      Page d'accueil
+  • public/dashboard-demo.html             Dashboard demo
+
+═══════════════════════════════════════════════════════════════════════════
+
+🔧 MODIFIER LA PWA
+
+  1. Aller dans: new_dolibarr/mv3pro_portail/pwa/
+  2. Installer: npm install
+  3. Dev: npm run dev (port 5173)
+  4. Modifier fichiers dans: src/
+  5. Builder: npm run build (génère ../pwa_dist/)
+
+  Fichiers clés:
+  • src/config.ts                          Configuration API
+  • src/pages/Planning.tsx                 Page planning
+  • src/pages/Dashboard.tsx                Page dashboard mobile
+  • src/components/                        Composants React
+
+═══════════════════════════════════════════════════════════════════════════
+
+📦 DÉPLOYER VERS DOLIBARR
+
+  Source:       new_dolibarr/mv3pro_portail/
+  Destination:  custom/mv3pro_portail/ (sur serveur Dolibarr)
+
+  Méthodes:
+  • FTP/SFTP:   Uploader tout le dossier mv3pro_portail/
+  • SSH/SCP:    scp -r new_dolibarr/mv3pro_portail/* user@server:/path/
+  • Git:        Commit + Push puis Pull sur serveur
+
+  Après upload:
+  1. Dolibarr → Configuration → Modules
+  2. Chercher "MV-3 PRO Portail"
+  3. Activer
+  4. Setup → URL PWA: /custom/mv3pro_portail/pwa_dist/
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 ACCÈS MENU DOLIBARR (après activation)
+
+  Menu top:
+  • MV-3 PRO                               Menu principal
+
+  Sous-menus:
+  • Dashboard                              Widgets + Stats ⭐
+  • Planning                               Agenda Dolibarr
+
+═══════════════════════════════════════════════════════════════════════════
+
+🔐 IDENTIFIANTS DEMO PWA
+
+  URL:      http://localhost:3000/pwa
+  Login:    demo
+  Pass:     demo
+
+  ⚠️  En production, utiliser les vrais identifiants Dolibarr
+
+═══════════════════════════════════════════════════════════════════════════
+
+✅ CHECKLIST VALIDATION
+
+  Demo locale:
+  □ Serveur démarré (npm run dev)
+  □ Accueil accessible (http://localhost:3000)
+  □ PWA fonctionne (login demo/demo)
+  □ Dashboard demo s'affiche
+  □ Tous les liens fonctionnent
+
+  Déploiement Dolibarr:
+  □ Fichiers uploadés dans custom/mv3pro_portail/
+  □ Module activé dans Dolibarr
+  □ Menu MV-3 PRO visible
+  □ Dashboard accessible
+  □ Planning fonctionne
+  □ PWA accessible depuis URL configurée
+
+═══════════════════════════════════════════════════════════════════════════
+
+📊 RÉSUMÉ FICHIERS
+
+  PHP (module):         17 fichiers
+  API endpoints:        11
+  Menus Dolibarr:       3
+  Pages demo HTML:      2 (accueil + dashboard)
+  Scripts démarrage:    2 (Linux/Mac + Windows)
+  Documentation:        6 fichiers
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎉 TOUT EST PRÊT !
+
+  1. Lancer:  ./START.sh (ou START.bat)
+  2. Tester:  http://localhost:3000
+  3. Valider: PWA + Dashboard
+  4. Déployer vers Dolibarr
+
+═══════════════════════════════════════════════════════════════════════════

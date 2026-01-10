@@ -1,0 +1,18 @@
+#!/bin/bash
+
+echo ""
+echo "═══════════════════════════════════════════════════════════════"
+echo "  🚀 MV-3 PRO - Démarrage Serveur Demo"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+echo "  📦 Installation dépendances (si nécessaire)..."
+echo ""
+
+npm install > /dev/null 2>&1
+
+echo "  ✅ Dépendances OK"
+echo ""
+echo "  🌐 Démarrage serveur..."
+echo ""
+
+npm run dev

@@ -1,0 +1,11 @@
+{
+  "name": "mv3pro-demo",
+  "version": "1.0.0",
+  "description": "MV-3 PRO Demo Server",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

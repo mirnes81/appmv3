@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MV-3 PRO - Démo Module Dolibarr</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            color: #0891b2;
+            margin-bottom: 10px;
+        }
+
+        .header .version {
+            color: #666;
+            font-size: 18px;
+        }
+
+        .header .tagline {
+            color: #999;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+            border-radius: 15px;
+            padding: 40px 30px;
+            color: white;
+            text-decoration: none;
+            display: block;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(45deg);
+            transition: all 0.5s;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card:hover::before {
+            right: -100%;
+        }
+
+        .card.dashboard {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+        }
+
+        .card-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .card-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .card-description {
+            font-size: 16px;
+            opacity: 0.9;
+            position: relative;
+        }
+
+        .features {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .features h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .features ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .features li {
+            color: #555;
+            padding: 10px 0;
+            font-size: 16px;
+        }
+
+        .features li:before {
+            content: '✓';
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #0891b2;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin-top: 40px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 36px;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 MV-3 PRO</h1>
+            <div class="version">Version 2.0.0-minimal</div>
+            <div class="tagline">Module Dolibarr + PWA Mobile</div>
+            <span class="badge">✓ Prêt à déployer</span>
+        </div>
+
+        <div class="cards">
+            <a href="/pwa" class="card" target="_blank">
+                <div class="card-icon">📱</div>
+                <div class="card-title">PWA Mobile</div>
+                <div class="card-description">
+                    Application mobile pour techniciens avec planning et upload photos
+                </div>
+            </a>
+
+            <a href="/dashboard-demo" class="card dashboard">
+                <div class="card-icon">📊</div>
+                <div class="card-title">Dashboard Demo</div>
+                <div class="card-description">
+                    Aperçu du dashboard Dolibarr avec widgets et statistiques
+                </div>
+            </a>
+        </div>
+
+        <div class="features">
+            <h2>✨ Fonctionnalités</h2>
+            <ul>
+                <li>Dashboard avec widgets Planning</li>
+                <li>Statistiques temps réel</li>
+                <li>Planning 7 prochains jours</li>
+                <li>Activité par technicien</li>
+                <li>PWA installable (offline)</li>
+                <li>Upload photos depuis mobile</li>
+                <li>API REST (11 endpoints)</li>
+                <li>Authentification sécurisée</li>
+                <li>Design moderne et responsive</li>
+                <li>Compatible Dolibarr 14+</li>
+            </ul>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value">17</div>
+                <div class="stat-label">Fichiers PHP</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">11</div>
+                <div class="stat-label">API Endpoints</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">3</div>
+                <div class="stat-label">Menus</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">92%</div>
+                <div class="stat-label">Code réduit</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Structure :</strong> new_dolibarr/mv3pro_portail/ → custom/mv3pro_portail/</p>
+            <p style="margin-top: 10px;">MV-3 PRO Team • 2024</p>
+        </div>
+    </div>
+</body>
+</html>

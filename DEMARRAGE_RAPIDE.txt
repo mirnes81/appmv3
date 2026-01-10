@@ -1,0 +1,77 @@
+═══════════════════════════════════════════════════════════════════════════
+  🚀 DÉMARRAGE RAPIDE - MV-3 PRO DEMO
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 LANCER LA DEMO EN 10 SECONDES
+
+  Linux / Mac:
+  $ ./START.sh
+
+  Windows:
+  > START.bat
+
+  Ou manuellement:
+  $ npm run dev
+
+═══════════════════════════════════════════════════════════════════════════
+
+🌐 URLS DISPONIBLES
+
+  Une fois le serveur démarré:
+
+  🏠 Accueil:           http://localhost:3000
+  📱 PWA Mobile:        http://localhost:3000/pwa
+  📊 Dashboard Demo:    http://localhost:3000/dashboard-demo
+
+═══════════════════════════════════════════════════════════════════════════
+
+📱 TESTER LA PWA
+
+  1. Ouvrir:  http://localhost:3000/pwa
+  2. Login:   demo
+  3. Pass:    demo
+  4. Explorer le planning, détails, upload photos
+
+═══════════════════════════════════════════════════════════════════════════
+
+📊 VOIR LE DASHBOARD
+
+  1. Ouvrir:  http://localhost:3000/dashboard-demo
+  2. Voir les widgets statistiques
+  3. Voir l'activité par technicien
+  4. Voir le planning 7 prochains jours
+
+═══════════════════════════════════════════════════════════════════════════
+
+📦 DÉPLOYER VERS DOLIBARR
+
+  Dossier à déployer:   new_dolibarr/mv3pro_portail/
+  Destination:          custom/mv3pro_portail/
+
+  Voir fichier: DEPLOIEMENT_FINAL.md
+
+═══════════════════════════════════════════════════════════════════════════
+
+✅ CONTENU DU BUILD
+
+  ✅ Module Dolibarr complet (17 fichiers PHP)
+  ✅ Dashboard avec widgets
+  ✅ PWA buildée et prête
+  ✅ API REST (11 endpoints)
+  ✅ Documentation complète
+
+═══════════════════════════════════════════════════════════════════════════
+
+⚡ COMMANDES UTILES
+
+  Démarrer serveur:     npm run dev
+  Builder PWA:          cd new_dolibarr/mv3pro_portail/pwa && npm run build
+  Dev PWA:              cd new_dolibarr/mv3pro_portail/pwa && npm run dev
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎉 BON TEST !
+
+  Le build est prêt. Testez la démo puis déployez vers Dolibarr.
+
+═══════════════════════════════════════════════════════════════════════════
