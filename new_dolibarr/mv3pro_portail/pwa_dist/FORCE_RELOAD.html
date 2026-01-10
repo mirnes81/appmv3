@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MV3 PRO - Forcer le rechargement</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+        p {
+            color: #6b7280;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .warning {
+            background: #f59e0b;
+        }
+        .warning:hover {
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.4);
+        }
+        .danger {
+            background: #ef4444;
+        }
+        .danger:hover {
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.4);
+        }
+        .success {
+            background: #10b981;
+        }
+        .success:hover {
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
+        }
+        #status {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 12px;
+            display: none;
+            text-align: center;
+            font-weight: 600;
+        }
+        #status.show {
+            display: block;
+        }
+        #status.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        #status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        #status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .step {
+            background: #f3f4f6;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .step-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        .step-desc {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .countdown {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Forcer le rechargement complet</h1>
+        <p>Si vous rencontrez des erreurs 404 ou si l'application ne charge pas correctement, utilisez cette page pour forcer un rechargement complet.</p>
+
+        <div class="step">
+            <div class="step-title">Étape 1: Désactiver le Service Worker</div>
+            <div class="step-desc">Supprime le Service Worker qui peut cacher des anciennes versions</div>
+        </div>
+
+        <button onclick="unregisterServiceWorker()">1. Désactiver le Service Worker</button>
+
+        <div class="step">
+            <div class="step-title">Étape 2: Vider tout le cache</div>
+            <div class="step-desc">Efface tous les fichiers mis en cache par l'application</div>
+        </div>
+
+        <button class="warning" onclick="clearAllCaches()">2. Vider le cache complet</button>
+
+        <div class="step">
+            <div class="step-title">Étape 3: Effacer le token</div>
+            <div class="step-desc">Supprime le token d'authentification (vous devrez vous reconnecter)</div>
+        </div>
+
+        <button class="danger" onclick="clearToken()">3. Effacer le token</button>
+
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid #e5e7eb;">
+
+        <button class="success" onclick="reloadApp()">Ouvrir l'application</button>
+
+        <div id="status"></div>
+        <div id="countdown" class="countdown" style="display: none;"></div>
+    </div>
+
+    <script>
+        let statusEl = document.getElementById('status');
+        let countdownEl = document.getElementById('countdown');
+
+        function showStatus(message, type = 'info') {
+            statusEl.textContent = message;
+            statusEl.className = 'show ' + type;
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 5000);
+        }
+
+        async function unregisterServiceWorker() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    if (registrations.length === 0) {
+                        showStatus('Aucun Service Worker à désactiver', 'info');
+                        return;
+                    }
+
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                    showStatus(`${registrations.length} Service Worker(s) désactivé(s)`, 'success');
+                    console.log('[FORCE_RELOAD] Service Workers unregistered');
+                } else {
+                    showStatus('Service Worker non supporté par ce navigateur', 'info');
+                }
+            } catch (error) {
+                showStatus('Erreur lors de la désactivation: ' + error.message, 'error');
+                console.error('[FORCE_RELOAD] Error unregistering SW:', error);
+            }
+        }
+
+        async function clearAllCaches() {
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    if (cacheNames.length === 0) {
+                        showStatus('Aucun cache à vider', 'info');
+                        return;
+                    }
+
+                    for (let cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                    }
+                    showStatus(`${cacheNames.length} cache(s) supprimé(s)`, 'success');
+                    console.log('[FORCE_RELOAD] All caches cleared:', cacheNames);
+                } else {
+                    showStatus('Cache API non supportée par ce navigateur', 'info');
+                }
+
+                // Clear localStorage cache aussi
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('cache') || key.includes('version'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+
+                if (keysToRemove.length > 0) {
+                    console.log('[FORCE_RELOAD] Removed localStorage cache keys:', keysToRemove);
+                }
+
+            } catch (error) {
+                showStatus('Erreur lors du vidage: ' + error.message, 'error');
+                console.error('[FORCE_RELOAD] Error clearing caches:', error);
+            }
+        }
+
+        function clearToken() {
+            try {
+                localStorage.removeItem('mv3pro_token');
+                localStorage.removeItem('mv3pro_debug');
+                sessionStorage.clear();
+                showStatus('Token et sessions effacés', 'success');
+                console.log('[FORCE_RELOAD] Token and sessions cleared');
+            } catch (error) {
+                showStatus('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        function reloadApp() {
+            showStatus('Redirection vers l\'application...', 'info');
+
+            // Countdown animation
+            countdownEl.style.display = 'block';
+            let count = 3;
+            countdownEl.textContent = count;
+
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownEl.textContent = count;
+                } else {
+                    clearInterval(interval);
+                    // Force hard reload with cache bypass
+                    window.location.href = './index.html?nocache=' + Date.now();
+                }
+            }, 1000);
+        }
+
+        // Auto-check sur le chargement
+        window.onload = async function() {
+            console.log('[FORCE_RELOAD] Page loaded');
+
+            // Afficher les infos actuelles
+            const token = localStorage.getItem('mv3pro_token');
+            const debug = localStorage.getItem('mv3pro_debug');
+
+            console.log('[FORCE_RELOAD] Current state:', {
+                hasToken: !!token,
+                tokenPreview: token ? token.substring(0, 20) + '...' : 'none',
+                debugMode: debug === 'true',
+            });
+
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                console.log('[FORCE_RELOAD] Active Service Workers:', registrations.length);
+            }
+
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                console.log('[FORCE_RELOAD] Active caches:', cacheNames);
+            }
+        };
+    </script>
+</body>
+</html>

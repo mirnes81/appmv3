@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MV3 PRO - Démarrer ici</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 16px;
+            font-size: 32px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 32px;
+            font-size: 18px;
+        }
+        .alert {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 32px;
+        }
+        .alert-title {
+            font-weight: 600;
+            color: #991b1b;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        .alert-text {
+            color: #7f1d1d;
+            line-height: 1.6;
+        }
+        .btn-group {
+            margin-bottom: 24px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .btn-danger:hover {
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .btn-warning:hover {
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+        }
+        .btn-info {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        .btn-info:hover {
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+        }
+        .divider {
+            border: none;
+            border-top: 2px solid #e5e7eb;
+            margin: 32px 0;
+        }
+        .info-box {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 24px;
+        }
+        .info-box h3 {
+            color: #374151;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .info-box p {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .emoji {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="emoji">📱</div>
+        <h1>MV3 PRO</h1>
+        <p class="subtitle">Application Mobile Professionnelle</p>
+
+        <div class="alert">
+            <div class="alert-title">Vous avez une erreur 404?</div>
+            <div class="alert-text">
+                Si l'application affiche "Erreur 404" ou ne charge pas correctement,
+                cliquez d'abord sur le bouton rouge ci-dessous avant d'ouvrir l'application.
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-danger" onclick="window.location.href='./FORCE_RELOAD.html'">
+                🔄 FORCER LE RECHARGEMENT
+            </button>
+            <button onclick="window.location.href='./index.html'">
+                ✅ OUVRIR L'APPLICATION
+            </button>
+        </div>
+
+        <hr class="divider">
+
+        <h3 style="color: #374151; margin-bottom: 16px;">Outils disponibles</h3>
+
+        <button class="btn-warning" onclick="window.location.href='./DEBUG_MODE.html'">
+            🔧 Mode Debug
+        </button>
+        <button class="btn-info" onclick="window.location.href='./AIDE.html'">
+            📖 Aide et Instructions
+        </button>
+
+        <div class="info-box">
+            <h3>Comment utiliser cette page?</h3>
+            <p>
+                <strong>Si c'est votre première visite ou si vous avez une erreur:</strong><br>
+                1. Cliquez sur "FORCER LE RECHARGEMENT"<br>
+                2. Suivez les 3 étapes<br>
+                3. Revenez ici et cliquez sur "OUVRIR L'APPLICATION"
+            </p>
+            <p style="margin-top: 12px;">
+                <strong>Si l'application fonctionne normalement:</strong><br>
+                Cliquez directement sur "OUVRIR L'APPLICATION"
+            </p>
+        </div>
+    </div>
+</body>
+</html>

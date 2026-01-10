@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MV3 PRO - Activer Debug</title>
+    <title>MV3 PRO - Mode Debug</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
@@ -11,6 +11,7 @@
             margin: 40px auto;
             padding: 20px;
             line-height: 1.6;
+            background: #f3f4f6;
         }
         .card {
             background: white;
@@ -45,6 +46,12 @@
         .warning:hover {
             background: #d97706;
         }
+        .danger {
+            background: #ef4444;
+        }
+        .danger:hover {
+            background: #dc2626;
+        }
         #status {
             margin-top: 20px;
             padding: 12px;
@@ -66,9 +73,40 @@
             color: #6b7280;
             margin-top: 0;
         }
+        #token-display {
+            word-break: break-all;
+            font-family: monospace;
+            background: #f3f4f6;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .alert {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        .alert-text {
+            color: #78350f;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
+    <div class="alert">
+        <div class="alert-title">Erreur 404 ou problèmes de chargement?</div>
+        <div class="alert-text">Si vous rencontrez des erreurs 404, utilisez le bouton "Forcer le rechargement complet" ci-dessous.</div>
+    </div>
+
     <div class="card">
         <h1>Mode Debug MV3 PRO</h1>
         <p>Activez le mode debug pour voir les logs détaillés de l'API</p>
@@ -76,17 +114,21 @@
         <button onclick="enableDebug()">Activer le mode debug</button>
         <button class="warning" onclick="disableDebug()">Désactiver le mode debug</button>
         <button class="success" onclick="goToPWA()">Ouvrir l'application</button>
+        <button class="danger" onclick="forceReload()">Forcer le rechargement complet</button>
 
         <div id="status"></div>
     </div>
 
     <div class="card">
         <h2>Token actuel</h2>
-        <p id="token-display" style="word-break: break-all; font-family: monospace; background: #f3f4f6; padding: 12px; border-radius: 6px;">
-            Aucun token
-        </p>
+        <p id="token-display">Aucun token</p>
         <button onclick="showToken()">Afficher le token</button>
         <button class="warning" onclick="clearToken()">Effacer le token</button>
+    </div>
+
+    <div class="card">
+        <h2>Informations système</h2>
+        <div id="system-info" style="font-size: 14px; font-family: monospace; line-height: 1.8;"></div>
     </div>
 
     <script>
@@ -104,11 +146,13 @@
             showStatus('Mode debug activé ! Ouvrez la console du navigateur.', 'info');
             console.log('[MV3PRO DEBUG] Mode debug activé');
             console.log('[MV3PRO DEBUG] Token:', localStorage.getItem('mv3pro_token'));
+            updateSystemInfo();
         }
 
         function disableDebug() {
             localStorage.removeItem('mv3pro_debug');
             showStatus('Mode debug désactivé', 'warning');
+            updateSystemInfo();
         }
 
         function showToken() {
@@ -127,10 +171,52 @@
             localStorage.removeItem('mv3pro_token');
             document.getElementById('token-display').textContent = 'Token effacé';
             showStatus('Token effacé. Reconnectez-vous.', 'warning');
+            updateSystemInfo();
         }
 
         function goToPWA() {
             window.location.href = './index.html';
+        }
+
+        function forceReload() {
+            window.location.href = './FORCE_RELOAD.html';
+        }
+
+        async function updateSystemInfo() {
+            const info = document.getElementById('system-info');
+            const token = localStorage.getItem('mv3pro_token');
+            const debug = localStorage.getItem('mv3pro_debug');
+
+            let html = '';
+            html += `<div>Token: ${token ? '✓ Présent (' + token.substring(0, 20) + '...)' : '✗ Absent'}</div>`;
+            html += `<div>Debug: ${debug === 'true' ? '✓ Activé' : '✗ Désactivé'}</div>`;
+            html += `<div>UserAgent: ${navigator.userAgent.substring(0, 60)}...</div>`;
+
+            // Service Worker
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    html += `<div>Service Worker: ${registrations.length} actif(s)</div>`;
+                } catch (e) {
+                    html += `<div>Service Worker: Erreur</div>`;
+                }
+            } else {
+                html += `<div>Service Worker: Non supporté</div>`;
+            }
+
+            // Caches
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    html += `<div>Caches: ${cacheNames.length} actif(s)</div>`;
+                } catch (e) {
+                    html += `<div>Caches: Erreur</div>`;
+                }
+            } else {
+                html += `<div>Caches: Non supporté</div>`;
+            }
+
+            info.innerHTML = html;
         }
 
         // Afficher l'état initial
@@ -139,6 +225,7 @@
             if (debugEnabled) {
                 showStatus('Mode debug déjà activé', 'info');
             }
+            updateSystemInfo();
         };
     </script>
 </body>

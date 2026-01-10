@@ -1,0 +1,44 @@
+═══════════════════════════════════════════════════════════════
+  MV3 PRO - URLs IMPORTANTES
+═══════════════════════════════════════════════════════════════
+
+🚨 ERREUR 404? OUVREZ CETTE URL EN PREMIER:
+https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/FORCE_RELOAD.html
+
+───────────────────────────────────────────────────────────────
+
+📱 APPLICATION PRINCIPALE
+https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/
+
+───────────────────────────────────────────────────────────────
+
+🔧 OUTILS DE DIAGNOSTIC
+
+Debug Mode:
+https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/DEBUG_MODE.html
+
+Forcer rechargement:
+https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/FORCE_RELOAD.html
+
+Aide et instructions:
+https://crm.mv-3pro.ch/custom/mv3pro_portail/pwa_dist/AIDE.html
+
+───────────────────────────────────────────────────────────────
+
+📋 PROCÉDURE EN CAS D'ERREUR 404
+
+1. Ouvrir: FORCE_RELOAD.html (URL ci-dessus)
+2. Cliquer sur les 3 boutons dans l'ordre:
+   - Désactiver le Service Worker
+   - Vider le cache complet
+   - Effacer le token
+3. Cliquer sur "Ouvrir l'application"
+4. Se reconnecter
+
+───────────────────────────────────────────────────────────────
+
+💾 SAUVEGARDEZ CES URLS!
+
+Ajoutez cette page à vos favoris ou prenez une capture d'écran.
+
+═══════════════════════════════════════════════════════════════
