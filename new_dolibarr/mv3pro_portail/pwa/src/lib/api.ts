@@ -376,6 +376,10 @@ export const api = {
     });
   },
 
+  async rapportsDebug(): Promise<any> {
+    return apiFetch('/rapports_debug.php');
+  },
+
   async regieList(): Promise<any[]> {
     throw new ApiError('Endpoint non disponible (à créer)', 501);
   },

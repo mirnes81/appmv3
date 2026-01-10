@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
-import { storage } from '../lib/api';
+import { api, storage } from '../lib/api';
 import { API_PATHS } from '../config';
 
 interface TestResult {
@@ -48,12 +48,28 @@ interface PlanningDebugReport {
   diagnostic: any[];
 }
 
+interface RapportsDebugReport {
+  success: boolean;
+  debug_info: {
+    user_info: any;
+    entity: number;
+    total_rapports: number;
+    rapports_by_user: Record<number, number>;
+    rapports_with_filter: number;
+    filter_applied: string;
+    recent_rapports: any[];
+  };
+  recommendation: string;
+  solution: string;
+}
+
 export function Debug() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [backendReport, setBackendReport] = useState<BackendReport | null>(null);
   const [frontendTests, setFrontendTests] = useState<TestResult[]>([]);
   const [planningDebug, setPlanningDebug] = useState<PlanningDebugReport | null>(null);
+  const [rapportsDebug, setRapportsDebug] = useState<RapportsDebugReport | null>(null);
   const [debugMode, setDebugMode] = useState(
     localStorage.getItem('mv3pro_debug') === 'true'
   );
@@ -183,6 +199,31 @@ export function Debug() {
             message: 'Erreur lors du diagnostic: ' + error.message,
           },
         ],
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testRapportsDebug = async () => {
+    setLoading(true);
+    try {
+      const data = await api.rapportsDebug();
+      setRapportsDebug(data);
+    } catch (error: any) {
+      setRapportsDebug({
+        success: false,
+        debug_info: {
+          user_info: {},
+          entity: 0,
+          total_rapports: 0,
+          rapports_by_user: {},
+          rapports_with_filter: 0,
+          filter_applied: 'ERROR',
+          recent_rapports: [],
+        },
+        recommendation: 'Erreur lors du diagnostic: ' + error.message,
+        solution: 'Vérifier les logs serveur',
       });
     } finally {
       setLoading(false);
@@ -359,7 +400,24 @@ export function Debug() {
             Diagnostic Planning
           </button>
 
-          {(backendReport || frontendTests.length > 0 || planningDebug) && (
+          <button
+            onClick={testRapportsDebug}
+            disabled={loading}
+            style={{
+              padding: '12px 24px',
+              background: loading ? '#9ca3af' : '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Diagnostic Rapports
+          </button>
+
+          {(backendReport || frontendTests.length > 0 || planningDebug || rapportsDebug) && (
             <button
               onClick={exportReport}
               style={{
@@ -930,6 +988,191 @@ export function Debug() {
                         <div><strong>Terminé ID:</strong> {event.fk_user_done}</div>
                       </div>
                     </details>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rapports Debug */}
+        {rapportsDebug && !loading && (
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px' }}>
+              📋 Diagnostic Rapports
+            </h3>
+
+            {/* Recommendation Box */}
+            {rapportsDebug.recommendation && (
+              <div
+                style={{
+                  background: '#fef2f2',
+                  border: '2px solid #ef4444',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  marginBottom: '16px',
+                }}
+              >
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#991b1b', marginBottom: '8px' }}>
+                  ⚠️ PROBLÈME DÉTECTÉ
+                </div>
+                <div style={{ fontSize: '14px', color: '#7f1d1d', marginBottom: '12px' }}>
+                  {rapportsDebug.recommendation}
+                </div>
+                {rapportsDebug.solution && (
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      color: '#7f1d1d',
+                      background: '#fee2e2',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    <strong>Solution:</strong> {rapportsDebug.solution}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* User Info */}
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                Utilisateur connecté
+              </h4>
+              <div style={{ background: 'white', borderRadius: '8px', padding: '12px', border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>Mode auth:</strong> {rapportsDebug.debug_info.user_info?.mode || 'N/A'}
+                </div>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>Email:</strong> {rapportsDebug.debug_info.user_info?.email || 'N/A'}
+                </div>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>User ID Dolibarr:</strong>{' '}
+                  <span
+                    style={{
+                      color: rapportsDebug.debug_info.user_info?.user_id ? '#059669' : '#ef4444',
+                      fontWeight: '600',
+                    }}
+                  >
+                    {rapportsDebug.debug_info.user_info?.user_id || 'NULL'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>Mobile User ID:</strong> {rapportsDebug.debug_info.user_info?.mobile_user_id || 'N/A'}
+                </div>
+                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                  <strong>Est non lié:</strong>{' '}
+                  <span style={{ color: rapportsDebug.debug_info.user_info?.is_unlinked ? '#ef4444' : '#059669' }}>
+                    {rapportsDebug.debug_info.user_info?.is_unlinked ? 'OUI' : 'NON'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                Statistiques Rapports
+              </h4>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '8px', border: '1px solid #059669', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669' }}>
+                    {rapportsDebug.debug_info.total_rapports}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#047857', marginTop: '4px' }}>Total rapports (entité)</div>
+                </div>
+                <div style={{ background: rapportsDebug.debug_info.rapports_with_filter > 0 ? '#f0fdf4' : '#fef2f2', padding: '12px', borderRadius: '8px', border: `2px solid ${rapportsDebug.debug_info.rapports_with_filter > 0 ? '#059669' : '#ef4444'}`, textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: rapportsDebug.debug_info.rapports_with_filter > 0 ? '#059669' : '#ef4444' }}>
+                    {rapportsDebug.debug_info.rapports_with_filter}
+                  </div>
+                  <div style={{ fontSize: '12px', color: rapportsDebug.debug_info.rapports_with_filter > 0 ? '#047857' : '#991b1b', marginTop: '4px' }}>Visibles (avec filtre)</div>
+                </div>
+              </div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px', textAlign: 'center' }}>
+                <strong>Filtre appliqué:</strong> {rapportsDebug.debug_info.filter_applied}
+              </div>
+            </div>
+
+            {/* Rapports par utilisateur */}
+            {Object.keys(rapportsDebug.debug_info.rapports_by_user).length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  Rapports par utilisateur
+                </h4>
+                <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                  {Object.entries(rapportsDebug.debug_info.rapports_by_user).map(([user_id, count], idx) => (
+                    <div
+                      key={user_id}
+                      style={{
+                        padding: '8px 12px',
+                        borderBottom: idx < Object.keys(rapportsDebug.debug_info.rapports_by_user).length - 1 ? '1px solid #e5e7eb' : 'none',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <span style={{ fontSize: '13px' }}>
+                        <strong>User ID {user_id}</strong>
+                        {rapportsDebug.debug_info.user_info?.user_id && parseInt(user_id) === rapportsDebug.debug_info.user_info.user_id && (
+                          <span style={{ color: '#059669', marginLeft: '8px' }}>(vous)</span>
+                        )}
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#0891b2' }}>{count} rapport(s)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent rapports */}
+            {rapportsDebug.debug_info.recent_rapports && rapportsDebug.debug_info.recent_rapports.length > 0 && (
+              <div>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  5 derniers rapports (sans filtre)
+                </h4>
+                <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                  {rapportsDebug.debug_info.recent_rapports.map((rapport, idx) => (
+                    <div
+                      key={rapport.rowid}
+                      style={{
+                        padding: '12px',
+                        borderBottom: idx < rapportsDebug.debug_info.recent_rapports.length - 1 ? '1px solid #e5e7eb' : 'none',
+                      }}
+                    >
+                      <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                        {rapport.ref || `Rapport #${rapport.rowid}`}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                        <strong>Projet:</strong> {rapport.projet_title || 'N/A'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                        <strong>Date:</strong> {rapport.date_rapport}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                        <strong>fk_user:</strong>{' '}
+                        <span
+                          style={{
+                            color: rapport.fk_user === rapportsDebug.debug_info.user_info?.user_id ? '#059669' : '#6b7280',
+                            fontWeight: rapport.fk_user === rapportsDebug.debug_info.user_info?.user_id ? '700' : '400',
+                          }}
+                        >
+                          {rapport.fk_user}
+                        </span>
+                        {rapport.fk_user === rapportsDebug.debug_info.user_info?.user_id && (
+                          <span style={{ color: '#059669', marginLeft: '4px' }}>(correspond!)</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                        <strong>Ouvrier:</strong> {rapport.user_name || rapport.user_login || 'N/A'}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
