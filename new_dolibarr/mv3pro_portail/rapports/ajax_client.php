@@ -35,10 +35,14 @@ if ($client_id) {
 
     if ($resql && $obj = $db->fetch_object($resql)) {
         $address_parts = array();
-        if ($obj->address) $address_parts[] = $obj->address;
+        if ($obj->address) {
+            $address_parts[] = $obj->address;
+        }
         if ($obj->zip || $obj->town) {
             $location = trim($obj->zip.' '.$obj->town);
-            if ($location) $address_parts[] = $location;
+            if ($location) {
+                $address_parts[] = $location;
+            }
         }
 
         $full_address = !empty($address_parts) ? implode(', ', $address_parts) : '';
@@ -88,10 +92,14 @@ if ($debug) {
 if ($resql) {
     while ($obj = $db->fetch_object($resql)) {
         $address_parts = array();
-        if ($obj->address) $address_parts[] = $obj->address;
+        if ($obj->address) {
+            $address_parts[] = $obj->address;
+        }
         if ($obj->zip || $obj->town) {
             $location = trim($obj->zip.' '.$obj->town);
-            if ($location) $address_parts[] = $location;
+            if ($location) {
+                $address_parts[] = $location;
+            }
         }
 
         $clients[] = array(
@@ -136,10 +144,14 @@ if ($resql2) {
 
         if (!$already_added) {
             $address_parts = array();
-            if ($obj->address) $address_parts[] = $obj->address;
+            if ($obj->address) {
+                $address_parts[] = $obj->address;
+            }
             if ($obj->zip || $obj->town) {
                 $location = trim($obj->zip.' '.$obj->town);
-                if ($location) $address_parts[] = $location;
+                if ($location) {
+                    $address_parts[] = $location;
+                }
             }
 
             $clients[] = array(
@@ -176,10 +188,14 @@ if (count($clients) == 0) {
     if ($resql3) {
         while ($obj = $db->fetch_object($resql3)) {
             $address_parts = array();
-            if ($obj->address) $address_parts[] = $obj->address;
+            if ($obj->address) {
+                $address_parts[] = $obj->address;
+            }
             if ($obj->zip || $obj->town) {
                 $location = trim($obj->zip.' '.$obj->town);
-                if ($location) $address_parts[] = $location;
+                if ($location) {
+                    $address_parts[] = $location;
+                }
             }
 
             $clients[] = array(

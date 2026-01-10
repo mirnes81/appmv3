@@ -313,8 +313,12 @@ $data['unpaid_invoices'] = $unpaid_invoices;
 // Helper function
 function human_time_diff($from, $to) {
     $diff = $to - $from;
-    if ($diff < 3600) return round($diff/60).' min';
-    if ($diff < 86400) return round($diff/3600).' h';
+    if ($diff < 3600) {
+        return round($diff/60).' min';
+    }
+    if ($diff < 86400) {
+        return round($diff/3600).' h';
+    }
     return round($diff/86400).' j';
 }
 

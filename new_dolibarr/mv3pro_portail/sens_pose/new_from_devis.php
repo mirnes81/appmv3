@@ -8,7 +8,9 @@ $res = 0;
 if (!$res && file_exists("../../main.inc.php")) $res = @include "../../main.inc.php";
 if (!$res && file_exists("../../../main.inc.php")) $res = @include "../../../main.inc.php";
 
-if (!$res) die("Include of main fails");
+if (!$res) {
+    die("Include of main fails");
+}
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';

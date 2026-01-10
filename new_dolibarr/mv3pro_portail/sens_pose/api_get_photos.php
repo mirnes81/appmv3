@@ -7,7 +7,9 @@ $res = 0;
 if (!$res && file_exists("../../main.inc.php")) $res = @include "../../main.inc.php";
 if (!$res && file_exists("../../../main.inc.php")) $res = @include "../../../main.inc.php";
 
-if (!$res) die(json_encode(['error' => 'Include of main fails']));
+if (!$res) {
+    die(json_encode(['error' => 'Include of main fails']));
+}
 
 header('Content-Type: application/json');
 

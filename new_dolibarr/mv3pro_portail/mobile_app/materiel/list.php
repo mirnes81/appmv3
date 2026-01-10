@@ -175,7 +175,9 @@ $resql = $db->query($sql);
         }
 
         function scanQR(video) {
-            if (!scanning) return;
+            if (!scanning) {
+                return;
+            }
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');

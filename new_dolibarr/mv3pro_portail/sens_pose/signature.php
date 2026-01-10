@@ -284,7 +284,9 @@ function startDrawing(e) {
 }
 
 function draw(e) {
-    if (!isDrawing) return;
+    if (!isDrawing) {
+        return;
+    }
 
     e.preventDefault();
 

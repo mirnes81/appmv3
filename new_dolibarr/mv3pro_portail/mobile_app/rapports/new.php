@@ -532,11 +532,17 @@ $resql_projets = $db->query($sql_projets);
             let parts = [];
             if (typeLieu) {
                 let prefix = typeLieu;
-                if (numeroLieu) prefix += ' ' + numeroLieu;
+                if (numeroLieu) {
+                    prefix += ' ' + numeroLieu;
+                }
                 parts.push(prefix);
             }
-            if (selectedZones.length > 0) parts.push(selectedZones.join(', '));
-            if (zoneAutre) parts.push(zoneAutre);
+            if (selectedZones.length > 0) {
+                parts.push(selectedZones.join(', '));
+            }
+            if (zoneAutre) {
+                parts.push(zoneAutre);
+            }
 
             const finalText = parts.join(' - ');
             if (finalText) {
@@ -651,7 +657,9 @@ $resql_projets = $db->query($sql_projets);
             const dt = new DataTransfer();
 
             allPhotos.forEach(file => {
-                if (file) dt.items.add(file);
+                if (file) {
+                    dt.items.add(file);
+                }
             });
 
             photoInput.files = dt.files;

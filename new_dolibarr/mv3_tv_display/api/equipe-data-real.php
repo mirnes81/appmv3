@@ -101,8 +101,12 @@ if ($resql) {
         $obj = $db->fetch_object($resql);
 
         $status = 'done';
-        if ($obj->statut == 'brouillon') $status = 'in-progress';
-        if (!$obj->heures_fin) $status = 'in-progress';
+        if ($obj->statut == 'brouillon') {
+            $status = 'in-progress';
+        }
+        if (!$obj->heures_fin) {
+            $status = 'in-progress';
+        }
 
         $tasks[] = array(
             'time' => substr($obj->heures_debut, 0, 5),
@@ -190,9 +194,15 @@ if ($resql) {
         $obj = $db->fetch_object($resql);
 
         $badge = null;
-        if ($obj->m2_week >= 200) $badge = '⚡'; // Speed demon
-        if ($obj->m2_week >= 150) $badge = '⭐'; // Star
-        if ($obj->nb_rapports >= 5) $badge = '📅'; // Regular
+        if ($obj->m2_week >= 200) {
+            $badge = '⚡'; // Speed demon
+        }
+        if ($obj->m2_week >= 150) {
+            $badge = '⭐'; // Star
+        }
+        if ($obj->nb_rapports >= 5) {
+            $badge = '📅'; // Regular
+        }
 
         $leaderboard[] = array(
             'name' => $obj->firstname.' '.$obj->lastname,

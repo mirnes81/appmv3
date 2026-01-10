@@ -7,7 +7,9 @@ $res = 0;
 if (!$res && file_exists("../../main.inc.php")) $res = @include "../../main.inc.php";
 if (!$res && file_exists("../../../main.inc.php")) $res = @include "../../../main.inc.php";
 
-if (!$res) die("Include of main fails");
+if (!$res) {
+    die("Include of main fails");
+}
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 
@@ -1548,7 +1550,9 @@ function setJointCiment(nom, color) {
     const inputName = document.querySelector('[name="joint_ciment"]') || document.getElementById('joint_ciment');
     const inputColor = document.querySelector('[name="joint_ciment_color"]') || document.getElementById('joint_ciment_color');
 
-    if (inputName) inputName.value = 'Laticrete ' + nom;
+    if (inputName) {
+        inputName.value = 'Laticrete ' + nom;
+    }
     if (inputColor && color !== 'transparent') {
         inputColor.value = color;
     }
@@ -1558,7 +1562,9 @@ function setJointSilicone(nom, color) {
     const inputName = document.querySelector('[name="joint_silicone"]') || document.getElementById('joint_silicone');
     const inputColor = document.querySelector('[name="joint_silicone_color"]') || document.getElementById('joint_silicone_color');
 
-    if (inputName) inputName.value = 'Laticrete ' + nom;
+    if (inputName) {
+        inputName.value = 'Laticrete ' + nom;
+    }
     if (inputColor && color !== 'transparent') {
         inputColor.value = color;
     }

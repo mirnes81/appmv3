@@ -8,7 +8,9 @@ $res = 0;
 if (!$res && file_exists("../../main.inc.php")) $res = @include "../../main.inc.php";
 if (!$res && file_exists("../../../main.inc.php")) $res = @include "../../../main.inc.php";
 
-if (!$res) die(json_encode(['error' => 'Include of main fails']));
+if (!$res) {
+    die(json_encode(['error' => 'Include of main fails']));
+}
 
 require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';

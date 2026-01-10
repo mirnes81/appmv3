@@ -8,7 +8,9 @@ $res = 0;
 if (!$res && file_exists("../../main.inc.php")) $res = @include "../../main.inc.php";
 if (!$res && file_exists("../../../main.inc.php")) $res = @include "../../../main.inc.php";
 
-if (!$res) die(json_encode(['error' => 'Include main fails']));
+if (!$res) {
+    die(json_encode(['error' => 'Include main fails']));
+}
 
 require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
@@ -61,9 +63,15 @@ while ($devis_obj = $db->fetch_object($resql_devis)) {
 
     // Pour chaque ligne du devis
     foreach ($propal->lines as $line) {
-        if ($line->fk_product <= 0) continue;
-        if ($line->product_type == 9) continue;
-        if ($line->total_ht < 0 || $line->qty <= 0) continue;
+        if ($line->fk_product <= 0) {
+            continue;
+        }
+        if ($line->product_type == 9) {
+            continue;
+        }
+        if ($line->total_ht < 0 || $line->qty <= 0) {
+            continue;
+        }
 
         // Chercher si le nom de la pièce est dans la description ou le label
         $description = strtolower($line->desc ?? '');
@@ -74,15 +82,25 @@ while ($devis_obj = $db->fetch_object($resql_devis)) {
 
         // Score de correspondance
         if (!empty($piece_name)) {
-            if (stripos($description, $search_term) !== false) $match_score += 10;
-            if (stripos($label, $search_term) !== false) $match_score += 10;
+            if (stripos($description, $search_term) !== false) {
+                $match_score += 10;
+            }
+            if (stripos($label, $search_term) !== false) {
+                $match_score += 10;
+            }
 
             // Mots clés
             $keywords = explode(' ', $search_term);
             foreach ($keywords as $keyword) {
-                if (strlen($keyword) < 3) continue;
-                if (stripos($description, $keyword) !== false) $match_score += 3;
-                if (stripos($label, $keyword) !== false) $match_score += 3;
+                if (strlen($keyword) < 3) {
+                    continue;
+                }
+                if (stripos($description, $keyword) !== false) {
+                    $match_score += 3;
+                }
+                if (stripos($label, $keyword) !== false) {
+                    $match_score += 3;
+                }
             }
         } else {
             // Si pas de nom de pièce, retourner tous les produits avec photos

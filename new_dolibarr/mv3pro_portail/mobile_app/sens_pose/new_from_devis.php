@@ -34,7 +34,9 @@ function getProductImage($product_ref) {
     $files = scandir($product_dir);
 
     foreach ($files as $file) {
-        if ($file == '.' || $file == '..') continue;
+        if ($file == '.' || $file == '..') {
+            continue;
+        }
         $ext = pathinfo($file, PATHINFO_EXTENSION);
         if (in_array($ext, $photo_extensions)) {
             return array(

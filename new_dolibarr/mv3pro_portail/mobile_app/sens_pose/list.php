@@ -170,7 +170,9 @@ if ($resql) {
             const statut = '<?php echo $statut_filter; ?>';
             const url = new URL(window.location.href);
             url.searchParams.set('search', search);
-            if (statut) url.searchParams.set('statut', statut);
+            if (statut) {
+                url.searchParams.set('statut', statut);
+            }
             window.location.href = url.toString();
         }, 500);
     });

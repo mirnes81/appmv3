@@ -268,7 +268,9 @@ if (!empty($recent_errors)) {
 
         // Type
         $type_color = 'gray';
-        if (strpos($error['error_type'], 'SQL') !== false) $type_color = 'red';
+        if (strpos($error['error_type'], 'SQL') !== false) {
+            $type_color = 'red';
+        }
         elseif (strpos($error['error_type'], 'AUTH') !== false) $type_color = 'orange';
         elseif (strpos($error['error_type'], 'API') !== false) $type_color = 'blue';
         print '<td><span style="color: '.$type_color.'; font-weight: bold;">'.$error['error_type'].'</span></td>';

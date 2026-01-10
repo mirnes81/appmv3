@@ -61,7 +61,9 @@ $image_file = null;
 $files = @scandir($product_dir);
 if ($files) {
     foreach ($files as $file) {
-        if ($file == '.' || $file == '..') continue;
+        if ($file == '.' || $file == '..') {
+            continue;
+        }
 
         $ext = pathinfo($file, PATHINFO_EXTENSION);
         if (in_array($ext, $photo_extensions)) {

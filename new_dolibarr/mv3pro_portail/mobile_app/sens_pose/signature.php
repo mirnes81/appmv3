@@ -214,7 +214,9 @@ if ($fiche->statut == 'signe') {
     }
 
     function draw(e) {
-        if (!isDrawing) return;
+        if (!isDrawing) {
+            return;
+        }
         e.preventDefault();
 
         const coords = getCoordinates(e);

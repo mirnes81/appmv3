@@ -145,7 +145,9 @@ if ($resql_top) {
             $obj = $db->fetch_object($resql_top);
             print '<tr class="oddeven">';
             print '<td>';
-            if ($i === 0) print '🥇 ';
+            if ($i === 0) {
+                print '🥇 ';
+            }
             elseif ($i === 1) print '🥈 ';
             elseif ($i === 2) print '🥉 ';
             print $obj->firstname.' '.$obj->lastname;

@@ -695,7 +695,9 @@ $resql_projets = $db->query($sql_projets);
 
         function applyDirectHours() {
             const hours = parseFloat(document.getElementById('directHours').value || 0);
-            if (hours <= 0) return;
+            if (hours <= 0) {
+                return;
+            }
 
             const now = new Date();
             const debut = new Date(now);
@@ -895,15 +897,33 @@ $resql_projets = $db->query($sql_projets);
                     }
                 }
 
-                if (rapport.zone_travail) form.querySelector('[name="zone_travail"]').value = rapport.zone_travail;
-                if (rapport.heures_debut) form.querySelector('[name="heures_debut"]').value = rapport.heures_debut;
-                if (rapport.heures_fin) form.querySelector('[name="heures_fin"]').value = rapport.heures_fin;
-                if (rapport.surface_carrelee) form.querySelector('[name="surface_carrelee"]').value = rapport.surface_carrelee;
-                if (rapport.format_carreaux) form.querySelector('[name="format_carreaux"]').value = rapport.format_carreaux;
-                if (rapport.type_pose) form.querySelector('[name="type_pose"]').value = rapport.type_pose;
-                if (rapport.zone_pose) form.querySelector('[name="zone_pose"]').value = rapport.zone_pose;
-                if (rapport.travaux_realises) form.querySelector('[name="travaux_realises"]').value = rapport.travaux_realises;
-                if (rapport.observations) form.querySelector('[name="observations"]').value = rapport.observations;
+                if (rapport.zone_travail) {
+                    form.querySelector('[name="zone_travail"]').value = rapport.zone_travail;
+                }
+                if (rapport.heures_debut) {
+                    form.querySelector('[name="heures_debut"]').value = rapport.heures_debut;
+                }
+                if (rapport.heures_fin) {
+                    form.querySelector('[name="heures_fin"]').value = rapport.heures_fin;
+                }
+                if (rapport.surface_carrelee) {
+                    form.querySelector('[name="surface_carrelee"]').value = rapport.surface_carrelee;
+                }
+                if (rapport.format_carreaux) {
+                    form.querySelector('[name="format_carreaux"]').value = rapport.format_carreaux;
+                }
+                if (rapport.type_pose) {
+                    form.querySelector('[name="type_pose"]').value = rapport.type_pose;
+                }
+                if (rapport.zone_pose) {
+                    form.querySelector('[name="zone_pose"]').value = rapport.zone_pose;
+                }
+                if (rapport.travaux_realises) {
+                    form.querySelector('[name="travaux_realises"]').value = rapport.travaux_realises;
+                }
+                if (rapport.observations) {
+                    form.querySelector('[name="observations"]').value = rapport.observations;
+                }
 
                 document.querySelector('.modal-overlay').remove();
                 alert('✅ Rapport copié avec succès!');
@@ -1062,11 +1082,17 @@ $resql_projets = $db->query($sql_projets);
             let parts = [];
             if (typeLieu) {
                 let prefix = typeLieu;
-                if (numeroLieu) prefix += ' ' + numeroLieu;
+                if (numeroLieu) {
+                    prefix += ' ' + numeroLieu;
+                }
                 parts.push(prefix);
             }
-            if (selectedZones.length > 0) parts.push(selectedZones.join(', '));
-            if (zoneAutre) parts.push(zoneAutre);
+            if (selectedZones.length > 0) {
+                parts.push(selectedZones.join(', '));
+            }
+            if (zoneAutre) {
+                parts.push(zoneAutre);
+            }
 
             const finalText = parts.join(' - ');
             if (finalText) {
@@ -1166,7 +1192,9 @@ $resql_projets = $db->query($sql_projets);
             const dt = new DataTransfer();
 
             allPhotos.forEach(file => {
-                if (file) dt.items.add(file);
+                if (file) {
+                    dt.items.add(file);
+                }
             });
 
             photoInput.files = dt.files;
