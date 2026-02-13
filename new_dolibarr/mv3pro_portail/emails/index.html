@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Templates Email MV-3 PRO</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            text-align: center;
+            line-height: 80px;
+            font-size: 40px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            border: 3px solid rgba(255,255,255,0.2);
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #0891b2, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 500;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 32px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #0891b2;
+            box-shadow: 0 20px 60px rgba(8,145,178,0.3);
+        }
+
+        .card-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        .card-desc {
+            font-size: 15px;
+            line-height: 1.6;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 24px;
+        }
+
+        .card-features {
+            list-style: none;
+            margin-bottom: 24px;
+        }
+
+        .card-features li {
+            padding: 8px 0;
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .card-features li:before {
+            content: '✓';
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #0891b2, #06b6d4);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            margin-right: 12px;
+            margin-bottom: 12px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(8,145,178,0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 10px 30px rgba(255,255,255,0.1);
+        }
+
+        .docs {
+            background: rgba(16,185,129,0.1);
+            border: 2px solid #10b981;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 40px;
+        }
+
+        .docs h2 {
+            font-size: 28px;
+            margin-bottom: 16px;
+            color: #10b981;
+        }
+
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .doc-link {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            text-decoration: none;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        .doc-link:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+
+        .doc-link-icon {
+            font-size: 32px;
+            margin-right: 16px;
+        }
+
+        .doc-link-text {
+            flex: 1;
+        }
+
+        .doc-link-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .doc-link-desc {
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 60px;
+        }
+
+        .footer-text {
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(16,185,129,0.2);
+            color: #10b981;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 36px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .docs-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="logo">M</div>
+            <h1>Templates Email MV-3 PRO</h1>
+            <p class="subtitle">
+                Modèles d'emails modernes et professionnels pour Dolibarr
+            </p>
+        </div>
+
+        <!-- DOCUMENTATION -->
+        <div class="docs">
+            <h2>📚 Documentation</h2>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 20px;">
+                Consultez les guides pour intégrer et personnaliser vos templates email
+            </p>
+            <div class="docs-grid">
+                <a href="README.md" class="doc-link">
+                    <div class="doc-link-icon">📖</div>
+                    <div class="doc-link-text">
+                        <div class="doc-link-title">Documentation Complète</div>
+                        <div class="doc-link-desc">Guide détaillé d'utilisation</div>
+                    </div>
+                </a>
+                <a href="GUIDE_RAPIDE.md" class="doc-link">
+                    <div class="doc-link-icon">⚡</div>
+                    <div class="doc-link-text">
+                        <div class="doc-link-title">Guide Rapide</div>
+                        <div class="doc-link-desc">Installation en 5 minutes</div>
+                    </div>
+                </a>
+                <a href="https://wiki.dolibarr.org" target="_blank" class="doc-link">
+                    <div class="doc-link-icon">🌐</div>
+                    <div class="doc-link-text">
+                        <div class="doc-link-title">Wiki Dolibarr</div>
+                        <div class="doc-link-desc">Documentation officielle</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- TEMPLATES GRID -->
+        <div class="grid">
+
+            <!-- Template 1: Coordonnées Bancaires -->
+            <div class="card">
+                <div class="card-icon">🏦</div>
+                <div class="card-title">
+                    Coordonnées Bancaires
+                    <span class="badge">DISPONIBLE</span>
+                </div>
+                <div class="card-desc">
+                    Template moderne pour envoyer les coordonnées bancaires avec les détails de commande. Design premium avec gradient et mise en valeur de l'IBAN.
+                </div>
+                <ul class="card-features">
+                    <li>Design moderne avec gradients</li>
+                    <li>Détails commande structurés</li>
+                    <li>IBAN mis en valeur</li>
+                    <li>Notice importante stylisée</li>
+                    <li>Footer avec contacts</li>
+                    <li>100% responsive</li>
+                </ul>
+                <div>
+                    <a href="preview_demo.html" class="btn" target="_blank">
+                        👁️ Prévisualiser
+                    </a>
+                    <a href="template_coordonnees_bancaires.html" class="btn btn-secondary" download>
+                        📥 Télécharger HTML
+                    </a>
+                </div>
+            </div>
+
+            <!-- Template 2: Confirmation Commande (Coming Soon) -->
+            <div class="card" style="opacity: 0.6;">
+                <div class="card-icon">✅</div>
+                <div class="card-title">
+                    Confirmation Commande
+                    <span class="badge" style="background: rgba(251,191,36,0.2); color: #fbbf24;">BIENTÔT</span>
+                </div>
+                <div class="card-desc">
+                    Email de confirmation suite à une commande validée. Récapitulatif complet avec timeline de livraison.
+                </div>
+                <ul class="card-features">
+                    <li>Récapitulatif de commande</li>
+                    <li>Timeline de livraison</li>
+                    <li>Coordonnées de contact</li>
+                    <li>Liens de suivi</li>
+                </ul>
+                <div>
+                    <button class="btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        🔒 Bientôt disponible
+                    </button>
+                </div>
+            </div>
+
+            <!-- Template 3: Rappel Paiement (Coming Soon) -->
+            <div class="card" style="opacity: 0.6;">
+                <div class="card-icon">⏰</div>
+                <div class="card-title">
+                    Rappel Paiement
+                    <span class="badge" style="background: rgba(251,191,36,0.2); color: #fbbf24;">BIENTÔT</span>
+                </div>
+                <div class="card-desc">
+                    Email de rappel automatique pour les factures impayées. Ton professionnel et courtois.
+                </div>
+                <ul class="card-features">
+                    <li>Rappel courtois</li>
+                    <li>Détails facture</li>
+                    <li>Options de paiement</li>
+                    <li>Coordonnées support</li>
+                </ul>
+                <div>
+                    <button class="btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        🔒 Bientôt disponible
+                    </button>
+                </div>
+            </div>
+
+            <!-- Template 4: Newsletter (Coming Soon) -->
+            <div class="card" style="opacity: 0.6;">
+                <div class="card-icon">📰</div>
+                <div class="card-title">
+                    Newsletter
+                    <span class="badge" style="background: rgba(251,191,36,0.2); color: #fbbf24;">BIENTÔT</span>
+                </div>
+                <div class="card-desc">
+                    Template de newsletter pour informer vos clients des actualités et nouveautés.
+                </div>
+                <ul class="card-features">
+                    <li>Sections multiples</li>
+                    <li>Images optimisées</li>
+                    <li>Boutons d'action</li>
+                    <li>Désabonnement intégré</li>
+                </ul>
+                <div>
+                    <button class="btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        🔒 Bientôt disponible
+                    </button>
+                </div>
+            </div>
+
+            <!-- Template 5: Bienvenue (Coming Soon) -->
+            <div class="card" style="opacity: 0.6;">
+                <div class="card-icon">👋</div>
+                <div class="card-title">
+                    Email de Bienvenue
+                    <span class="badge" style="background: rgba(251,191,36,0.2); color: #fbbf24;">BIENTÔT</span>
+                </div>
+                <div class="card-desc">
+                    Premier contact avec vos nouveaux clients. Présentation de votre entreprise et services.
+                </div>
+                <ul class="card-features">
+                    <li>Message personnalisé</li>
+                    <li>Présentation services</li>
+                    <li>Liens utiles</li>
+                    <li>Contact direct</li>
+                </ul>
+                <div>
+                    <button class="btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        🔒 Bientôt disponible
+                    </button>
+                </div>
+            </div>
+
+            <!-- Template 6: Rapport Chantier (Coming Soon) -->
+            <div class="card" style="opacity: 0.6;">
+                <div class="card-icon">📋</div>
+                <div class="card-title">
+                    Rapport Chantier
+                    <span class="badge" style="background: rgba(251,191,36,0.2); color: #fbbf24;">BIENTÔT</span>
+                </div>
+                <div class="card-desc">
+                    Envoi automatique des rapports chantier validés aux clients avec photos et détails.
+                </div>
+                <ul class="card-features">
+                    <li>Résumé travaux</li>
+                    <li>Galerie photos</li>
+                    <li>Durée intervention</li>
+                    <li>Signature technicien</li>
+                </ul>
+                <div>
+                    <button class="btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        🔒 Bientôt disponible
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- STATS -->
+        <div style="background: rgba(255,255,255,0.05); border-radius: 16px; padding: 40px; text-align: center; margin-bottom: 40px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px;">
+                <div>
+                    <div style="font-size: 48px; font-weight: 700; color: #0891b2; margin-bottom: 8px;">6</div>
+                    <div style="color: rgba(255,255,255,0.7); font-size: 14px;">Templates prévus</div>
+                </div>
+                <div>
+                    <div style="font-size: 48px; font-weight: 700; color: #10b981; margin-bottom: 8px;">1</div>
+                    <div style="color: rgba(255,255,255,0.7); font-size: 14px;">Disponible maintenant</div>
+                </div>
+                <div>
+                    <div style="font-size: 48px; font-weight: 700; color: #fbbf24; margin-bottom: 8px;">100%</div>
+                    <div style="color: rgba(255,255,255,0.7); font-size: 14px;">Responsive</div>
+                </div>
+                <div>
+                    <div style="font-size: 48px; font-weight: 700; color: #06b6d4; margin-bottom: 8px;">✓</div>
+                    <div style="color: rgba(255,255,255,0.7); font-size: 14px;">Compatible Dolibarr</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <p class="footer-text">
+                © 2024 MV-3 PRO - Templates Email<br>
+                <a href="https://www.mv-3pro.ch" style="color: #0891b2; text-decoration: none; margin-top: 8px; display: inline-block;">
+                    www.mv-3pro.ch
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
